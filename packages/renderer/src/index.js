@@ -11,6 +11,7 @@ export { default as SlotRenderer } from "./SlotRenderer.jsx";
 export { default as ErrorBoundary } from "./ErrorBoundary.jsx";
 
 // Архетипы (barrel из A9)
+export { registerCanvas } from "./archetypes/ArchetypeCanvas.jsx";
 import * as archetypes from "./archetypes/index.js";
 export { archetypes };
 
