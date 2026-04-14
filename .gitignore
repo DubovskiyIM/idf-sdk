@@ -1,0 +1,12 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+.env
+.env.local
+verdaccio-config/storage/
+verdaccio-config/htpasswd
+.idea/
+.vscode/
+coverage/
+*.tsbuildinfo
