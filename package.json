@@ -1,0 +1,14 @@
+{
+  "name": "idf-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Intent-Driven Frontend SDK monorepo",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "publish:local": "bash scripts/publish-local.sh",
+    "verdaccio": "bash scripts/verdaccio-up.sh"
+  },
+  "packageManager": "pnpm@10.0.0",
+  "license": "MIT"
+}
