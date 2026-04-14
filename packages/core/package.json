@@ -1,7 +1,7 @@
 {
   "name": "@idf/core",
-  "version": "0.1.0",
-  "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer",
+  "version": "0.2.0",
+  "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer, materializers (pixels/voice/agent-API/document), invariants",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

@@ -58,3 +58,42 @@ export {
   SLOT_STATUS_COLORS,
   BOOKING_STATUS_COLORS,
 } from "./constants.js";
+
+// ────────────────────────────────────────────────────────────
+// v0.2.0 — server schema (pure functions для agent layer + materializations)
+// ────────────────────────────────────────────────────────────
+
+// Filter world per role + many-to-many через role.scope (§5)
+export { filterWorldForRole } from "./filterWorld.js";
+
+// Базовые роли (§5 v1.6.1) — таксономия owner / viewer / agent / observer
+export {
+  BASE_ROLES,
+  validateBase,
+  getRolesByBase,
+  isAgentRole,
+  isObserverRole,
+  isOwnerRole,
+  auditOntologyRoles,
+} from "./baseRoles.js";
+
+// Preapproval guard (§17 v1.6) — agent лимиты поверх JWT
+export { checkPreapproval } from "./preapprovalGuard.js";
+
+// Materializers (§1 четыре материализации)
+export {
+  materializeAsDocument,
+  renderDocumentHtml,
+} from "./materializers/documentMaterializer.js";
+export {
+  materializeAsVoice,
+  renderVoiceSsml,
+  renderVoicePlain,
+} from "./materializers/voiceMaterializer.js";
+
+// Global invariants (§14 v1.6.1) — schema-level ∀-свойства world
+export {
+  checkInvariants,
+  registerKind,
+  KIND_HANDLERS,
+} from "./invariants/index.js";
