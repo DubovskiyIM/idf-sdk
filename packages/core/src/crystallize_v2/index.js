@@ -17,7 +17,7 @@ import { assignToSlots } from "./assignToSlots.js";
 import { hashInputs } from "./hash.js";
 import { deriveNavGraph } from "./navGraph.js";
 import { generateEditProjections, buildFormSpec } from "./formGrouping.js";
-import { validateArtifact } from "../renderer/validation/validateArtifact.js";
+import { validateArtifact } from "./validateArtifact.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 

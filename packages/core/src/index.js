@@ -37,6 +37,7 @@ export { parseCondition, parseConditions } from "./conditionParser.js";
 
 // Crystallize v2
 export { crystallizeV2 } from "./crystallize_v2/index.js";
+export { validateArtifact } from "./crystallize_v2/validateArtifact.js";
 export {
   generateEditProjections,
   findReplaceIntents,
