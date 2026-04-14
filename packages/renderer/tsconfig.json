@@ -15,5 +15,5 @@
     "outDir": "dist"
   },
   "include": ["src"],
-  "exclude": ["node_modules", "dist", "src/index.jsx"]
+  "exclude": ["node_modules", "dist"]
 }

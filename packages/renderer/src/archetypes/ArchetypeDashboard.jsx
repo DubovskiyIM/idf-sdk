@@ -5,7 +5,7 @@
  * Dashboard рендерит каждый виджет как карточку с ограниченной высотой.
  * Click по заголовку — navigate к полной проекции.
  */
-import ProjectionRendererV2 from "../index.jsx";
+import ProjectionRendererV2 from "../ProjectionRendererV2.jsx";
 
 export default function ArchetypeDashboard({ slots, ctx }) {
   const widgets = slots.body?.widgets || [];

@@ -6,7 +6,7 @@
  */
 
 // Верхний уровень
-export { default as ProjectionRendererV2 } from "./index.jsx";
+export { default as ProjectionRendererV2 } from "./ProjectionRendererV2.jsx";
 export { default as SlotRenderer } from "./SlotRenderer.jsx";
 export { default as ErrorBoundary } from "./ErrorBoundary.jsx";
 
