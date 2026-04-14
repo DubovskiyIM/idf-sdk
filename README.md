@@ -21,7 +21,24 @@ pnpm -r build
 pnpm -r test
 ```
 
-## Локальная публикация
+## Использование в эталонном приложении
+
+В `idf/package.json`:
+```json
+{
+  "dependencies": {
+    "@idf/core": "file:../idf-sdk/packages/core"
+  }
+}
+```
+
+Тогда `npm install` в idf/ берёт пакет напрямую из dist/. После изменений в SDK:
+```bash
+cd ../idf-sdk/packages/core && pnpm build
+cd ../../../idf && npm install --force
+```
+
+## Локальная публикация (опционально, через verdaccio)
 
 ```bash
 # Запустить verdaccio
