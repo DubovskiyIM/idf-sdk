@@ -1,0 +1,49 @@
+{
+  "name": "@idf/adapter-shadcn",
+  "version": "0.1.0",
+  "description": "shadcn/ui doodle-style adapter for @idf/renderer",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    },
+    "./styles.css": "./dist/theme.css"
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "tsup && cp src/theme.css dist/theme.css",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "@idf/renderer": ">=0.1.0",
+    "lucide-react": ">=1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0",
+    "jsdom": "^25.0.0",
+    "@testing-library/react": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "@idf/renderer": "workspace:*",
+    "lucide-react": "^1.8.0",
+    "@radix-ui/react-dialog": "^1.1.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.0",
+    "@radix-ui/react-select": "^2.2.0",
+    "@radix-ui/react-tabs": "^1.1.0",
+    "@radix-ui/react-avatar": "^1.1.0",
+    "clsx": "^2.1.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://localhost:4873"
+  },
+  "license": "MIT"
+}
