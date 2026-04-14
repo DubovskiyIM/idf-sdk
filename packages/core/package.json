@@ -1,0 +1,44 @@
+{
+  "name": "@idf/core",
+  "version": "0.1.0",
+  "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
+  "dependencies": {
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^9.0.0",
+    "vitest": "^4.0.0",
+    "react": "^19.0.0"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://localhost:4873"
+  },
+  "license": "MIT",
+  "keywords": ["idf", "intent-driven", "crystallize", "fold"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git"
+  }
+}
