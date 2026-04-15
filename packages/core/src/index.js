@@ -97,3 +97,6 @@ export {
   registerKind,
   KIND_HANDLERS,
 } from "./invariants/index.js";
+
+// Asset-boundary helpers (§19 v1.7) — декларация внешних asset-источников
+export { getAssets, validateAsset, ASSET_KINDS } from "./ontology/assets.js";
