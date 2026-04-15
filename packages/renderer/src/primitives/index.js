@@ -2,6 +2,7 @@ import { Text, Heading, Badge, Avatar, Image, Audio, Spacer, Divider, StatBar, P
 import { Row, Column, Card, List } from "./containers.jsx";
 import { Chart, Sparkline } from "./chart.jsx";
 import { Map } from "./map.jsx";
+import { IrreversibleBadge } from "./IrreversibleBadge.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -23,4 +24,5 @@ export const PRIMITIVES = {
   chart: Chart,
   sparkline: Sparkline,
   map: Map,
+  irreversibleBadge: IrreversibleBadge,
 };
