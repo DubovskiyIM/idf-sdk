@@ -83,4 +83,7 @@ const grid = calendarGrid({ year: 2026, month: 3 });
 
 ## Лицензия
 
-MIT
+**MIT** (см. [LICENSE](./LICENSE)).
+
+`@idf/canvas-kit` — standalone пакет без peer-зависимости от `@idf/core`;
+может использоваться в любых React-проектах независимо от IDF.

@@ -1,0 +1,28 @@
+Intent-Driven Frontend SDK — многолицензионный репозиторий
+
+Лицензии разделены по пакетам:
+
+- packages/core/ — Business Source License 1.1 (BUSL-1.1).
+  Некоммерческое и внутреннее использование — свободно.
+  Hosted SaaS / PaaS, где третьи лица строят приложения на @idf/core без
+  собственной установки — требует коммерческой лицензии.
+  Переход на Apache License 2.0 — 2030-04-15 (через 4 года).
+  См. packages/core/LICENSE для полного текста.
+
+- packages/renderer/ — MIT
+- packages/adapter-mantine/ — MIT
+- packages/adapter-shadcn/ — MIT
+- packages/adapter-apple/ — MIT
+- packages/adapter-antd/ — MIT
+- packages/canvas-kit/ — MIT
+
+  Клиентские пакеты распространяются под MIT. Заметьте: @idf/renderer и
+  адаптеры используют @idf/core как peer-dependency, поэтому их
+  потребители также должны согласиться с условиями BUSL-1.1 для @idf/core
+  до Change Date.
+
+Workspace-скрипты на верхнем уровне (scripts/, pnpm-workspace.yaml,
+package.json) — MIT. См. файлы LICENSE в каждом пакете для точной
+копии и SPDX-идентификатора.
+
+Copyright (c) 2026 Ignat Dubovsky

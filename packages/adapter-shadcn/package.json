@@ -14,7 +14,7 @@
     },
     "./styles.css": "./dist/theme.css"
   },
-  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
   "scripts": {
     "build": "tsup && node -e \"require('fs').writeFileSync('dist/theme.css', require('fs').readFileSync('src/theme.css','utf8').replace(/@import \\\"tailwindcss\\\";\\n?/g, ''))\"",
     "test": "vitest run"
