@@ -6,9 +6,15 @@
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm -r build && changeset publish",
     "publish:local": "bash scripts/publish-local.sh",
     "verdaccio": "bash scripts/verdaccio-up.sh"
   },
   "packageManager": "pnpm@10.0.0",
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "@changesets/cli": "^2.30.0"
+  }
 }
