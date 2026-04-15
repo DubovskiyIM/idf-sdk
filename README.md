@@ -4,14 +4,14 @@ Reusable npm packages для парадигмы Intent-Driven Frontend.
 
 ## Пакеты
 
-- **@idf/core** — engine, fold, intentAlgebra, crystallize_v2
+- **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2
 
 ## Дальше (отдельные spec'и)
 
-- `@idf/server` — validator, ruleEngine, agent layer
-- `@idf/renderer` — V2Shell, archetypes, primitives
-- `@idf/adapter-mantine` / `@idf/adapter-shadcn` / `@idf/adapter-apple`
-- `@idf/canvas-kit` — Charts, GlassCard, Heatmap, MoodMeter
+- `@intent-driven/server` — validator, ruleEngine, agent layer
+- `@intent-driven/renderer` — V2Shell, archetypes, primitives
+- `@intent-driven/adapter-mantine` / `@intent-driven/adapter-shadcn` / `@intent-driven/adapter-apple`
+- `@intent-driven/canvas-kit` — Charts, GlassCard, Heatmap, MoodMeter
 
 ## Разработка
 
@@ -27,7 +27,7 @@ pnpm -r test
 ```json
 {
   "dependencies": {
-    "@idf/core": "file:../idf-sdk/packages/core"
+    "@intent-driven/core": "file:../idf-sdk/packages/core"
   }
 }
 ```

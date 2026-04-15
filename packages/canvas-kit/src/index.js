@@ -1,5 +1,5 @@
 /**
- * @idf/canvas-kit — низкоуровневые SVG math/layout утилиты
+ * @intent-driven/canvas-kit — низкоуровневые SVG math/layout утилиты
  * для канвасов в intent-driven доменах.
  */
 export { makeSvgScale } from "./useSvgScale.js";

@@ -1,5 +1,5 @@
 /**
- * @idf/renderer — Intent-Driven Frontend renderer.
+ * @intent-driven/renderer — Intent-Driven Frontend renderer.
  *
  * Primitives, archetypes, controls, adapter registry (shared).
  * См. манифест IDF v1.6 §16a, §17.

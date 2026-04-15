@@ -1,4 +1,4 @@
-# @idf/core
+# @intent-driven/core
 
 Ядро парадигмы Intent-Driven Frontend: движок эффектов, сворачивание мира (fold), алгебра намерений, кристаллизатор v2, четыре материализации (пиксели / голос / агент / документ), инварианты, фильтрация по роли и preapproval guard.
 
@@ -7,9 +7,9 @@
 ## Установка
 
 ```bash
-npm install @idf/core
+npm install @intent-driven/core
 # или
-pnpm add @idf/core
+pnpm add @intent-driven/core
 ```
 
 Peer dependency: `react@>=18`.
@@ -19,7 +19,7 @@ Peer dependency: `react@>=18`.
 ### Базовый движок
 
 ```js
-import { useEngine, crystallizeV2 } from "@idf/core";
+import { useEngine, crystallizeV2 } from "@intent-driven/core";
 
 const domain = {
   DOMAIN_ID: "todo",
@@ -63,7 +63,7 @@ const artifact = crystallizeV2(
 ### Фильтрация мира по роли (§5)
 
 ```js
-import { filterWorldForRole } from "@idf/core";
+import { filterWorldForRole } from "@intent-driven/core";
 
 const visibleWorld = filterWorldForRole(world, ontology, "customer");
 ```
@@ -71,7 +71,7 @@ const visibleWorld = filterWorldForRole(world, ontology, "customer");
 ### Проверка инвариантов (§14)
 
 ```js
-import { checkInvariants } from "@idf/core";
+import { checkInvariants } from "@intent-driven/core";
 
 const violations = checkInvariants(ontology, world);
 if (violations.length > 0) {
@@ -82,7 +82,7 @@ if (violations.length > 0) {
 ### Материализация в документ (§1)
 
 ```js
-import { materializeAsDocument, renderDocumentHtml } from "@idf/core";
+import { materializeAsDocument, renderDocumentHtml } from "@intent-driven/core";
 
 const doc = materializeAsDocument(artifact, world, "catalog");
 const html = renderDocumentHtml(doc);
@@ -91,7 +91,7 @@ const html = renderDocumentHtml(doc);
 ### Проверка asset-boundary (§19)
 
 ```js
-import { getAssets, validateAsset, ASSET_KINDS } from "@idf/core";
+import { getAssets, validateAsset, ASSET_KINDS } from "@intent-driven/core";
 
 const assets = getAssets(ontology);
 const result = validateAsset(assetDef); // { valid, errors }
@@ -201,11 +201,11 @@ const result = validateAsset(assetDef); // { valid, errors }
 
 ## Связь с IDF
 
-`@idf/core` — канонический пакет парадигмы. Все остальные пакеты экосистемы зависят от него:
+`@intent-driven/core` — канонический пакет парадигмы. Все остальные пакеты экосистемы зависят от него:
 
-- **`@idf/renderer`** использует `crystallizeV2`, `fold`, `computeAlgebra` для рендера
-- **`@idf/adapter-*`** получают capability surface от renderer, а не от core напрямую
-- **`@idf/canvas-kit`** — автономен, peer только `react`
+- **`@intent-driven/renderer`** использует `crystallizeV2`, `fold`, `computeAlgebra` для рендера
+- **`@intent-driven/adapter-*`** получают capability surface от renderer, а не от core напрямую
+- **`@intent-driven/canvas-kit`** — автономен, peer только `react`
 - **Server-слой** (`server/schema/*.cjs` в основном репо) — thin re-exports из core для CJS-совместимости
 
 Манифест IDF v1.7: [docs/manifesto-v1.7.md](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md)
@@ -223,10 +223,10 @@ const result = validateAsset(assetDef); // { valid, errors }
 Коротко:
 - Некоммерческое использование, обучение, исследования — свободно.
 - Внутреннее корпоративное использование и разработка ваших собственных
-  приложений на базе `@idf/core` (которые вы распространяете своим
+  приложений на базе `@intent-driven/core` (которые вы распространяете своим
   конечным пользователям) — свободно.
 - Hosted SaaS / PaaS, где третьи лица строят приложения поверх
-  `@idf/core` **без установки собственного экземпляра**, требует
+  `@intent-driven/core` **без установки собственного экземпляра**, требует
   коммерческой лицензии от Licensor до Change Date.
 - **Change Date:** 2030-04-15 (через 4 года от первой публикации).
   После этой даты пакет автоматически конвертируется в Apache License 2.0.
@@ -234,7 +234,7 @@ const result = validateAsset(assetDef); // { valid, errors }
 Полный текст: [LICENSE](./LICENSE). Вопросы по коммерческой лицензии —
 issue в репозитории или email указанный в `author`.
 
-Клиентские пакеты экосистемы (`@idf/renderer`, `@idf/adapter-*`,
-`@idf/canvas-kit`) распространяются под MIT, но используют `@idf/core`
+Клиентские пакеты экосистемы (`@intent-driven/renderer`, `@intent-driven/adapter-*`,
+`@intent-driven/canvas-kit`) распространяются под MIT, но используют `@intent-driven/core`
 как peer-dependency — их потребители также соглашаются с условиями
-BUSL-1.1 для `@idf/core` до Change Date.
+BUSL-1.1 для `@intent-driven/core` до Change Date.

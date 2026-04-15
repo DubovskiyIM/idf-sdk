@@ -4,9 +4,9 @@ import {
   registerUIAdapter,
   getAdaptedComponent,
   getCapability,
-} from "@idf/renderer";
+} from "@intent-driven/renderer";
 
-describe("@idf/adapter-mantine", () => {
+describe("@intent-driven/adapter-mantine", () => {
   it("adapter has name 'mantine'", () => {
     expect(mantineAdapter.name).toBe("mantine");
   });

@@ -9,7 +9,7 @@ export default defineConfig({
   clean: true,
   outDir: "dist",
   target: "es2022",
-  external: ["react", "react-dom", "@mantine/core", "@mantine/dates", "@idf/renderer", "lucide-react"],
+  external: ["react", "react-dom", "@mantine/core", "@mantine/dates", "@intent-driven/renderer", "lucide-react"],
   loader: { ".jsx": "jsx" },
   outExtension({ format }) {
     return { js: format === "esm" ? ".mjs" : ".cjs" };

@@ -1,5 +1,5 @@
 {
-  "name": "@idf/core",
+  "name": "@intent-driven/core",
   "version": "0.3.0",
   "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer, materializers (pixels/voice/agent-API/document), invariants",
   "type": "module",

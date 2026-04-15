@@ -11,7 +11,7 @@ import {
   validateArtifact,
 } from "./index.js";
 
-describe("@idf/renderer public API", () => {
+describe("@intent-driven/renderer public API", () => {
   it("exports ProjectionRendererV2", () => {
     expect(typeof ProjectionRendererV2).toBe("function");
   });

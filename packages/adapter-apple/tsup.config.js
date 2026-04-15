@@ -12,7 +12,7 @@ export default defineConfig({
   external: [
     "react",
     "react-dom",
-    "@idf/renderer",
+    "@intent-driven/renderer",
     "lucide-react",
     "@radix-ui/react-dialog",
     "@radix-ui/react-dropdown-menu",

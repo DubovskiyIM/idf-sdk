@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Обновлена peerDependency `@idf/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
+- Обновлена peerDependency `@intent-driven/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
 
 ---
 
@@ -12,5 +12,5 @@
 
 - Первый релиз: `shadcnAdapter` + `ShadcnAdapterProvider` + `theme.css`
 - Doodle/sketch стилистика с Tailwind-токенами
-- CSS-тема экспортируется через `@idf/adapter-shadcn/styles.css`
+- CSS-тема экспортируется через `@intent-driven/adapter-shadcn/styles.css`
 - Radix UI primitives под капотом (dialog, dropdown, select, tabs, avatar)

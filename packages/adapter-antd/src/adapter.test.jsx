@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { antdAdapter } from "./adapter.jsx";
-import { registerUIAdapter, getCapability, supportsVariant } from "@idf/renderer";
+import { registerUIAdapter, getCapability, supportsVariant } from "@intent-driven/renderer";
 
-describe("@idf/adapter-antd", () => {
+describe("@intent-driven/adapter-antd", () => {
   it("adapter has name 'antd'", () => {
     expect(antdAdapter.name).toBe("antd");
   });

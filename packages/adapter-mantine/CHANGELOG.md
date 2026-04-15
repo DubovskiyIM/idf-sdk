@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Обновлена peerDependency `@idf/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
+- Обновлена peerDependency `@intent-driven/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
 
 ---
 

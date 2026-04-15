@@ -1,7 +1,7 @@
 {
-  "name": "@idf/adapter-antd",
+  "name": "@intent-driven/adapter-antd",
   "version": "0.1.1",
-  "description": "Ant Design enterprise-fintech adapter for @idf/renderer",
+  "description": "Ant Design enterprise-fintech adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -28,7 +28,7 @@
     "antd": ">=5",
     "@ant-design/plots": ">=2",
     "@ant-design/icons": ">=5",
-    "@idf/renderer": ">=0.2.0"
+    "@intent-driven/renderer": ">=0.2.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
@@ -42,7 +42,7 @@
     "@ant-design/icons": "^6.1.1",
     "dayjs": "^1.11.0",
     "typescript": "^5.7.0",
-    "@idf/renderer": "workspace:*"
+    "@intent-driven/renderer": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

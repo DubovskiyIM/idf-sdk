@@ -4,7 +4,7 @@
 
 ### Changed
 
-- Обновлена peerDependency `@idf/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
+- Обновлена peerDependency `@intent-driven/renderer` до `>=0.2.0` (поддержка map primitive и IrreversibleBadge)
 
 ---
 
@@ -12,5 +12,5 @@
 
 - Первый релиз: `appleAdapter` + `AppleAdapterProvider` + `theme.css`
 - Apple visionOS-glass эстетика (glassmorphism, backdrop-filter, blur)
-- CSS-тема экспортируется через `@idf/adapter-apple/styles.css`
+- CSS-тема экспортируется через `@intent-driven/adapter-apple/styles.css`
 - Radix UI primitives под капотом (dialog, dropdown, select, tabs, avatar)

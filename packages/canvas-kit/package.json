@@ -1,5 +1,5 @@
 {
-  "name": "@idf/canvas-kit",
+  "name": "@intent-driven/canvas-kit",
   "version": "0.1.0",
   "description": "Low-level SVG math/layout utilities for Intent-Driven Frontend canvases",
   "type": "module",

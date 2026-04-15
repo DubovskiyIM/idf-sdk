@@ -1,26 +1,26 @@
-# @idf/adapter-mantine
+# @intent-driven/adapter-mantine
 
-Mantine-адаптер для `@idf/renderer`. Корпоративный data-dense стиль — дефолт для доменов booking, planning, workflow, messenger, sales.
+Mantine-адаптер для `@intent-driven/renderer`. Корпоративный data-dense стиль — дефолт для доменов booking, planning, workflow, messenger, sales.
 
 **Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
 
 ## Установка
 
 ```bash
-npm install @idf/adapter-mantine @mantine/core @mantine/dates lucide-react
+npm install @intent-driven/adapter-mantine @mantine/core @mantine/dates lucide-react
 # или
-pnpm add @idf/adapter-mantine @mantine/core @mantine/dates lucide-react
+pnpm add @intent-driven/adapter-mantine @mantine/core @mantine/dates lucide-react
 ```
 
-Peer dependencies: `react@>=18`, `@idf/renderer@>=0.2.0`, `@mantine/core@>=9`, `@mantine/dates@>=9`, `lucide-react@>=0.400.0`.
+Peer dependencies: `react@>=18`, `@intent-driven/renderer@>=0.2.0`, `@mantine/core@>=9`, `@mantine/dates@>=9`, `lucide-react@>=0.400.0`.
 
 CSS-файлы `@mantine/core/styles.css` и `@mantine/dates/styles.css` импортируются провайдером автоматически.
 
 ## Использование
 
 ```jsx
-import { MantineAdapterProvider } from "@idf/adapter-mantine";
-import { ProjectionRendererV2 } from "@idf/renderer";
+import { MantineAdapterProvider } from "@intent-driven/adapter-mantine";
+import { ProjectionRendererV2 } from "@intent-driven/renderer";
 
 function App() {
   return (
@@ -72,7 +72,7 @@ capabilities: {
 
 **MIT** (см. [LICENSE](./LICENSE)).
 
-Адаптер транзитивно зависит от `@idf/core` (через peer-dep `@idf/renderer`),
+Адаптер транзитивно зависит от `@intent-driven/core` (через peer-dep `@intent-driven/renderer`),
 который распространяется под **Business Source License 1.1**. Hosted SaaS
 на базе ядра — коммерческая лицензия; некоммерческое и внутреннее
 производственное использование — свободно. Change Date: 2030-04-15

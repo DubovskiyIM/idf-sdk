@@ -89,7 +89,7 @@ import {
   BankOutlined,
 } from "@ant-design/icons";
 import dayjs from "dayjs";
-import { Icon, labels } from "@idf/renderer";
+import { Icon, labels } from "@intent-driven/renderer";
 import { AntdChart, AntdSparkline } from "./charts.jsx";
 
 const { humanLabel } = labels;

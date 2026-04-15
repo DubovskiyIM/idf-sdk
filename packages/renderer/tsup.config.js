@@ -9,7 +9,7 @@ export default defineConfig({
   clean: true,
   outDir: "dist",
   target: "es2022",
-  external: ["react", "react-dom", "@idf/core"],
+  external: ["react", "react-dom", "@intent-driven/core"],
   loader: { ".jsx": "jsx" },
   outExtension({ format }) {
     return { js: format === "esm" ? ".mjs" : ".cjs" };

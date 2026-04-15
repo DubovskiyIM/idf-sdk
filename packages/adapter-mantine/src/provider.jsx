@@ -5,14 +5,14 @@ import {
   localStorageColorSchemeManager,
 } from "@mantine/core";
 import { DatesProvider } from "@mantine/dates";
-import { registerUIAdapter } from "@idf/renderer";
+import { registerUIAdapter } from "@intent-driven/renderer";
 import { mantineAdapter } from "./adapter.jsx";
 
 import "@mantine/core/styles.css";
 import "@mantine/dates/styles.css";
 
 /**
- * Оборачивает приложение: регистрирует mantineAdapter в @idf/renderer,
+ * Оборачивает приложение: регистрирует mantineAdapter в @intent-driven/renderer,
  * монтирует MantineProvider + DatesProvider с дефолтными настройками.
  */
 export function MantineAdapterProvider({

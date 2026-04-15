@@ -16,7 +16,7 @@ importers:
       '@ant-design/plots':
         specifier: ^2.6.8
         version: 2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@idf/renderer':
+      '@intent-driven/renderer':
         specifier: workspace:*
         version: link:../renderer
       '@testing-library/react':
@@ -49,7 +49,7 @@ importers:
 
   packages/adapter-apple:
     devDependencies:
-      '@idf/renderer':
+      '@intent-driven/renderer':
         specifier: workspace:*
         version: link:../renderer
       '@radix-ui/react-avatar':
@@ -94,7 +94,7 @@ importers:
 
   packages/adapter-mantine:
     devDependencies:
-      '@idf/renderer':
+      '@intent-driven/renderer':
         specifier: workspace:*
         version: link:../renderer
       '@mantine/core':
@@ -130,7 +130,7 @@ importers:
 
   packages/adapter-shadcn:
     devDependencies:
-      '@idf/renderer':
+      '@intent-driven/renderer':
         specifier: workspace:*
         version: link:../renderer
       '@radix-ui/react-avatar':
@@ -221,7 +221,7 @@ importers:
 
   packages/renderer:
     devDependencies:
-      '@idf/core':
+      '@intent-driven/core':
         specifier: workspace:*
         version: link:../core
       '@testing-library/react':

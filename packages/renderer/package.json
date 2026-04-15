@@ -1,5 +1,5 @@
 {
-  "name": "@idf/renderer",
+  "name": "@intent-driven/renderer",
   "version": "0.2.0",
   "description": "Intent-Driven Frontend — renderer: primitives, archetypes, controls, adapter registry",
   "type": "module",
@@ -27,7 +27,7 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "@idf/core": ">=0.3.0"
+    "@intent-driven/core": ">=0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
@@ -37,7 +37,7 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "typescript": "^5.7.0",
-    "@idf/core": "workspace:*"
+    "@intent-driven/core": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

@@ -1,4 +1,4 @@
-# @idf/canvas-kit
+# @intent-driven/canvas-kit
 
 Низкоуровневые SVG math/layout утилиты для кастомных canvas в IDF-доменах: оси, пути, heatmap, zoom/pan, drag, кластеры, календарная сетка.
 
@@ -7,9 +7,9 @@
 ## Установка
 
 ```bash
-npm install @idf/canvas-kit
+npm install @intent-driven/canvas-kit
 # или
-pnpm add @idf/canvas-kit
+pnpm add @intent-driven/canvas-kit
 ```
 
 Peer dependency: `react@>=18`. Нет зависимостей от UI-kit — пакет полностью автономен.
@@ -27,7 +27,7 @@ import {
   useZoomPan,
   clusterLayout,
   calendarGrid,
-} from "@idf/canvas-kit";
+} from "@intent-driven/canvas-kit";
 
 // Построить SVG-шкалу для оси X
 const xScale = makeSvgScale({ domain: [0, 100], range: [0, 400] });
@@ -73,7 +73,7 @@ const grid = calendarGrid({ year: 2026, month: 3 });
 
 ## Связь с IDF
 
-`@idf/canvas-kit` используется при создании кастомных canvas в архетипе `ArchetypeCanvas`. Применяется в доменах lifequest (6 canvas), reflect (6 canvas), delivery (3 map-canvas). Пакет не зависит от `@idf/core` или `@idf/renderer` — подключается напрямую в canvas-компонентах.
+`@intent-driven/canvas-kit` используется при создании кастомных canvas в архетипе `ArchetypeCanvas`. Применяется в доменах lifequest (6 canvas), reflect (6 canvas), delivery (3 map-canvas). Пакет не зависит от `@intent-driven/core` или `@intent-driven/renderer` — подключается напрямую в canvas-компонентах.
 
 Подробнее о canvas-архетипе: [manifesto §16a](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
 
@@ -85,5 +85,5 @@ const grid = calendarGrid({ year: 2026, month: 3 });
 
 **MIT** (см. [LICENSE](./LICENSE)).
 
-`@idf/canvas-kit` — standalone пакет без peer-зависимости от `@idf/core`;
+`@intent-driven/canvas-kit` — standalone пакет без peer-зависимости от `@intent-driven/core`;
 может использоваться в любых React-проектах независимо от IDF.

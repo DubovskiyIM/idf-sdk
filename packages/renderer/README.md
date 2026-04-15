@@ -1,4 +1,4 @@
-# @idf/renderer
+# @intent-driven/renderer
 
 Слой рендеринга Intent-Driven Frontend: 7 архетипов, 11 control-компонентов, примитивы (atoms / containers / chart / map / irreversibility), реестр UI-адаптеров и `ProjectionRendererV2`.
 
@@ -7,22 +7,22 @@
 ## Установка
 
 ```bash
-npm install @idf/renderer
+npm install @intent-driven/renderer
 # или
-pnpm add @idf/renderer
+pnpm add @intent-driven/renderer
 ```
 
-Peer dependencies: `react@>=18`, `@idf/core@>=0.3.0`.
+Peer dependencies: `react@>=18`, `@intent-driven/core@>=0.3.0`.
 
-Конкретный UI-kit подключается через адаптер (`@idf/adapter-mantine` / `@idf/adapter-shadcn` / `@idf/adapter-apple` / `@idf/adapter-antd`). Renderer сам по себе не импортирует ни один UI-kit.
+Конкретный UI-kit подключается через адаптер (`@intent-driven/adapter-mantine` / `@intent-driven/adapter-shadcn` / `@intent-driven/adapter-apple` / `@intent-driven/adapter-antd`). Renderer сам по себе не импортирует ни один UI-kit.
 
 ## Использование
 
 ### Рендер проекции из артефакта
 
 ```jsx
-import { ProjectionRendererV2 } from "@idf/renderer";
-import { AntdAdapterProvider } from "@idf/adapter-antd";
+import { ProjectionRendererV2 } from "@intent-driven/renderer";
+import { AntdAdapterProvider } from "@intent-driven/adapter-antd";
 
 function DomainView({ artifact, world, exec }) {
   return (
@@ -41,7 +41,7 @@ function DomainView({ artifact, world, exec }) {
 ### Использование отдельных примитивов
 
 ```jsx
-import { primitives } from "@idf/renderer";
+import { primitives } from "@intent-driven/renderer";
 
 const { Map, IrreversibleBadge } = primitives;
 
@@ -61,7 +61,7 @@ const { Map, IrreversibleBadge } = primitives;
 ### Регистрация пользовательского canvas
 
 ```js
-import { registerCanvas } from "@idf/renderer";
+import { registerCanvas } from "@intent-driven/renderer";
 
 registerCanvas("order_tracker", OrderTrackerCanvas);
 ```
@@ -135,14 +135,14 @@ registerCanvas("order_tracker", OrderTrackerCanvas);
 
 ## Связь с IDF
 
-`@idf/renderer` — адаптивный слой между канонической логикой (`@idf/core`) и конкретным UI-kit:
+`@intent-driven/renderer` — адаптивный слой между канонической логикой (`@intent-driven/core`) и конкретным UI-kit:
 
 ```
-@idf/core  (кристаллизация + fold)
+@intent-driven/core  (кристаллизация + fold)
     ↓
-@idf/renderer  (архетипы + примитивы + реестр)
+@intent-driven/renderer  (архетипы + примитивы + реестр)
     ↓
-@idf/adapter-*  (конкретный UI-kit: mantine / shadcn / apple / antd)
+@intent-driven/adapter-*  (конкретный UI-kit: mantine / shadcn / apple / antd)
 ```
 
 Renderer **не импортирует UI-kit напрямую** — все компоненты разрешаются через `getAdaptedComponent` из реестра. Это позволяет одному домену работать с любым из 4 адаптеров без изменения кода.
@@ -157,9 +157,9 @@ Capability surface (v1.6): адаптеры декларируют `adapter.capa
 
 **MIT** (см. [LICENSE](./LICENSE)).
 
-Примечание: этот пакет использует `@idf/core` как peer-dependency.
-`@idf/core` распространяется под **Business Source License 1.1**
+Примечание: этот пакет использует `@intent-driven/core` как peer-dependency.
+`@intent-driven/core` распространяется под **Business Source License 1.1**
 (некоммерческое + внутреннее производственное использование свободно,
 hosted SaaS на базе ядра — коммерческая лицензия; автоматический переход
-на Apache 2.0 — 2030-04-15). Использование `@idf/renderer` в продакшн
-означает также согласие с условиями BUSL-1.1 для `@idf/core`.
+на Apache 2.0 — 2030-04-15). Использование `@intent-driven/renderer` в продакшн
+означает также согласие с условиями BUSL-1.1 для `@intent-driven/core`.

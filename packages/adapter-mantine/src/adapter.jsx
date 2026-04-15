@@ -27,7 +27,7 @@ import {
   Menu,
 } from "@mantine/core";
 import { DateInput, TimeInput } from "@mantine/dates";
-import { Icon, labels } from "@idf/renderer";
+import { Icon, labels } from "@intent-driven/renderer";
 import {
   Pencil,
   Trash2,

@@ -9,7 +9,7 @@ export default defineConfig({
   clean: true,
   outDir: "dist",
   target: "es2022",
-  external: ["react", "react-dom", "antd", "@ant-design/plots", "@ant-design/icons", "@idf/renderer", "dayjs"],
+  external: ["react", "react-dom", "antd", "@ant-design/plots", "@ant-design/icons", "@intent-driven/renderer", "dayjs"],
   loader: { ".jsx": "jsx" },
   outExtension({ format }) {
     return { js: format === "esm" ? ".mjs" : ".cjs" };

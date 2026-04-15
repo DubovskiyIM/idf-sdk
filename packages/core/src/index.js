@@ -1,5 +1,5 @@
 /**
- * @idf/core — Intent-Driven Frontend ядро.
+ * @intent-driven/core — Intent-Driven Frontend ядро.
  *
  * Engine, fold, intent algebra, crystallize_v2.
  *

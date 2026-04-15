@@ -1,7 +1,7 @@
 {
-  "name": "@idf/adapter-mantine",
+  "name": "@intent-driven/adapter-mantine",
   "version": "0.1.1",
-  "description": "Mantine UI adapter for @idf/renderer",
+  "description": "Mantine UI adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -27,7 +27,7 @@
     "react": ">=18",
     "@mantine/core": ">=9",
     "@mantine/dates": ">=9",
-    "@idf/renderer": ">=0.2.0",
+    "@intent-driven/renderer": ">=0.2.0",
     "lucide-react": ">=0.400.0"
   },
   "devDependencies": {
@@ -41,7 +41,7 @@
     "@mantine/dates": "^9.0.0",
     "lucide-react": "^0.400.0",
     "typescript": "^5.7.0",
-    "@idf/renderer": "workspace:*"
+    "@intent-driven/renderer": "workspace:*"
   },
   "publishConfig": {
     "access": "public"

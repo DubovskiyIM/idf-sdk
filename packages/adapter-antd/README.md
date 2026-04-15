@@ -1,24 +1,24 @@
-# @idf/adapter-antd
+# @intent-driven/adapter-antd
 
-Ant Design enterprise-fintech адаптер для `@idf/renderer`. Dashboard / Statistic / @ant-design/plots — дефолт для домена invest (4 роли, 7 правил, 3 ML-сервиса).
+Ant Design enterprise-fintech адаптер для `@intent-driven/renderer`. Dashboard / Statistic / @ant-design/plots — дефолт для домена invest (4 роли, 7 правил, 3 ML-сервиса).
 
 **Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
 
 ## Установка
 
 ```bash
-npm install @idf/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
+npm install @intent-driven/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
 # или
-pnpm add @idf/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
+pnpm add @intent-driven/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
 ```
 
-Peer dependencies: `react@>=18`, `@idf/renderer@>=0.2.0`, `antd@>=5`, `@ant-design/plots@>=2`, `@ant-design/icons@>=5`.
+Peer dependencies: `react@>=18`, `@intent-driven/renderer@>=0.2.0`, `antd@>=5`, `@ant-design/plots@>=2`, `@ant-design/icons@>=5`.
 
 ## Использование
 
 ```jsx
-import { AntdAdapterProvider } from "@idf/adapter-antd";
-import { ProjectionRendererV2 } from "@idf/renderer";
+import { AntdAdapterProvider } from "@intent-driven/adapter-antd";
+import { ProjectionRendererV2 } from "@intent-driven/renderer";
 
 function App() {
   return (
@@ -74,7 +74,7 @@ capabilities: {
 
 **MIT** (см. [LICENSE](./LICENSE)).
 
-Адаптер транзитивно зависит от `@idf/core` (через peer-dep `@idf/renderer`),
+Адаптер транзитивно зависит от `@intent-driven/core` (через peer-dep `@intent-driven/renderer`),
 который распространяется под **Business Source License 1.1**. Hosted SaaS
 на базе ядра — коммерческая лицензия; некоммерческое и внутреннее
 производственное использование — свободно. Change Date: 2030-04-15
