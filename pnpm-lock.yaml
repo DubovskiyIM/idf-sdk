@@ -176,6 +176,30 @@ importers:
         specifier: ^4.1.0
         version: 4.1.4(jsdom@25.0.1)(vite@8.0.8(esbuild@0.27.7))
 
+  packages/canvas-kit:
+    devDependencies:
+      '@testing-library/react':
+        specifier: ^16.1.0
+        version: 16.3.2(@testing-library/dom@10.4.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      jsdom:
+        specifier: ^25.0.0
+        version: 25.0.1
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+      tsup:
+        specifier: ^8.5.0
+        version: 8.5.1(postcss@8.5.9)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vitest:
+        specifier: ^4.1.0
+        version: 4.1.4(jsdom@25.0.1)(vite@8.0.8(esbuild@0.27.7))
+
   packages/core:
     dependencies:
       uuid:
