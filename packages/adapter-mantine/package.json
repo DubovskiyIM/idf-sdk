@@ -1,6 +1,6 @@
 {
   "name": "@idf/adapter-mantine",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Mantine UI adapter for @idf/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -22,7 +22,7 @@
     "react": ">=18",
     "@mantine/core": ">=9",
     "@mantine/dates": ">=9",
-    "@idf/renderer": ">=0.1.0",
+    "@idf/renderer": ">=0.2.0",
     "lucide-react": ">=0.400.0"
   },
   "devDependencies": {
@@ -42,5 +42,17 @@
     "access": "public",
     "registry": "http://localhost:4873"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/adapter-mantine",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "directory": "packages/adapter-mantine"
+  },
+  "bugs": {
+    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+  },
+  "keywords": ["idf", "mantine", "ui-adapter", "react"],
+  "sideEffects": false
 }

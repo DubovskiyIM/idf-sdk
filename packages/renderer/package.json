@@ -1,6 +1,6 @@
 {
   "name": "@idf/renderer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Intent-Driven Frontend — renderer: primitives, archetypes, controls, adapter registry",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -22,7 +22,7 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "@idf/core": ">=0.2.0"
+    "@idf/core": ">=0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
@@ -39,6 +39,16 @@
     "registry": "http://localhost:4873"
   },
   "license": "MIT",
-  "keywords": ["idf", "intent-driven", "renderer"],
-  "repository": { "type": "git", "url": "https://github.com/ignatdubovskiy/idf-sdk.git" }
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/renderer",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "directory": "packages/renderer"
+  },
+  "bugs": {
+    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+  },
+  "keywords": ["idf", "intent-driven", "renderer", "archetypes", "primitives", "react"],
+  "sideEffects": false
 }

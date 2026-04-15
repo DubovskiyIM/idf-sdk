@@ -1,6 +1,6 @@
 {
   "name": "@idf/core",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer, materializers (pixels/voice/agent-API/document), invariants",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -37,9 +37,16 @@
     "registry": "http://localhost:4873"
   },
   "license": "MIT",
-  "keywords": ["idf", "intent-driven", "crystallize", "fold"],
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/core",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ignatdubovskiy/idf-sdk.git"
-  }
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+  },
+  "keywords": ["idf", "intent-driven", "fold", "crystallize", "materialization", "ontology", "invariants"],
+  "sideEffects": false
 }

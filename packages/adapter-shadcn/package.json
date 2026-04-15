@@ -1,6 +1,6 @@
 {
   "name": "@idf/adapter-shadcn",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "shadcn/ui doodle-style adapter for @idf/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -21,7 +21,7 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "@idf/renderer": ">=0.1.0",
+    "@idf/renderer": ">=0.2.0",
     "lucide-react": ">=1.0"
   },
   "devDependencies": {
@@ -45,5 +45,17 @@
     "access": "public",
     "registry": "http://localhost:4873"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/adapter-shadcn",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "directory": "packages/adapter-shadcn"
+  },
+  "bugs": {
+    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+  },
+  "keywords": ["idf", "shadcn", "ui-adapter", "tailwind", "react"],
+  "sideEffects": ["**/*.css"]
 }

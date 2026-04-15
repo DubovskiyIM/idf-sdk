@@ -1,44 +1,75 @@
 # @idf/adapter-antd
 
-Ant Design enterprise-fintech UI adapter for `@idf/renderer`.
+Ant Design enterprise-fintech адаптер для `@idf/renderer`. Dashboard / Statistic / @ant-design/plots — дефолт для домена invest (4 роли, 7 правил, 3 ML-сервиса).
 
-Fourth adapter in the IDF adapter suite, designed for fintech/banking dashboards (invest domain). Provides:
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
 
-- Full parameter controls (text, number, select, datetime with dayjs)
-- Buttons (primary, secondary, danger, intent, overflow dropdown)
-- Primitives: heading, text, badge, avatar, paper (Card), **statistic** (финансовая метрика с trend), **chart** (line/pie/column/bar/area via @ant-design/plots), **sparkline**
-- Shell: Modal, Tabs
-- Icon resolution (emoji → @ant-design/icons)
+## Установка
 
-## Usage
+```bash
+npm install @idf/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
+# или
+pnpm add @idf/adapter-antd antd @ant-design/plots @ant-design/icons dayjs
+```
+
+Peer dependencies: `react@>=18`, `@idf/renderer@>=0.2.0`, `antd@>=5`, `@ant-design/plots@>=2`, `@ant-design/icons@>=5`.
+
+## Использование
 
 ```jsx
 import { AntdAdapterProvider } from "@idf/adapter-antd";
+import { ProjectionRendererV2 } from "@idf/renderer";
 
 function App() {
   return (
     <AntdAdapterProvider theme={{ token: { colorPrimary: "#1677ff" } }}>
-      {/* your app */}
+      <ProjectionRendererV2
+        artifact={artifact}
+        world={world}
+        exec={exec}
+        projectionId="portfolio_dashboard"
+      />
     </AntdAdapterProvider>
   );
 }
 ```
 
+## Что экспортируется
+
+| Export | Описание |
+|--------|----------|
+| `AntdAdapterProvider` | Провайдер, регистрирует адаптер в реестре renderer; принимает `theme` prop |
+| `antdAdapter` | Spec-объект адаптера (для ручной регистрации) |
+
 ## Capabilities
+
+Единственный из 4 адаптеров с полной поддержкой финансовых примитивов:
 
 ```js
 capabilities: {
   primitive: {
     chart: { chartTypes: ["line", "pie", "column", "bar", "area"] },
-    sparkline: true,
-    statistic: true,
-    ...
+    sparkline: true,   // мини-график тренда
+    statistic: true,   // финансовая метрика с trend + prefix/suffix
+    map: { fallback: "svg" },
   },
   shell: { modal: true, tabs: true },
   button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
 }
 ```
 
-## License
+## Связь с IDF
+
+Один из четырёх UI-адаптеров IDF. AntD-адаптер оптимизирован для data-heavy fintech дашбордов с графиками, статистикой и enterprise-таблицами. Единственный, поддерживающий `statistic: true` и полный `chart` (без SVG-fallback).
+
+Переключение адаптера — через `PrefsPanel ⚙ → UI-kit`.
+
+Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+
+## Версии
+
+[CHANGELOG.md](./CHANGELOG.md)
+
+## Лицензия
 
 MIT

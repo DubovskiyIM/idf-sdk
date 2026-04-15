@@ -1,5 +1,31 @@
 # Changelog
 
+## v0.3.0 — 2026-04-15
+
+**Asset-boundary, необратимость, temporal scheduler — полевой тест 11 (delivery) + Consolidation Sprint 1.**
+
+### Added
+
+**§19 — Asset-boundary (v1.7 terminological):**
+- `ASSET_KINDS` — перечень допустимых видов внешних активов в онтологии
+- `getAssets(ontology)` — возвращает `ontology.assets[]`
+- `validateAsset(asset)` — валидирует декларацию актива `{ valid, errors }`
+
+**§23 — Необратимость (closure):**
+- `mergeIntoContext(context, irrDef)` — добавляет `__irr: { point, at, reason }` к контексту эффекта zero-migration через JSON-поле
+- Integrity-правило в validator.js блокирует `α:"remove"` на сущностях с past confirmed high-irr эффектом
+- Forward-correction через `α:"replace"` разрешён всегда
+
+**§4 — Temporal scheduler (v1.7):**
+- Системные намерения `schedule_timer(afterMs|atISO, target, revokeOn?)` и `revoke_timer(timerId)` — задокументированы как часть core-парадигмы
+- `evaluateScheduleV2` parser: `after:"5m"` / `at:"ISO"` / `revokeOn:[patterns]`
+
+### Design notes
+
+Все три дополнения v1.7 применяются совместно в домене delivery (field-test-11). Нет breaking changes — расширение через новые export-пути `./ontology/assets` и `./irreversibility`.
+
+---
+
 ## v0.2.0 — 2026-04-14
 
 **Agent layer + materializations extraction from IDF prototype v1.6.2.**

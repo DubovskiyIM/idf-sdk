@@ -1,76 +1,221 @@
 # @idf/core
 
-**Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer.**
+Ядро парадигмы Intent-Driven Frontend: движок эффектов, сворачивание мира (fold), алгебра намерений, кристаллизатор v2, четыре материализации (пиксели / голос / агент / документ), инварианты, фильтрация по роли и preapproval guard.
 
-Парадигма IDF: UI выводится из формального описания пользовательских намерений. Этот пакет содержит core-логику без UI-зависимостей.
-
-См. [манифест IDF v1.5](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.5.md).
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
 
 ## Установка
 
 ```bash
 npm install @idf/core
+# или
+pnpm add @idf/core
 ```
 
 Peer dependency: `react@>=18`.
 
-## Quick start
+## Использование
+
+### Базовый движок
 
 ```js
 import { useEngine, crystallizeV2 } from "@idf/core";
 
 const domain = {
-  INTENTS: { /* ... */ },
-  PROJECTIONS: { /* ... */ },
-  ONTOLOGY: { /* ... */ },
-  DOMAIN_ID: "my-domain",
-  buildEffects: (intentId, ctx, world, drafts) => { /* ... */ },
+  DOMAIN_ID: "todo",
+  INTENTS: {
+    create_task: {
+      label: "Создать задачу",
+      particles: { effects: [{ tau: "task", alpha: "create" }] },
+    },
+  },
+  PROJECTIONS: {
+    task_list: {
+      label: "Задачи",
+      archetype: "feed",
+      source: "task",
+      slots: { title: { field: "title" } },
+    },
+  },
+  ONTOLOGY: {
+    entities: { task: { fields: { title: { type: "string" } } } },
+  },
+  buildEffects: (intentId, ctx, world, drafts) => [],
 };
 
 function App() {
   const { world, exec } = useEngine(domain);
-  return <button onClick={() => exec("create_thing", { name: "Foo" })}>+</button>;
+  return (
+    <button onClick={() => exec("create_task", { title: "Новая задача" })}>
+      + Задача
+    </button>
+  );
 }
 
 const artifact = crystallizeV2(
-  domain.INTENTS, domain.PROJECTIONS, domain.ONTOLOGY, domain.DOMAIN_ID,
+  domain.INTENTS,
+  domain.PROJECTIONS,
+  domain.ONTOLOGY,
+  domain.DOMAIN_ID,
 );
 ```
 
-## Public API
+### Фильтрация мира по роли (§5)
 
-| Категория | Exports |
-|-----------|---------|
-| **Engine** | `useEngine` |
-| **Fold** | `fold`, `foldDrafts`, `applyPresentation`, `buildTypeMap`, `filterByStatus`, `causalSort` |
-| **Intent algebra** | `computeAlgebra`, `computeAlgebraWithEvidence`, `normalizeEntityFromTarget` |
-| **Composition** | `checkComposition` |
-| **Integrity** | `checkIntegrity` |
-| **Conditions** | `parseCondition`, `parseConditions` |
-| **Crystallize** | `crystallizeV2`, `validateArtifact` |
-| **Forms** | `generateEditProjections`, `findReplaceIntents`, `buildFormSpec` |
-| **Archetypes registry** | `registerArchetype`, `prependArchetype`, `selectArchetype`, `getArchetypes` |
-| **Constants** | `PARTICLE_COLORS`, `ALPHA_LABELS`, `LINK_COLORS`, `SLOT_STATUS_COLORS`, `BOOKING_STATUS_COLORS` |
+```js
+import { filterWorldForRole } from "@idf/core";
 
-## Связанные пакеты (TBD)
-
-- `@idf/server` — validator, ruleEngine, agent layer
-- `@idf/renderer` — V2Shell, archetypes, primitives, controls
-- `@idf/adapter-mantine` / `@idf/adapter-shadcn` / `@idf/adapter-apple`
-- `@idf/canvas-kit` — Charts, GlassCard, Heatmap, MoodMeter
-
-## Build & test
-
-```bash
-pnpm install
-pnpm build      # ESM + CJS + .d.ts
-pnpm test       # 238 unit-тестов
+const visibleWorld = filterWorldForRole(world, ontology, "customer");
 ```
 
-## Версионирование
+### Проверка инвариантов (§14)
 
-`0.x` — unstable API, breaking changes возможны без bump major. После 2-3 successful integrations → `1.0.0`.
+```js
+import { checkInvariants } from "@idf/core";
+
+const violations = checkInvariants(ontology, world);
+if (violations.length > 0) {
+  // откат через cascadeReject
+}
+```
+
+### Материализация в документ (§1)
+
+```js
+import { materializeAsDocument, renderDocumentHtml } from "@idf/core";
+
+const doc = materializeAsDocument(artifact, world, "catalog");
+const html = renderDocumentHtml(doc);
+```
+
+### Проверка asset-boundary (§19)
+
+```js
+import { getAssets, validateAsset, ASSET_KINDS } from "@idf/core";
+
+const assets = getAssets(ontology);
+const result = validateAsset(assetDef); // { valid, errors }
+```
+
+## Что экспортируется
+
+### Движок
+
+| Export | Описание |
+|--------|----------|
+| `useEngine(domain)` | Главный React-hook; возвращает `{ world, exec, Overlay }` |
+
+### Fold — мир из эффектов
+
+| Export | Описание |
+|--------|----------|
+| `fold(effects)` | Вычисляет текущий мир из подтверждённых эффектов Φ |
+| `foldDrafts(effects, drafts)` | Fold с учётом session-scoped черновиков Δ |
+| `applyPresentation(world, projection)` | Применяет presentation-трансформации |
+| `buildTypeMap(ontology)` | Строит карту типов из онтологии |
+| `filterByStatus(effects, status)` | Фильтрует эффекты по статусу |
+| `causalSort(effects)` | Топологическая сортировка по причинно-следственным связям |
+
+### Алгебра намерений (§12)
+
+| Export | Описание |
+|--------|----------|
+| `computeAlgebra(intents, world)` | Вычисляет связи ▷ ⇌ ⊕ ∥ между намерениями |
+| `computeAlgebraWithEvidence(...)` | То же с доказательствами для witness-of-proof |
+| `normalizeEntityFromTarget(target)` | Нормализует entity-target для алгебры |
+
+### Кристаллизатор v2
+
+| Export | Описание |
+|--------|----------|
+| `crystallizeV2(intents, projections, ontology, domainId)` | Строит артефакт (7 архетипов) |
+| `validateArtifact(artifact)` | Проверяет корректность артефакта |
+| `generateEditProjections(ontology)` | Генерирует edit-проекции для всех сущностей |
+| `findReplaceIntents(intents, entityType)` | Находит replace-намерения для формы |
+| `buildFormSpec(intent, ontology)` | Строит спецификацию формы из намерения |
+| `registerArchetype(name, fn)` | Регистрирует пользовательский архетип |
+| `prependArchetype(name, fn)` | Добавляет архетип в начало registry |
+| `selectArchetype(artifact, projection)` | Выбирает подходящий архетип |
+| `getArchetypes()` | Возвращает все зарегистрированные архетипы |
+
+### Материализации (§1)
+
+| Export | Описание |
+|--------|----------|
+| `materializeAsDocument(artifact, world, projId)` | Document-материализация (§1 4-я) |
+| `renderDocumentHtml(doc)` | HTML из document-графа |
+| `materializeAsVoice(artifact, world, projId)` | Voice-материализация (§1 3-я) |
+| `renderVoiceSsml(voiceDoc)` | SSML для TTS |
+| `renderVoicePlain(voiceDoc)` | Plain text для отладки |
+
+### Фильтрация по роли (§5)
+
+| Export | Описание |
+|--------|----------|
+| `filterWorldForRole(world, ontology, roleId)` | Viewer-scoping с m2m через role.scope |
+| `BASE_ROLES` | Словарь базовых ролей: owner / viewer / agent / observer |
+| `validateBase(base)` | Проверяет корректность base-значения |
+| `getRolesByBase(ontology, base)` | Возвращает роли с заданной base |
+| `isAgentRole(role)` | Проверяет, является ли роль агентской |
+| `isObserverRole(role)` | Проверяет наблюдательную роль |
+| `isOwnerRole(role)` | Проверяет роль владельца |
+| `auditOntologyRoles(ontology)` | Аудит аннотаций ролей домена |
+
+### Preapproval guard (§17)
+
+| Export | Описание |
+|--------|----------|
+| `checkPreapproval(intent, ctx, world, preapprovalDef)` | Проверяет 5 типов предикатов для agent-лимитов |
+
+### Инварианты (§14)
+
+| Export | Описание |
+|--------|----------|
+| `checkInvariants(ontology, world)` | Проверяет schema-level ∀-свойства мира |
+| `registerKind(kind, handler)` | Регистрирует обработчик нового вида инварианта |
+| `KIND_HANDLERS` | Встроенные обработчики: role-capability, referential, transition, cardinality, aggregate |
+
+### Необратимость (§23)
+
+| Export | Описание |
+|--------|----------|
+| `mergeIntoContext(context, irrDef)` | Добавляет `__irr` к контексту эффекта |
+
+### Asset-boundary (§19)
+
+| Export | Описание |
+|--------|----------|
+| `ASSET_KINDS` | Перечень допустимых видов внешних активов |
+| `getAssets(ontology)` | Возвращает `ontology.assets[]` |
+| `validateAsset(asset)` | Валидирует декларацию актива |
+
+### Прочее
+
+| Export | Описание |
+|--------|----------|
+| `checkComposition(intents)` | Проверяет корректность composition-алгебры |
+| `checkIntegrity(world, ontology)` | Integrity rules (referential, state machine) |
+| `parseCondition(expr)` / `parseConditions(exprs)` | Парсер условных выражений |
+| `PARTICLE_COLORS`, `ALPHA_LABELS`, `LINK_COLORS` | Визуальные константы для графа намерений |
+| `SLOT_STATUS_COLORS`, `BOOKING_STATUS_COLORS` | Константы статусов |
+
+## Связь с IDF
+
+`@idf/core` — канонический пакет парадигмы. Все остальные пакеты экосистемы зависят от него:
+
+- **`@idf/renderer`** использует `crystallizeV2`, `fold`, `computeAlgebra` для рендера
+- **`@idf/adapter-*`** получают capability surface от renderer, а не от core напрямую
+- **`@idf/canvas-kit`** — автономен, peer только `react`
+- **Server-слой** (`server/schema/*.cjs` в основном репо) — thin re-exports из core для CJS-совместимости
+
+Манифест IDF v1.7: [docs/manifesto-v1.7.md](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md)
+
+## Версии
+
+[CHANGELOG.md](./CHANGELOG.md)
+
+`0.x` — нестабильный API, breaking changes возможны без bump major. После 2–3 успешных продакшн-интеграций → `1.0.0`.
 
 ## Лицензия
 
-[MIT](../../LICENSE)
+MIT

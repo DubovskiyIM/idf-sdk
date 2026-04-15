@@ -26,5 +26,17 @@
     "typescript": "^5.7.0"
   },
   "publishConfig": { "access": "public", "registry": "http://localhost:4873" },
-  "license": "MIT"
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/canvas-kit",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "directory": "packages/canvas-kit"
+  },
+  "bugs": {
+    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+  },
+  "keywords": ["idf", "svg", "canvas", "visualization", "react"],
+  "sideEffects": false
 }
