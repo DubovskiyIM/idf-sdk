@@ -106,6 +106,17 @@ export function inferFieldRole(fieldName, fieldDef) {
   // timer — datetime + имя содержит end/deadline/expir
   if ((type === "datetime" || type === "date") && /end|deadline|expir/i.test(name)) return "timer";
 
+  // coordinate (v1.7) — пара lat/lng или type=coordinate
+  if (type === "coordinate") return "coordinate";
+  if (/^(lat|lng|coords?|position)$/i.test(name) && type !== "text") return "coordinate";
+
+  // address (v1.7) — имя содержит address (но не number — те уже price)
+  if (/address$/i.test(name) && type !== "number") return "address";
+
+  // zone (v1.7) — type=polygon или имя zone/area (но не number)
+  if (type === "polygon") return "zone";
+  if (/^(zone|polygon|area)$/i.test(name) && type !== "number") return "zone";
+
   // location — имя содержит location/from/city (но не number — те уже price)
   if (/^(location|city)$|from$/i.test(name) && type !== "number") return "location";
 

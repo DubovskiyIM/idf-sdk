@@ -193,3 +193,45 @@ describe("inferFieldRole", () => {
     expect(inferFieldRole("shippingCost", { type: "number" })).toBe("price");
   });
 });
+
+describe("inferFieldRole — пространственные роли v1.7", () => {
+  it("field с type 'coordinate' → role 'coordinate'", () => {
+    expect(inferFieldRole("position", { type: "coordinate" })).toBe("coordinate");
+  });
+
+  it("field named 'lat' → role 'coordinate'", () => {
+    expect(inferFieldRole("lat", { type: "number" })).toBe("coordinate");
+  });
+
+  it("field named 'lng' → role 'coordinate'", () => {
+    expect(inferFieldRole("lng", { type: "number" })).toBe("coordinate");
+  });
+
+  it("field named 'coords' → role 'coordinate'", () => {
+    expect(inferFieldRole("coords", {})).toBe("coordinate");
+  });
+
+  it("field named 'address' type text → role 'address'", () => {
+    expect(inferFieldRole("address", { type: "text" })).toBe("address");
+  });
+
+  it("field 'deliveryAddress' → role 'address'", () => {
+    expect(inferFieldRole("deliveryAddress", { type: "text" })).toBe("address");
+  });
+
+  it("field с type 'polygon' → role 'zone'", () => {
+    expect(inferFieldRole("area", { type: "polygon" })).toBe("zone");
+  });
+
+  it("field named 'zone' → role 'zone'", () => {
+    expect(inferFieldRole("zone", {})).toBe("zone");
+  });
+
+  it("numeric 'price' НЕ должен стать coordinate", () => {
+    expect(inferFieldRole("price", { type: "number" })).toBe("price");
+  });
+
+  it("existing 'location' правило не сломано — city → 'location'", () => {
+    expect(inferFieldRole("city", {})).toBe("location");
+  });
+});
