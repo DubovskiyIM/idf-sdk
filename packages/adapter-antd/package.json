@@ -1,0 +1,47 @@
+{
+  "name": "@idf/adapter-antd",
+  "version": "0.1.0",
+  "description": "Ant Design enterprise-fintech adapter for @idf/renderer",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "antd": ">=5",
+    "@ant-design/plots": ">=2",
+    "@ant-design/icons": ">=5",
+    "@idf/renderer": ">=0.1.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0",
+    "jsdom": "^25.0.0",
+    "@testing-library/react": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "antd": "^6.3.5",
+    "@ant-design/plots": "^2.6.8",
+    "@ant-design/icons": "^6.1.1",
+    "dayjs": "^1.11.0",
+    "typescript": "^5.7.0",
+    "@idf/renderer": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://localhost:4873"
+  },
+  "license": "MIT"
+}

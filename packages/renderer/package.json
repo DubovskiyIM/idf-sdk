@@ -1,0 +1,44 @@
+{
+  "name": "@idf/renderer",
+  "version": "0.1.0",
+  "description": "Intent-Driven Frontend — renderer: primitives, archetypes, controls, adapter registry",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "@idf/core": ">=0.2.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0",
+    "jsdom": "^25.0.0",
+    "@testing-library/react": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "typescript": "^5.7.0",
+    "@idf/core": "workspace:*"
+  },
+  "publishConfig": {
+    "access": "public",
+    "registry": "http://localhost:4873"
+  },
+  "license": "MIT",
+  "keywords": ["idf", "intent-driven", "renderer"],
+  "repository": { "type": "git", "url": "https://github.com/ignatdubovskiy/idf-sdk.git" }
+}
