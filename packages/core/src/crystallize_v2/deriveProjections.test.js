@@ -531,10 +531,10 @@ describe("mergeProjections", () => {
   it("authored adds new projection not in derived", () => {
     const derived = { listing_list: { kind: "catalog" } };
     const authored = {
-      meshok_home: { kind: "dashboard", widgets: [{ projection: "listing_list" }] },
+      sales_home: { kind: "dashboard", widgets: [{ projection: "listing_list" }] },
     };
     const result = mergeProjections(derived, authored);
-    expect(result.meshok_home.kind).toBe("dashboard");
+    expect(result.sales_home.kind).toBe("dashboard");
     expect(result.listing_list).toBeDefined();
   });
 

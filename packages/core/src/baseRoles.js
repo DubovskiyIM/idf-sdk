@@ -19,14 +19,14 @@
  *   Самоакторный участник с CRUD над своими сущностями.
  *   Доступ: `row[ownerField] === viewer.id` (single-owner) или
  *           `role.scope` для m2m (advisor ↔ clients).
- *   Примеры: booking.client, meshok.buyer/seller, invest.investor,
+ *   Примеры: booking.client, sales.buyer/seller, invest.investor,
  *            messenger.self, invest.advisor (owner of assignments).
  *
  * ─── viewer ───────────────────────────────────────────────
  *   Связанный читатель с минимальным write (голосование, reactions).
  *   Видит сущности по explicit-связи (contact, participant), не owner.
  *   Примеры: messenger.contact, planning.participant (voter),
- *            meshok.moderator (read-most, write-on-moderated).
+ *            sales.moderator (read-most, write-on-moderated).
  *
  * ─── agent ────────────────────────────────────────────────
  *   Автоматический актор (LLM-бот, human-agent, rule engine) с

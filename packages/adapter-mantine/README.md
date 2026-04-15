@@ -1,6 +1,6 @@
 # @idf/adapter-mantine
 
-Mantine-адаптер для `@idf/renderer`. Корпоративный data-dense стиль — дефолт для доменов booking, planning, workflow, messenger, meshok.
+Mantine-адаптер для `@idf/renderer`. Корпоративный data-dense стиль — дефолт для доменов booking, planning, workflow, messenger, sales.
 
 **Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
 
