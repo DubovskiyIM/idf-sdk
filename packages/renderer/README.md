@@ -2,7 +2,7 @@
 
 Слой рендеринга Intent-Driven Frontend: 7 архетипов, 11 control-компонентов, примитивы (atoms / containers / chart / map / irreversibility), реестр UI-адаптеров и `ProjectionRendererV2`.
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 

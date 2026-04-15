@@ -51,14 +51,14 @@
   },
   "license": "MIT",
   "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
-  "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/adapter-shadcn",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/adapter-shadcn",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ignatdubovskiy/idf-sdk.git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/adapter-shadcn"
   },
   "bugs": {
-    "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
   },
   "keywords": [
     "idf",

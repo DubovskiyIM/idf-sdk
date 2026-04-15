@@ -2,7 +2,7 @@
 
 Низкоуровневые SVG math/layout утилиты для кастомных canvas в IDF-доменах: оси, пути, heatmap, zoom/pan, drag, кластеры, календарная сетка.
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -75,7 +75,7 @@ const grid = calendarGrid({ year: 2026, month: 3 });
 
 `@intent-driven/canvas-kit` используется при создании кастомных canvas в архетипе `ArchetypeCanvas`. Применяется в доменах lifequest (6 canvas), reflect (6 canvas), delivery (3 map-canvas). Пакет не зависит от `@intent-driven/core` или `@intent-driven/renderer` — подключается напрямую в canvas-компонентах.
 
-Подробнее о canvas-архетипе: [manifesto §16a](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+Подробнее о canvas-архетипе: [manifesto §16a](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md).
 
 ## Версии
 

@@ -2,7 +2,7 @@
 
 Mantine-адаптер для `@intent-driven/renderer`. Корпоративный data-dense стиль — дефолт для доменов booking, planning, workflow, messenger, sales.
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -62,7 +62,7 @@ capabilities: {
 
 Один из четырёх UI-адаптеров IDF. Выбор адаптера меняется через `PrefsPanel ⚙ → UI-kit` в рантайме — домен не меняется.
 
-Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md).
 
 ## Версии
 

@@ -2,7 +2,7 @@
 
 Apple visionOS-glass адаптер для `@intent-driven/renderer`. Premium / minimal эстетика с glassmorphism-эффектами — дефолт для домена reflect (Mood Meter Yale RULER, 9 аналитических canvas, visionOS-glass shell).
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -65,7 +65,7 @@ capabilities: {
 
 Один из четырёх UI-адаптеров IDF. Glass-стилистика оптимизирована под аналитические и wellness-домены. Переключение адаптера — через `PrefsPanel ⚙ → UI-kit`.
 
-Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md).
 
 ## Версии
 

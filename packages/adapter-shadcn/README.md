@@ -2,7 +2,7 @@
 
 Shadcn/ui doodle-style адаптер для `@intent-driven/renderer`. Handcrafted / sketch эстетика с Tailwind-токенами — дефолт для домена lifequest (mobile-first, BottomTabs, 6 custom canvas).
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -65,7 +65,7 @@ capabilities: {
 
 Один из четырёх UI-адаптеров IDF. Doodle-стилистика ориентирована на lifestyle/productivity домены. Переключение адаптера — через `PrefsPanel ⚙ → UI-kit`.
 
-Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md).
 
 ## Версии
 

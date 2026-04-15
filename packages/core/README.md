@@ -2,7 +2,7 @@
 
 Ядро парадигмы Intent-Driven Frontend: движок эффектов, сворачивание мира (fold), алгебра намерений, кристаллизатор v2, четыре материализации (пиксели / голос / агент / документ), инварианты, фильтрация по роли и preapproval guard.
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -208,7 +208,7 @@ const result = validateAsset(assetDef); // { valid, errors }
 - **`@intent-driven/canvas-kit`** — автономен, peer только `react`
 - **Server-слой** (`server/schema/*.cjs` в основном репо) — thin re-exports из core для CJS-совместимости
 
-Манифест IDF v1.7: [docs/manifesto-v1.7.md](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md)
+Манифест IDF v1.7: [docs/manifesto-v1.7.md](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md)
 
 ## Версии
 

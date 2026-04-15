@@ -2,7 +2,7 @@
 
 Ant Design enterprise-fintech адаптер для `@intent-driven/renderer`. Dashboard / Statistic / @ant-design/plots — дефолт для домена invest (4 роли, 7 правил, 3 ML-сервиса).
 
-**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/ignatdubovskiy/idf).**
+**Часть экосистемы [Intent-Driven Frontend (IDF)](https://github.com/DubovskiyIM/idf).**
 
 ## Установка
 
@@ -64,7 +64,7 @@ capabilities: {
 
 Переключение адаптера — через `PrefsPanel ⚙ → UI-kit`.
 
-Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/ignatdubovskiy/idf/blob/main/docs/manifesto-v1.7.md).
+Подробнее об архитектуре адаптеров: [manifesto §17](https://github.com/DubovskiyIM/idf/blob/main/docs/manifesto-v1.7.md).
 
 ## Версии
 
