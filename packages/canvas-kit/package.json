@@ -13,9 +13,19 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
-  "scripts": { "build": "tsup", "test": "vitest run" },
-  "peerDependencies": { "react": ">=18" },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18"
+  },
   "devDependencies": {
     "tsup": "^8.5.0",
     "vitest": "^4.1.0",
@@ -25,7 +35,9 @@
     "react-dom": "^19.0.0",
     "typescript": "^5.7.0"
   },
-  "publishConfig": { "access": "public", "registry": "http://localhost:4873" },
+  "publishConfig": {
+    "access": "public"
+  },
   "license": "MIT",
   "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
   "homepage": "https://github.com/ignatdubovskiy/idf-sdk/tree/main/packages/canvas-kit",
@@ -37,6 +49,12 @@
   "bugs": {
     "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
   },
-  "keywords": ["idf", "svg", "canvas", "visualization", "react"],
+  "keywords": [
+    "idf",
+    "svg",
+    "canvas",
+    "visualization",
+    "react"
+  ],
   "sideEffects": false
 }

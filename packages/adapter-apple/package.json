@@ -14,7 +14,12 @@
     },
     "./styles.css": "./dist/theme.css"
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup && node -e \"require('fs').writeFileSync('dist/theme.css', require('fs').readFileSync('src/theme.css','utf8').replace(/@import \\\"tailwindcss\\\";\\n?/g, ''))\"",
     "test": "vitest run"
@@ -41,8 +46,7 @@
     "@radix-ui/react-avatar": "^1.1.0"
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "http://localhost:4873"
+    "access": "public"
   },
   "license": "MIT",
   "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
@@ -55,6 +59,15 @@
   "bugs": {
     "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
   },
-  "keywords": ["idf", "apple", "visionos", "glassmorphism", "ui-adapter", "react"],
-  "sideEffects": ["**/*.css"]
+  "keywords": [
+    "idf",
+    "apple",
+    "visionos",
+    "glassmorphism",
+    "ui-adapter",
+    "react"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ]
 }

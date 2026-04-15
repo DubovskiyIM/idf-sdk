@@ -13,7 +13,12 @@
       "require": "./dist/index.cjs"
     }
   },
-  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsup",
     "test": "vitest run"
@@ -39,8 +44,7 @@
     "@idf/renderer": "workspace:*"
   },
   "publishConfig": {
-    "access": "public",
-    "registry": "http://localhost:4873"
+    "access": "public"
   },
   "license": "MIT",
   "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
@@ -53,6 +57,11 @@
   "bugs": {
     "url": "https://github.com/ignatdubovskiy/idf-sdk/issues"
   },
-  "keywords": ["idf", "mantine", "ui-adapter", "react"],
+  "keywords": [
+    "idf",
+    "mantine",
+    "ui-adapter",
+    "react"
+  ],
   "sideEffects": false
 }
