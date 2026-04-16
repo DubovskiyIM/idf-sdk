@@ -315,14 +315,14 @@ function buildCatalogBody(projection, ONTOLOGY) {
     for (const witness of projection.witnesses) {
       // Computed witness — объект {field, compute}: используем field как имя
       if (typeof witness === "object" && witness !== null && witness.compute) {
-        const role = inferFieldRole(witness.field, {});
+        const role = inferFieldRole(witness.field, {})?.role ?? null;
         if (role === "metric" || role === "info") metrics.push({ bind: witness.field, compute: witness.compute });
         continue;
       }
       const fieldName = witness.includes(".") ? witness.split(".")[0] : witness;
       const fieldDef = typeof ontologyFields === "object" && !Array.isArray(ontologyFields)
         ? ontologyFields[fieldName] : null;
-      const role = inferFieldRole(fieldName, fieldDef || {});
+      const role = inferFieldRole(fieldName, fieldDef || {})?.role ?? null;
 
       switch (role) {
         case "heroImage":
