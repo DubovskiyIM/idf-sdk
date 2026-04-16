@@ -285,8 +285,8 @@ function mergeDeclaredAntagonists(INTENTS, structuralEdges) {
   for (const edge of structuralEdges) {
     if (!evidenceMap[edge.a]) evidenceMap[edge.a] = {};
     if (!evidenceMap[edge.b]) evidenceMap[edge.b] = {};
-    evidenceMap[edge.a][edge.b] = { classification: "structural" };
-    evidenceMap[edge.b][edge.a] = { classification: "structural" };
+    evidenceMap[edge.a][edge.b] = { classification: "structural", reliability: "structural", witness: { basis: "effect-pair reversal derivation", example: `${edge.a} ⇌ ${edge.b}` } };
+    evidenceMap[edge.b][edge.a] = { classification: "structural", reliability: "structural", witness: { basis: "effect-pair reversal derivation", example: `${edge.b} ⇌ ${edge.a}` } };
   }
 
   // 2. Declared antagonists (если не покрыты strict)
@@ -300,10 +300,10 @@ function mergeDeclaredAntagonists(INTENTS, structuralEdges) {
     if (!evidenceMap[id]) evidenceMap[id] = {};
     if (!evidenceMap[declared]) evidenceMap[declared] = {};
     if (!evidenceMap[id][declared]) {
-      evidenceMap[id][declared] = { classification: "heuristic-lifecycle" };
+      evidenceMap[id][declared] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"` } };
     }
     if (!evidenceMap[declared][id]) {
-      evidenceMap[declared][id] = { classification: "heuristic-lifecycle" };
+      evidenceMap[declared][id] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"` } };
     }
   }
 

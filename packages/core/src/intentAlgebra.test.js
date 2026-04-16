@@ -1154,3 +1154,33 @@ describe("computeAlgebra end-to-end composition", () => {
     expect(alg.open_poll.sequentialOut).toContain("send_reminder");
   });
 });
+
+describe("computeAlgebraWithEvidence — reliability alias (§15 zazor #2)", () => {
+  it("structural classification → reliability=structural + witness.basis", () => {
+    const intents = {
+      confirm: { particles: { effects: [{ α: "replace", target: "order.status", value: "confirmed" }] } },
+      reject:  { particles: { effects: [{ α: "replace", target: "order.status", value: "rejected"  }] } },
+    };
+    const alg = computeAlgebraWithEvidence(intents, { entities: { Order: { fields: ["id", "status"] } } });
+    const pair = alg.confirm?.antagonistsEvidence?.reject;
+    if (pair) {
+      expect(pair.classification).toBe("structural");
+      expect(pair.reliability).toBe("structural");
+      expect(pair.witness?.basis).toContain("effect-pair reversal");
+    }
+  });
+
+  it("heuristic-lifecycle → reliability=heuristic + witness.basis", () => {
+    const intents = {
+      accept_req: { antagonist: "reject_req", particles: { effects: [{ α: "add", target: "accepts" }] } },
+      reject_req: { particles: { effects: [{ α: "add", target: "rejects" }] } },
+    };
+    const alg = computeAlgebraWithEvidence(intents, {});
+    const pair = alg.accept_req?.antagonistsEvidence?.reject_req;
+    if (pair) {
+      expect(pair.classification).toBe("heuristic-lifecycle");
+      expect(pair.reliability).toBe("heuristic");
+      expect(pair.witness?.basis).toContain("declared antagonist");
+    }
+  });
+});
