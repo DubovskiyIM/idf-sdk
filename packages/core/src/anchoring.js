@@ -7,6 +7,41 @@
  * @module anchoring
  */
 
+/**
+ * @typedef {import("../../types/idf.d.ts").IntentsMap} IntentsMap
+ * @typedef {import("../../types/idf.d.ts").Ontology} Ontology
+ */
+
+/**
+ * @typedef {Object} AnchoringParticle
+ * @property {"entity"|"effect.target"|"field"|"witness"|"condition"} kind
+ * @property {string} value
+ * @property {number=} location
+ */
+
+/**
+ * Свидетельство о результате проверки анкеринга.
+ * Поля reliability/witness зарезервированы под §15 zazor #2.
+ *
+ * @typedef {Object} AnchoringFinding
+ * @property {"anchoring_entity"|"anchoring_effect_target"|"anchoring_effect_field"|"anchoring_witness"|"anchoring_condition"} rule
+ * @property {"error"|"warning"|"info"} level
+ * @property {string} intent
+ * @property {AnchoringParticle} particle
+ * @property {string} message
+ * @property {string} detail
+ * @property {("structural"|"rule-based"|"heuristic")=} reliability — zazor #2
+ * @property {{basis?: string, example?: string, counterexample?: string}=} witness — zazor #2
+ */
+
+/**
+ * @typedef {Object} CheckAnchoringResult
+ * @property {AnchoringFinding[]} errors
+ * @property {AnchoringFinding[]} warnings
+ * @property {AnchoringFinding[]} infos
+ * @property {boolean} passed — true если нет errors.
+ */
+
 function normalizeFieldNames(entity) {
   const f = entity?.fields;
   if (Array.isArray(f)) return new Set(f);
@@ -14,6 +49,13 @@ function normalizeFieldNames(entity) {
   return new Set();
 }
 
+/**
+ * Проверка анкеринга частиц намерений к онтологии.
+ *
+ * @param {IntentsMap} INTENTS — определения намерений домена.
+ * @param {Ontology} ONTOLOGY — онтология, включая `systemCollections` для подавления error'ов.
+ * @returns {CheckAnchoringResult}
+ */
 export function checkAnchoring(INTENTS, ONTOLOGY) {
   const errors = [];
   const warnings = [];
