@@ -171,6 +171,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "witness", value: w },
           message: `Witness "${w}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
           detail: `Свидетельство ссылается на поле, которого нет в онтологии. Добавьте поле либо скорректируйте witness.`,
+          reliability: "structural",
+          witness: { basis: `field not in entity: "${field}" absent from "${entityKey}.fields"`, example: w },
         });
       }
     }
@@ -191,6 +193,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "condition", value: cond },
           message: `Condition "${cond}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
           detail: `Предикат ссылается на поле, которого нет в онтологии.`,
+          reliability: "structural",
+          witness: { basis: `field not in entity: "${field}" absent from "${entityKey}.fields"`, example: cond },
         });
       }
     }

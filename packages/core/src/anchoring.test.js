@@ -241,4 +241,22 @@ describe("checkAnchoring — witness/condition info", () => {
     expect(result.infos).toHaveLength(1);
     expect(result.infos[0].rule).toBe("anchoring_condition");
   });
+
+  it("witness info — reliability=structural + basis 'field not in'", () => {
+    const intents = {
+      view_item: { particles: { entities: ["Item"], effects: [], witnesses: ["item.ghostField"] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.infos[0].reliability).toBe("structural");
+    expect(result.infos[0].witness.basis).toContain("field not in");
+  });
+
+  it("condition info — reliability=structural", () => {
+    const intents = {
+      edit_item: { particles: { entities: ["Item"], effects: [], witnesses: [], conditions: ["item.ghostField = 'active'"] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.infos[0].reliability).toBe("structural");
+    expect(result.infos[0].witness.basis).toContain("field not in");
+  });
 });
