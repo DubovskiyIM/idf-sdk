@@ -1,0 +1,51 @@
+{
+  "name": "@intent-driven/cli",
+  "version": "0.1.0",
+  "description": "Intent-Driven Frontend — CLI для bootstrap новых доменов через LLM-диалог",
+  "type": "module",
+  "bin": {
+    "idf": "./src/cli.js"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.88.0",
+    "@intent-driven/core": "workspace:*",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/cli",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "idf",
+    "intent-driven",
+    "cli",
+    "scaffolding",
+    "llm",
+    "claude"
+  ],
+  "engines": {
+    "node": ">=20"
+  }
+}
