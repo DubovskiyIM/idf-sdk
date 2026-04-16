@@ -111,3 +111,59 @@ describe("checkAnchoring — effect.target", () => {
     expect(result.passed).toBe(true);
   });
 });
+
+describe("checkAnchoring — witness/condition info", () => {
+  const ontology = {
+    entities: {
+      Item: { fields: { id: { type: "string" }, title: { type: "string" }, status: { type: "string" } } },
+    },
+  };
+
+  it("info для unknown witness field", () => {
+    const intents = {
+      view_item: {
+        particles: {
+          entities: ["Item"],
+          effects: [],
+          witnesses: ["item.ghostField"],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.passed).toBe(true);
+    expect(result.infos).toHaveLength(1);
+    expect(result.infos[0].rule).toBe("anchoring_witness");
+    expect(result.infos[0].level).toBe("info");
+  });
+
+  it("pass для known witness field", () => {
+    const intents = {
+      view_item: {
+        particles: {
+          entities: ["Item"],
+          effects: [],
+          witnesses: ["item.title"],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.passed).toBe(true);
+    expect(result.infos).toHaveLength(0);
+  });
+
+  it("info для condition с unknown field", () => {
+    const intents = {
+      edit_item: {
+        particles: {
+          entities: ["Item"],
+          effects: [],
+          witnesses: [],
+          conditions: ["item.ghostField = 'active'"],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.infos).toHaveLength(1);
+    expect(result.infos[0].rule).toBe("anchoring_condition");
+  });
+});

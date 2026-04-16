@@ -94,6 +94,45 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
         }
       }
     }
+
+    for (const w of (particles.witnesses || [])) {
+      if (typeof w !== "string" || !w.includes(".") || w.includes("(")) continue;
+      const [entityLower, ...fieldParts] = w.split(".");
+      const field = fieldParts.join(".");
+      const entityKey = Object.keys(entities).find(e => e.toLowerCase() === entityLower.toLowerCase());
+      if (!entityKey) continue;
+      const fields = normalizeFieldNames(entities[entityKey]);
+      if (!fields.has(field) && field !== "status") {
+        infos.push({
+          rule: "anchoring_witness",
+          level: "info",
+          intent: id,
+          particle: { kind: "witness", value: w },
+          message: `Witness "${w}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
+          detail: `Свидетельство ссылается на поле, которого нет в онтологии. Добавьте поле либо скорректируйте witness.`,
+        });
+      }
+    }
+
+    for (const cond of (particles.conditions || [])) {
+      if (typeof cond !== "string") continue;
+      const match = cond.match(/^(\w+)\.(\w+)/);
+      if (!match) continue;
+      const [, entityLower, field] = match;
+      const entityKey = Object.keys(entities).find(e => e.toLowerCase() === entityLower.toLowerCase());
+      if (!entityKey) continue;
+      const fields = normalizeFieldNames(entities[entityKey]);
+      if (!fields.has(field) && field !== "status") {
+        infos.push({
+          rule: "anchoring_condition",
+          level: "info",
+          intent: id,
+          particle: { kind: "condition", value: cond },
+          message: `Condition "${cond}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
+          detail: `Предикат ссылается на поле, которого нет в онтологии.`,
+        });
+      }
+    }
   }
 
   return {
