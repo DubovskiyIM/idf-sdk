@@ -7,7 +7,7 @@ import { pathToFileURL } from "node:url";
 
 export async function validateGenerated(targetDir) {
   // Динамически импортируем из workspace, чтобы не тянуть core в bundle CLI.
-  const { crystallizeV2, computeAlgebra } = await import("@intent-driven/core");
+  const { crystallizeV2, computeAlgebra, AnchoringError } = await import("@intent-driven/core");
 
   const domainUrl = pathToFileURL(join(targetDir, "domain.js")).href;
   const { ontology, intents, projections } = await import(domainUrl);
@@ -16,7 +16,20 @@ export async function validateGenerated(targetDir) {
     throw new Error("domain.js не экспортирует ontology / intents / projections");
   }
 
-  const artifacts = crystallizeV2(intents, projections, ontology);
+  let artifacts;
+  try {
+    artifacts = crystallizeV2(intents, projections, ontology);
+  } catch (err) {
+    if (err instanceof AnchoringError) {
+      console.error(`\n❌ Anchoring failed (${err.domainId}): ${err.findings.length} structural misses\n`);
+      for (const f of err.findings) {
+        console.error(`  [${f.intent}] ${f.message}`);
+        if (f.detail) console.error(`     → ${f.detail}`);
+      }
+      throw err;
+    }
+    throw err;
+  }
   if (!artifacts || Object.keys(artifacts).length === 0) {
     throw new Error("crystallizeV2 вернул пустой результат");
   }

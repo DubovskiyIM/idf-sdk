@@ -39,6 +39,41 @@ describe("checkAnchoring — entity", () => {
     const result = checkAnchoring(intents, ontology);
     expect(result.passed).toBe(true);
   });
+
+  it("plural y→ies: activities → Activity", () => {
+    const ontologyY = {
+      entities: { Activity: { fields: { id: { type: "string" } } } },
+    };
+    const intents = {
+      log_activity: {
+        particles: {
+          entities: ["Activity"],
+          effects: [{ type: "add", target: "activities", payload: {} }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontologyY);
+    expect(result.passed).toBe(true);
+    expect(result.errors).toHaveLength(0);
+  });
+
+  it("plural s→ses: addresses → Address", () => {
+    const ontologyS = {
+      entities: { Address: { fields: { id: { type: "string" } } } },
+    };
+    const intents = {
+      add_addr: {
+        particles: {
+          entities: [],
+          effects: [{ type: "add", target: "addresses", payload: {} }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontologyS);
+    expect(result.passed).toBe(true);
+  });
 });
 
 describe("checkAnchoring — effect.target", () => {

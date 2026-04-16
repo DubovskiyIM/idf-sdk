@@ -50,6 +50,31 @@ function normalizeFieldNames(entity) {
 }
 
 /**
+ * Compute plural form — зеркало buildTypeMap из fold.js.
+ * Нужно, чтобы anchoring соответствовал семантике fold: если target "items"
+ * фолдится в entity "Item", anchoring тоже должен распознать "items" как Item.
+ */
+function computePlural(singular) {
+  if (singular.endsWith("y")) return singular.slice(0, -1) + "ies";
+  if (singular.endsWith("s")) return singular + "es";
+  return singular + "s";
+}
+
+/**
+ * Build lookup: имя коллекции (lowercase) → entity name (original case).
+ * Каждая entity маппится и на своё имя, и на свою plural-форму.
+ */
+function buildCollectionLookup(entities) {
+  const map = new Map();
+  for (const entityName of Object.keys(entities)) {
+    const lower = entityName.toLowerCase();
+    map.set(lower, entityName);
+    map.set(computePlural(lower), entityName);
+  }
+  return map;
+}
+
+/**
  * Проверка анкеринга частиц намерений к онтологии.
  *
  * @param {IntentsMap} INTENTS — определения намерений домена.
@@ -62,8 +87,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
   const infos = [];
 
   const entities = ONTOLOGY?.entities || {};
-  const systemCollections = new Set(ONTOLOGY?.systemCollections || []);
-  const knownEntityNames = new Set(Object.keys(entities).map(e => e.toLowerCase()));
+  const systemCollections = new Set((ONTOLOGY?.systemCollections || []).map(s => s.toLowerCase()));
+  const collectionLookup = buildCollectionLookup(entities);
 
   for (const [id, intent] of Object.entries(INTENTS)) {
     const particles = intent.particles || {};
@@ -74,12 +99,9 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
         .replace(/\(.*\)/, "")
         .replace(/\[\]/, "")
         .toLowerCase();
-      const singular = typeName.endsWith("s") ? typeName.slice(0, -1) : typeName;
       const anchored =
-        knownEntityNames.has(typeName) ||
-        knownEntityNames.has(singular) ||
-        systemCollections.has(typeName) ||
-        systemCollections.has(singular);
+        collectionLookup.has(typeName) ||
+        systemCollections.has(typeName);
       if (!anchored) {
         errors.push({
           rule: "anchoring_entity",
@@ -97,42 +119,33 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
       if (!target) continue;
       const [base, ...fieldParts] = target.split(".");
       const baseLower = base.toLowerCase();
-      const singular = baseLower.endsWith("s") ? baseLower.slice(0, -1) : baseLower;
-      const isSystem = systemCollections.has(baseLower) || systemCollections.has(singular);
-      const baseAnchored =
-        knownEntityNames.has(baseLower) ||
-        knownEntityNames.has(singular) ||
-        isSystem;
+      const isSystem = systemCollections.has(baseLower);
+      const entityKey = collectionLookup.get(baseLower);
 
-      if (!baseAnchored) {
+      if (!entityKey && !isSystem) {
         errors.push({
           rule: "anchoring_effect_target",
           level: "error",
           intent: id,
           particle: { kind: "effect.target", value: target },
           message: `Effect target "${target}" не анкерирован (intent "${id}")`,
-          detail: `Коллекция "${base}" не соответствует ни одной сущности в ontology.entities. Проверьте plural-резолвинг ("${base}" → "${singular}"), добавьте сущность или декларируйте в ontology.systemCollections.`,
+          detail: `Коллекция "${base}" не соответствует ни одной сущности в ontology.entities (проверены singular и plural-формы через buildTypeMap-правила). Добавьте сущность или декларируйте в ontology.systemCollections.`,
         });
         continue;
       }
 
-      if (fieldParts.length > 0 && !isSystem) {
+      if (fieldParts.length > 0 && entityKey) {
         const field = fieldParts.join(".");
-        const entityKey = Object.keys(entities).find(e =>
-          e.toLowerCase() === baseLower || e.toLowerCase() === singular
-        );
-        if (entityKey) {
-          const entityFields = normalizeFieldNames(entities[entityKey]);
-          if (!entityFields.has(field) && field !== "status") {
-            warnings.push({
-              rule: "anchoring_effect_field",
-              level: "warning",
-              intent: id,
-              particle: { kind: "field", value: target },
-              message: `Поле "${field}" не объявлено в ${entityKey} (intent "${id}")`,
-              detail: `Effect target "${target}": поле "${field}" не в ontology.entities.${entityKey}.fields. Добавьте поле в онтологию, либо оставьте как описательную подсказку.`,
-            });
-          }
+        const entityFields = normalizeFieldNames(entities[entityKey]);
+        if (!entityFields.has(field) && field !== "status") {
+          warnings.push({
+            rule: "anchoring_effect_field",
+            level: "warning",
+            intent: id,
+            particle: { kind: "field", value: target },
+            message: `Поле "${field}" не объявлено в ${entityKey} (intent "${id}")`,
+            detail: `Effect target "${target}": поле "${field}" не в ontology.entities.${entityKey}.fields. Добавьте поле в онтологию, либо оставьте как описательную подсказку.`,
+          });
         }
       }
     }
