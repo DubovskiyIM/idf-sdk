@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.0.0
+
+### Patch Changes
+
+- Updated dependencies [9f643b6]
+  - @intent-driven/renderer@0.3.0
+
 ## 0.1.1 — 2026-04-15
 
 ### Changed

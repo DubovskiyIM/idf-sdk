@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-antd",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Ant Design enterprise-fintech adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -28,7 +28,7 @@
     "antd": ">=5",
     "@ant-design/plots": ">=2",
     "@ant-design/icons": ">=5",
-    "@intent-driven/renderer": ">=0.2.0"
+    "@intent-driven/renderer": ">=0.3.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
