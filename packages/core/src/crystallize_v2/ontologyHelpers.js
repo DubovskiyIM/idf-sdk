@@ -121,51 +121,51 @@ export function inferFieldRole(fieldName, fieldDef) {
 
   // description
   if (type === "textarea" && /^(description|bio|content)$/.test(name)) {
-    return { role: "description", reliability: "heuristic", basis: `textarea + name: '${name}'` };
+    return { role: "description", reliability: "heuristic", basis: `textarea + name: '${name}'`, pattern: "name:description-synonym" };
   }
 
   // price — number + имя содержит price/cost/amount
   if (type === "number" && /price|cost|amount/i.test(name)) {
-    return { role: "price", reliability: "heuristic", basis: `number + name substring: '${name}'` };
+    return { role: "price", reliability: "heuristic", basis: `number + name substring: '${name}'`, pattern: "name:price-substring" };
   }
 
   // timer — datetime + имя содержит end/deadline/expir
   if ((type === "datetime" || type === "date") && /end|deadline|expir/i.test(name)) {
-    return { role: "timer", reliability: "heuristic", basis: `datetime + name suffix: '${name}'` };
+    return { role: "timer", reliability: "heuristic", basis: `datetime + name suffix: '${name}'`, pattern: "name:timer-suffix" };
   }
 
   // coordinate по имени
   if (/^(lat|lng|coords?|position)$/i.test(name) && type !== "text") {
-    return { role: "coordinate", reliability: "heuristic", basis: `name in coordinate-set: '${name}'` };
+    return { role: "coordinate", reliability: "heuristic", basis: `name in coordinate-set: '${name}'`, pattern: "name:coordinate-set" };
   }
 
   // address (v1.7)
   if (/address$/i.test(name) && type !== "number") {
-    return { role: "address", reliability: "heuristic", basis: `name suffix 'address': '${name}'` };
+    return { role: "address", reliability: "heuristic", basis: `name suffix 'address': '${name}'`, pattern: "name:address-suffix" };
   }
 
   // zone (v1.7) — имя zone/area
   if (/^(zone|polygon|area)$/i.test(name) && type !== "number") {
-    return { role: "zone", reliability: "heuristic", basis: `name in zone-set: '${name}'` };
+    return { role: "zone", reliability: "heuristic", basis: `name in zone-set: '${name}'`, pattern: "name:zone-set" };
   }
 
   // location
   if (/^(location|city)$|from$/i.test(name) && type !== "number") {
-    return { role: "location", reliability: "heuristic", basis: `name in location-set: '${name}'` };
+    return { role: "location", reliability: "heuristic", basis: `name in location-set: '${name}'`, pattern: "name:location-set" };
   }
 
   // badge — status/condition
   if (/^(status|condition)$/.test(name)) {
-    return { role: "badge", reliability: "heuristic", basis: `name match: '${name}'` };
+    return { role: "badge", reliability: "heuristic", basis: `name match: '${name}'`, pattern: "name:badge-status" };
   }
 
   // metric — number fallback
   if (type === "number") {
-    return { role: "metric", reliability: "heuristic", basis: "number type fallback" };
+    return { role: "metric", reliability: "heuristic", basis: "number type fallback", pattern: "type:number-metric-fallback" };
   }
 
   // info — всё остальное (fallback)
-  return { role: "info", reliability: "heuristic", basis: "fallback: no specific pattern matched" };
+  return { role: "info", reliability: "heuristic", basis: "fallback: no specific pattern matched", pattern: "fallback:info" };
 }
 
 /**
