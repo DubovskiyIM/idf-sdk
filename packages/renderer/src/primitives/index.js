@@ -3,6 +3,14 @@ import { Row, Column, Card, List } from "./containers.jsx";
 import { Chart, Sparkline } from "./chart.jsx";
 import { Map } from "./map.jsx";
 import { IrreversibleBadge } from "./IrreversibleBadge.jsx";
+import EmptyState from "./EmptyState.jsx";
+
+// Re-export primitives как named members — для прямого использования
+// (например, в doменных canvas-wrapper'ах).
+export { Map } from "./map.jsx";
+export { Chart, Sparkline } from "./chart.jsx";
+export { IrreversibleBadge } from "./IrreversibleBadge.jsx";
+export { default as EmptyState } from "./EmptyState.jsx";
 
 export const PRIMITIVES = {
   text: Text,

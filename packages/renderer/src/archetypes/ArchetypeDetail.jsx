@@ -8,6 +8,7 @@ import VoterSelector from "./VoterSelector.jsx";
 import { evalIntentCondition } from "../eval.js";
 import { getAdaptedComponent } from "../adapters/registry.js";
 import Icon from "../adapters/Icon.jsx";
+import EmptyState from "../primitives/EmptyState.jsx";
 
 /**
  * Detail-архетип: показывает одну сущность по mainEntity+idParam из routeParams.
@@ -76,10 +77,23 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
   }, [projection, parentCtx.world, parentCtx.routeParams]);
 
   if (!target) {
+    const id = parentCtx.routeParams?.[projection?.idParam];
+    const entityName = projection?.name || "Запись";
+    if (!id) {
+      return (
+        <EmptyState
+          icon="👈"
+          title="Выбери элемент из списка"
+          hint={`Открой конкретный ${entityName.toLowerCase()} из соответствующего раздела.`}
+        />
+      );
+    }
     return (
-      <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
-        Сущность не найдена: {projection?.mainEntity} id={parentCtx.routeParams?.[projection?.idParam]}
-      </div>
+      <EmptyState
+        icon="🔍"
+        title="Ничего не найдено"
+        hint={`${entityName} с этим идентификатором отсутствует — возможно, был удалён.`}
+      />
     );
   }
 

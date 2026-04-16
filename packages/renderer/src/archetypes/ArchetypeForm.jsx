@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import ParameterControl from "../parameters/index.jsx";
+import EmptyState from "../primitives/EmptyState.jsx";
 
 /**
  * Form-архетип: редактирование одной сущности через композитную форму.
@@ -39,10 +40,23 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
   const [submitting, setSubmitting] = useState(false);
 
   if (!target) {
+    const id = parentCtx.routeParams?.[projection?.idParam];
+    const entityName = projection?.name || "Запись";
+    if (!id) {
+      return (
+        <EmptyState
+          icon="👈"
+          title="Выбери, что редактировать"
+          hint={`Открой конкретный ${entityName.toLowerCase()} из списка, чтобы внести изменения.`}
+        />
+      );
+    }
     return (
-      <div style={{ padding: 40, textAlign: "center", color: "#9ca3af" }}>
-        Сущность не найдена: {projection?.mainEntity} id={parentCtx.routeParams?.[projection?.idParam]}
-      </div>
+      <EmptyState
+        icon="🔍"
+        title="Ничего не найдено"
+        hint={`${entityName} с этим идентификатором отсутствует — возможно, был удалён.`}
+      />
     );
   }
 
