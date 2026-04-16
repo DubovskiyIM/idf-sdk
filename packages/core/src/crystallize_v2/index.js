@@ -18,8 +18,14 @@ import { hashInputs } from "./hash.js";
 import { deriveNavGraph } from "./navGraph.js";
 import { generateEditProjections, buildFormSpec } from "./formGrouping.js";
 import { validateArtifact } from "./validateArtifact.js";
+import { checkAnchoring } from "../anchoring.js";
+import { AnchoringError } from "../errors.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
+
+// Phase 1: soft default (не breaking для существующих потребителей).
+// В Phase 3 переключится на "strict" через major bump.
+const DEFAULT_ANCHORING_MODE = "soft";
 
 /**
  * Кристаллизация: INTENTS + PROJECTIONS + ONTOLOGY → артефакты v2.
@@ -30,7 +36,17 @@ const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canv
  * @param {string} [domainId] — идентификатор домена
  * @returns {Record<string, Artifact>} — артефакты по projection id
  */
-export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknown") {
+export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknown", opts = {}) {
+  // Anchoring gate (§15 zazor #1)
+  const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;
+  const anchoring = checkAnchoring(INTENTS, ONTOLOGY);
+  if (!anchoring.passed && mode === "strict") {
+    throw new AnchoringError(anchoring.errors, domainId);
+  }
+  if (mode === "soft" && anchoring.errors.length > 0) {
+    console.warn(`[crystallize_v2] ${domainId}: ${anchoring.errors.length} anchoring errors suppressed (soft mode)`);
+  }
+
   const artifacts = {};
 
   // Автогенерация edit-проекций (М3.4b)

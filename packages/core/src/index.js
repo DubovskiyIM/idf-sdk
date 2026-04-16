@@ -32,6 +32,10 @@ export { checkComposition } from "./algebra.js";
 // Integrity rules
 export { checkIntegrity } from "./integrity.js";
 
+// Anchoring (§15 zazor #1 — v1.8)
+export { checkAnchoring } from "./anchoring.js";
+export { AnchoringError } from "./errors.js";
+
 // Condition parser
 export { parseCondition, parseConditions } from "./conditionParser.js";
 
