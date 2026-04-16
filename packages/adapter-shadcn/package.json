@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-shadcn",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "shadcn/ui doodle-style adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -26,7 +26,7 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "@intent-driven/renderer": ">=0.2.0",
+    "@intent-driven/renderer": ">=0.3.0",
     "lucide-react": ">=1.0"
   },
   "devDependencies": {

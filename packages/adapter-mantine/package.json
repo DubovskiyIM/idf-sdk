@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-mantine",
-  "version": "0.1.1",
+  "version": "1.0.0",
   "description": "Mantine UI adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -27,7 +27,7 @@
     "react": ">=18",
     "@mantine/core": ">=9",
     "@mantine/dates": ">=9",
-    "@intent-driven/renderer": ">=0.2.0",
+    "@intent-driven/renderer": ">=0.3.0",
     "lucide-react": ">=0.400.0"
   },
   "devDependencies": {
