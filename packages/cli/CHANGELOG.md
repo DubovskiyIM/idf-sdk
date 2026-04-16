@@ -1,5 +1,19 @@
 # @intent-driven/cli
 
+## 1.0.2
+
+### Patch Changes
+
+- 550d9c2: feat(cli): validate.js ловит AnchoringError и печатает findings
+
+  Если `crystallizeV2` в strict-режиме throw'ит `AnchoringError`, CLI теперь
+  печатает каждый structural miss с actionable-подсказкой в stderr, затем
+  re-throw. Это даёт автору сгенерированного домена чёткую диагностику: какой
+  intent, какая частица, как исправить.
+
+- Updated dependencies [550d9c2]
+  - @intent-driven/core@0.5.1
+
 ## 1.0.1
 
 ### Patch Changes
