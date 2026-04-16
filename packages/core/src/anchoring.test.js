@@ -40,6 +40,16 @@ describe("checkAnchoring — entity", () => {
     expect(result.passed).toBe(true);
   });
 
+  it("MISS entity — reliability=structural + witness.basis содержит 'exhausted'", () => {
+    const intents = {
+      do_foo: { particles: { entities: ["Foo"], effects: [], witnesses: [] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.errors[0].reliability).toBe("structural");
+    expect(result.errors[0].witness).toBeDefined();
+    expect(result.errors[0].witness.basis).toContain("exhausted");
+  });
+
   it("plural y→ies: activities → Activity", () => {
     const ontologyY = {
       entities: { Activity: { fields: { id: { type: "string" } } } },

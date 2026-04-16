@@ -110,6 +110,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "entity", value: entityStr },
           message: `Entity "${entityStr}" не найдена в ontology.entities (intent "${id}")`,
           detail: `Добавьте сущность в ontology.entities, либо декларируйте "${typeName}" в ontology.systemCollections, если это системная коллекция без доменной сущности.`,
+          reliability: "structural",
+          witness: { basis: "exhausted: direct lookup, plural rule, systemCollections — no match", example: `entity name "${typeName}"` },
         });
       }
     }
