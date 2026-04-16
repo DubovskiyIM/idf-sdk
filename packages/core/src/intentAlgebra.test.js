@@ -1183,4 +1183,16 @@ describe("computeAlgebraWithEvidence — reliability alias (§15 zazor #2)", () 
       expect(pair.witness?.basis).toContain("declared antagonist");
     }
   });
+
+  it("heuristic-lifecycle witness.pattern === 'antagonist-declared' (v1.10)", () => {
+    const intents = {
+      accept_req: { antagonist: "reject_req", particles: { effects: [{ α: "add", target: "accepts" }] } },
+      reject_req: { particles: { effects: [{ α: "add", target: "rejects" }] } },
+    };
+    const alg = computeAlgebraWithEvidence(intents, {});
+    const pair = alg.accept_req?.antagonistsEvidence?.reject_req;
+    if (pair) {
+      expect(pair.witness?.pattern).toBe("antagonist-declared");
+    }
+  });
 });

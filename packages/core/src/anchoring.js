@@ -31,7 +31,7 @@
  * @property {string} message
  * @property {string} detail
  * @property {("structural"|"rule-based"|"heuristic")=} reliability — zazor #2
- * @property {{basis?: string, example?: string, counterexample?: string}=} witness — zazor #2
+ * @property {{basis?: string, example?: string, pattern?: string, counterexample?: string}=} witness — zazor #2 (pattern: v1.10 zazor #3, counterexample: v1.10+)
  */
 
 /**

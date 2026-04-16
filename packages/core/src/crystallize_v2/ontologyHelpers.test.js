@@ -262,3 +262,96 @@ describe("inferFieldRole — reliability (§15 v1.9 zazor #2)", () => {
     expect(result.basis).toContain("fallback");
   });
 });
+
+describe("inferFieldRole — witness.pattern (§15 v1.10 zazor #3)", () => {
+  it("name:title-synonym pattern", () => {
+    expect(inferFieldRole("title", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+    expect(inferFieldRole("name", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+    expect(inferFieldRole("label", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+  });
+
+  it("name:description-synonym pattern", () => {
+    expect(inferFieldRole("description", { type: "textarea" }))
+      .toMatchObject({ pattern: "name:description-synonym" });
+    expect(inferFieldRole("bio", { type: "textarea" }))
+      .toMatchObject({ pattern: "name:description-synonym" });
+  });
+
+  it("name:price-substring pattern", () => {
+    expect(inferFieldRole("currentPrice", { type: "number" }))
+      .toMatchObject({ pattern: "name:price-substring" });
+    expect(inferFieldRole("shippingCost", { type: "number" }))
+      .toMatchObject({ pattern: "name:price-substring" });
+    expect(inferFieldRole("totalAmount", { type: "number" }))
+      .toMatchObject({ pattern: "name:price-substring" });
+  });
+
+  it("name:timer-suffix pattern", () => {
+    expect(inferFieldRole("auctionEnd", { type: "datetime" }))
+      .toMatchObject({ pattern: "name:timer-suffix" });
+    expect(inferFieldRole("deadline", { type: "datetime" }))
+      .toMatchObject({ pattern: "name:timer-suffix" });
+  });
+
+  it("name:coordinate-set pattern (name-based, не type)", () => {
+    expect(inferFieldRole("lat", { type: "number" }))
+      .toMatchObject({ pattern: "name:coordinate-set" });
+    expect(inferFieldRole("lng", { type: "number" }))
+      .toMatchObject({ pattern: "name:coordinate-set" });
+    expect(inferFieldRole("coords", {}))
+      .toMatchObject({ pattern: "name:coordinate-set" });
+  });
+
+  it("name:address-suffix pattern", () => {
+    expect(inferFieldRole("address", { type: "text" }))
+      .toMatchObject({ pattern: "name:address-suffix" });
+    expect(inferFieldRole("deliveryAddress", { type: "text" }))
+      .toMatchObject({ pattern: "name:address-suffix" });
+  });
+
+  it("name:zone-set pattern (name-based)", () => {
+    expect(inferFieldRole("zone", {}))
+      .toMatchObject({ pattern: "name:zone-set" });
+  });
+
+  it("name:location-set pattern", () => {
+    expect(inferFieldRole("city", {}))
+      .toMatchObject({ pattern: "name:location-set" });
+    expect(inferFieldRole("shippingFrom", { type: "text" }))
+      .toMatchObject({ pattern: "name:location-set" });
+  });
+
+  it("name:badge-status pattern", () => {
+    expect(inferFieldRole("status", { type: "text" }))
+      .toMatchObject({ pattern: "name:badge-status" });
+    expect(inferFieldRole("condition", { type: "text" }))
+      .toMatchObject({ pattern: "name:badge-status" });
+  });
+
+  it("type:number-metric-fallback pattern", () => {
+    expect(inferFieldRole("bidCount", { type: "number" }))
+      .toMatchObject({ pattern: "type:number-metric-fallback" });
+    expect(inferFieldRole("weight", { type: "number" }))
+      .toMatchObject({ pattern: "type:number-metric-fallback" });
+  });
+
+  it("fallback:info pattern", () => {
+    expect(inferFieldRole("trackingNumber", { type: "text" }))
+      .toMatchObject({ pattern: "fallback:info" });
+    expect(inferFieldRole("featured", { type: "boolean" }))
+      .toMatchObject({ pattern: "fallback:info" });
+  });
+
+  it("structural — pattern не обязателен", () => {
+    const result = inferFieldRole("price", { type: "number", fieldRole: "price" });
+    expect(result.reliability).toBe("structural");
+  });
+
+  it("rule-based (type-based) — pattern не обязателен", () => {
+    const result = inferFieldRole("position", { type: "coordinate" });
+    expect(result.reliability).toBe("rule-based");
+  });
+});
