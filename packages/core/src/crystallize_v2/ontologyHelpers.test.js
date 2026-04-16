@@ -262,3 +262,14 @@ describe("inferFieldRole — reliability (§15 v1.9 zazor #2)", () => {
     expect(result.basis).toContain("fallback");
   });
 });
+
+describe("inferFieldRole — witness.pattern (§15 v1.10 zazor #3)", () => {
+  it("name:title-synonym pattern", () => {
+    expect(inferFieldRole("title", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+    expect(inferFieldRole("name", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+    expect(inferFieldRole("label", { type: "text" }))
+      .toMatchObject({ pattern: "name:title-synonym" });
+  });
+});

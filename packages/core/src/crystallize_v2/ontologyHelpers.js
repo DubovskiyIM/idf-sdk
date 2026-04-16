@@ -115,8 +115,8 @@ export function inferFieldRole(fieldName, fieldDef) {
 
   // 2. Name-based heuristics (applied top-down, first match wins)
   // title
-  if (name === "title" || name === "name") {
-    return { role: "title", reliability: "heuristic", basis: `name match: '${name}'` };
+  if (name === "title" || name === "name" || name === "label") {
+    return { role: "title", reliability: "heuristic", basis: `name match: '${name}'`, pattern: "name:title-synonym" };
   }
 
   // description
