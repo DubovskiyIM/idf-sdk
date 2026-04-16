@@ -91,46 +91,81 @@ export function inferFieldRole(fieldName, fieldDef) {
   const name = fieldName || "";
   const type = fieldDef?.type || "";
 
+  // 0. Explicit fieldRole declaration — structural (§15 v1.9)
+  if (fieldDef?.fieldRole) {
+    return { role: fieldDef.fieldRole, reliability: "structural", basis: "explicit ontology declaration" };
+  }
+
+  // 1. Type-based: coordinate / zone / heroImage / enum → rule-based (type-declared semantic)
+  if (type === "coordinate") {
+    return { role: "coordinate", reliability: "rule-based", basis: "type 'coordinate'" };
+  }
+  if (type === "polygon") {
+    return { role: "zone", reliability: "rule-based", basis: "type 'polygon'" };
+  }
+  if (type === "image" || type === "multiImage") {
+    return { role: "heroImage", reliability: "rule-based", basis: `type '${type}'` };
+  }
+  if (type === "enum") {
+    return { role: "badge", reliability: "rule-based", basis: "type 'enum'" };
+  }
+  if (type === "entityRef") {
+    return { role: "ref", reliability: "rule-based", basis: "type 'entityRef'" };
+  }
+
+  // 2. Name-based heuristics (applied top-down, first match wins)
   // title
-  if (name === "title" || name === "name") return "title";
+  if (name === "title" || name === "name") {
+    return { role: "title", reliability: "heuristic", basis: `name match: '${name}'` };
+  }
 
   // description
-  if (type === "textarea" && /^(description|bio|content)$/.test(name)) return "description";
-
-  // heroImage
-  if (type === "image" || type === "multiImage") return "heroImage";
+  if (type === "textarea" && /^(description|bio|content)$/.test(name)) {
+    return { role: "description", reliability: "heuristic", basis: `textarea + name: '${name}'` };
+  }
 
   // price — number + имя содержит price/cost/amount
-  if (type === "number" && /price|cost|amount/i.test(name)) return "price";
+  if (type === "number" && /price|cost|amount/i.test(name)) {
+    return { role: "price", reliability: "heuristic", basis: `number + name substring: '${name}'` };
+  }
 
   // timer — datetime + имя содержит end/deadline/expir
-  if ((type === "datetime" || type === "date") && /end|deadline|expir/i.test(name)) return "timer";
+  if ((type === "datetime" || type === "date") && /end|deadline|expir/i.test(name)) {
+    return { role: "timer", reliability: "heuristic", basis: `datetime + name suffix: '${name}'` };
+  }
 
-  // coordinate (v1.7) — пара lat/lng или type=coordinate
-  if (type === "coordinate") return "coordinate";
-  if (/^(lat|lng|coords?|position)$/i.test(name) && type !== "text") return "coordinate";
+  // coordinate по имени
+  if (/^(lat|lng|coords?|position)$/i.test(name) && type !== "text") {
+    return { role: "coordinate", reliability: "heuristic", basis: `name in coordinate-set: '${name}'` };
+  }
 
-  // address (v1.7) — имя содержит address (но не number — те уже price)
-  if (/address$/i.test(name) && type !== "number") return "address";
+  // address (v1.7)
+  if (/address$/i.test(name) && type !== "number") {
+    return { role: "address", reliability: "heuristic", basis: `name suffix 'address': '${name}'` };
+  }
 
-  // zone (v1.7) — type=polygon или имя zone/area (но не number)
-  if (type === "polygon") return "zone";
-  if (/^(zone|polygon|area)$/i.test(name) && type !== "number") return "zone";
+  // zone (v1.7) — имя zone/area
+  if (/^(zone|polygon|area)$/i.test(name) && type !== "number") {
+    return { role: "zone", reliability: "heuristic", basis: `name in zone-set: '${name}'` };
+  }
 
-  // location — имя содержит location/from/city (но не number — те уже price)
-  if (/^(location|city)$|from$/i.test(name) && type !== "number") return "location";
+  // location
+  if (/^(location|city)$|from$/i.test(name) && type !== "number") {
+    return { role: "location", reliability: "heuristic", basis: `name in location-set: '${name}'` };
+  }
 
-  // badge — enum или status/condition
-  if (type === "enum" || /^(status|condition)$/.test(name)) return "badge";
+  // badge — status/condition
+  if (/^(status|condition)$/.test(name)) {
+    return { role: "badge", reliability: "heuristic", basis: `name match: '${name}'` };
+  }
 
-  // ref — entityRef
-  if (type === "entityRef") return "ref";
+  // metric — number fallback
+  if (type === "number") {
+    return { role: "metric", reliability: "heuristic", basis: "number type fallback" };
+  }
 
-  // metric — number (не price, не shipping cost — те уже покрыты выше)
-  if (type === "number") return "metric";
-
-  // info — всё остальное
-  return "info";
+  // info — всё остальное (fallback)
+  return { role: "info", reliability: "heuristic", basis: "fallback: no specific pattern matched" };
 }
 
 /**

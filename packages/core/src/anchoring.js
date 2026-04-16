@@ -110,6 +110,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "entity", value: entityStr },
           message: `Entity "${entityStr}" не найдена в ontology.entities (intent "${id}")`,
           detail: `Добавьте сущность в ontology.entities, либо декларируйте "${typeName}" в ontology.systemCollections, если это системная коллекция без доменной сущности.`,
+          reliability: "structural",
+          witness: { basis: "exhausted: direct lookup, plural rule, systemCollections — no match", example: `entity name "${typeName}"` },
         });
       }
     }
@@ -130,6 +132,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "effect.target", value: target },
           message: `Effect target "${target}" не анкерирован (intent "${id}")`,
           detail: `Коллекция "${base}" не соответствует ни одной сущности в ontology.entities (проверены singular и plural-формы через buildTypeMap-правила). Добавьте сущность или декларируйте в ontology.systemCollections.`,
+          reliability: "structural",
+          witness: { basis: `exhausted: direct lookup ("${baseLower}"), plural rule, systemCollections — no match`, example: target },
         });
         continue;
       }
@@ -145,6 +149,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
             particle: { kind: "field", value: target },
             message: `Поле "${field}" не объявлено в ${entityKey} (intent "${id}")`,
             detail: `Effect target "${target}": поле "${field}" не в ontology.entities.${entityKey}.fields. Добавьте поле в онтологию, либо оставьте как описательную подсказку.`,
+            reliability: "structural",
+            witness: { basis: `known base entity "${entityKey}" but unknown field "${field}"`, example: target },
           });
         }
       }
@@ -165,6 +171,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "witness", value: w },
           message: `Witness "${w}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
           detail: `Свидетельство ссылается на поле, которого нет в онтологии. Добавьте поле либо скорректируйте witness.`,
+          reliability: "structural",
+          witness: { basis: `field not in entity: "${field}" absent from "${entityKey}.fields"`, example: w },
         });
       }
     }
@@ -185,6 +193,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "condition", value: cond },
           message: `Condition "${cond}" — поле "${field}" не в ${entityKey} (intent "${id}")`,
           detail: `Предикат ссылается на поле, которого нет в онтологии.`,
+          reliability: "structural",
+          witness: { basis: `field not in entity: "${field}" absent from "${entityKey}.fields"`, example: cond },
         });
       }
     }

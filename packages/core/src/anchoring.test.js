@@ -40,6 +40,16 @@ describe("checkAnchoring — entity", () => {
     expect(result.passed).toBe(true);
   });
 
+  it("MISS entity — reliability=structural + witness.basis содержит 'exhausted'", () => {
+    const intents = {
+      do_foo: { particles: { entities: ["Foo"], effects: [], witnesses: [] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.errors[0].reliability).toBe("structural");
+    expect(result.errors[0].witness).toBeDefined();
+    expect(result.errors[0].witness.basis).toContain("exhausted");
+  });
+
   it("plural y→ies: activities → Activity", () => {
     const ontologyY = {
       entities: { Activity: { fields: { id: { type: "string" } } } },
@@ -145,6 +155,36 @@ describe("checkAnchoring — effect.target", () => {
     const result = checkAnchoring(intents, ontologyWithSystem);
     expect(result.passed).toBe(true);
   });
+
+  it("MISS effect.target — reliability=structural + witness.basis содержит 'exhausted'", () => {
+    const intents = {
+      create_foo: {
+        particles: {
+          entities: [],
+          effects: [{ type: "add", target: "foos", payload: {} }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.errors[0].reliability).toBe("structural");
+    expect(result.errors[0].witness.basis).toContain("exhausted");
+  });
+
+  it("warning field — reliability=structural + basis про 'unknown field'", () => {
+    const intents = {
+      update_item: {
+        particles: {
+          entities: ["Item"],
+          effects: [{ type: "replace", target: "items.unknownField", payload: "x" }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.warnings[0].reliability).toBe("structural");
+    expect(result.warnings[0].witness.basis).toContain("unknown field");
+  });
 });
 
 describe("checkAnchoring — witness/condition info", () => {
@@ -200,5 +240,23 @@ describe("checkAnchoring — witness/condition info", () => {
     const result = checkAnchoring(intents, ontology);
     expect(result.infos).toHaveLength(1);
     expect(result.infos[0].rule).toBe("anchoring_condition");
+  });
+
+  it("witness info — reliability=structural + basis 'field not in'", () => {
+    const intents = {
+      view_item: { particles: { entities: ["Item"], effects: [], witnesses: ["item.ghostField"] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.infos[0].reliability).toBe("structural");
+    expect(result.infos[0].witness.basis).toContain("field not in");
+  });
+
+  it("condition info — reliability=structural", () => {
+    const intents = {
+      edit_item: { particles: { entities: ["Item"], effects: [], witnesses: [], conditions: ["item.ghostField = 'active'"] } },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.infos[0].reliability).toBe("structural");
+    expect(result.infos[0].witness.basis).toContain("field not in");
   });
 });

@@ -131,107 +131,134 @@ describe("mapOntologyTypeToControl", () => {
 
 describe("inferFieldRole", () => {
   it("title role for name/title fields", () => {
-    expect(inferFieldRole("title", { type: "text" })).toBe("title");
-    expect(inferFieldRole("name", { type: "text" })).toBe("title");
+    expect(inferFieldRole("title", { type: "text" })).toMatchObject({ role: "title" });
+    expect(inferFieldRole("name", { type: "text" })).toMatchObject({ role: "title" });
   });
 
   it("description role for textarea description/bio/content", () => {
-    expect(inferFieldRole("description", { type: "textarea" })).toBe("description");
-    expect(inferFieldRole("bio", { type: "textarea" })).toBe("description");
+    expect(inferFieldRole("description", { type: "textarea" })).toMatchObject({ role: "description" });
+    expect(inferFieldRole("bio", { type: "textarea" })).toMatchObject({ role: "description" });
   });
 
   it("heroImage for image/multiImage types", () => {
-    expect(inferFieldRole("images", { type: "multiImage" })).toBe("heroImage");
-    expect(inferFieldRole("avatar", { type: "image" })).toBe("heroImage");
+    expect(inferFieldRole("images", { type: "multiImage" })).toMatchObject({ role: "heroImage" });
+    expect(inferFieldRole("avatar", { type: "image" })).toMatchObject({ role: "heroImage" });
   });
 
   it("price for number fields with price/cost/amount in name", () => {
-    expect(inferFieldRole("currentPrice", { type: "number" })).toBe("price");
-    expect(inferFieldRole("shippingCost", { type: "number" })).toBe("price");
-    expect(inferFieldRole("totalAmount", { type: "number" })).toBe("price");
-    expect(inferFieldRole("startPrice", { type: "number" })).toBe("price");
+    expect(inferFieldRole("currentPrice", { type: "number" })).toMatchObject({ role: "price" });
+    expect(inferFieldRole("shippingCost", { type: "number" })).toMatchObject({ role: "price" });
+    expect(inferFieldRole("totalAmount", { type: "number" })).toMatchObject({ role: "price" });
+    expect(inferFieldRole("startPrice", { type: "number" })).toMatchObject({ role: "price" });
   });
 
   it("timer for datetime fields with end/deadline/expir in name", () => {
-    expect(inferFieldRole("auctionEnd", { type: "datetime" })).toBe("timer");
-    expect(inferFieldRole("deadline", { type: "datetime" })).toBe("timer");
+    expect(inferFieldRole("auctionEnd", { type: "datetime" })).toMatchObject({ role: "timer" });
+    expect(inferFieldRole("deadline", { type: "datetime" })).toMatchObject({ role: "timer" });
   });
 
   it("location for fields with location/from/city in name", () => {
-    expect(inferFieldRole("shippingFrom", { type: "text" })).toBe("location");
-    expect(inferFieldRole("location", { type: "text" })).toBe("location");
+    expect(inferFieldRole("shippingFrom", { type: "text" })).toMatchObject({ role: "location" });
+    expect(inferFieldRole("location", { type: "text" })).toMatchObject({ role: "location" });
   });
 
   it("badge for enum type or status/condition name", () => {
-    expect(inferFieldRole("condition", { type: "enum" })).toBe("badge");
-    expect(inferFieldRole("status", { type: "text" })).toBe("badge");
+    expect(inferFieldRole("condition", { type: "enum" })).toMatchObject({ role: "badge" });
+    expect(inferFieldRole("status", { type: "text" })).toMatchObject({ role: "badge" });
   });
 
   it("metric for number fields that are not price", () => {
-    expect(inferFieldRole("bidCount", { type: "number" })).toBe("metric");
-    expect(inferFieldRole("viewCount", { type: "number" })).toBe("metric");
+    expect(inferFieldRole("bidCount", { type: "number" })).toMatchObject({ role: "metric" });
+    expect(inferFieldRole("viewCount", { type: "number" })).toMatchObject({ role: "metric" });
   });
 
   it("ref for entityRef type", () => {
-    expect(inferFieldRole("sellerId", { type: "entityRef" })).toBe("ref");
+    expect(inferFieldRole("sellerId", { type: "entityRef" })).toMatchObject({ role: "ref" });
   });
 
   it("info as fallback for non-special types", () => {
-    expect(inferFieldRole("trackingNumber", { type: "text" })).toBe("info");
-    expect(inferFieldRole("featured", { type: "boolean" })).toBe("info");
+    expect(inferFieldRole("trackingNumber", { type: "text" })).toMatchObject({ role: "info" });
+    expect(inferFieldRole("featured", { type: "boolean" })).toMatchObject({ role: "info" });
   });
 
   it("weight is metric (number without price/cost/amount)", () => {
-    expect(inferFieldRole("weight", { type: "number" })).toBe("metric");
+    expect(inferFieldRole("weight", { type: "number" })).toMatchObject({ role: "metric" });
   });
 
   it("price takes priority over metric for number+price name", () => {
-    expect(inferFieldRole("buyNowPrice", { type: "number" })).toBe("price");
+    expect(inferFieldRole("buyNowPrice", { type: "number" })).toMatchObject({ role: "price" });
   });
 
   it("shippingCost is price (not location)", () => {
-    expect(inferFieldRole("shippingCost", { type: "number" })).toBe("price");
+    expect(inferFieldRole("shippingCost", { type: "number" })).toMatchObject({ role: "price" });
   });
 });
 
 describe("inferFieldRole — пространственные роли v1.7", () => {
   it("field с type 'coordinate' → role 'coordinate'", () => {
-    expect(inferFieldRole("position", { type: "coordinate" })).toBe("coordinate");
+    expect(inferFieldRole("position", { type: "coordinate" })).toMatchObject({ role: "coordinate" });
   });
 
   it("field named 'lat' → role 'coordinate'", () => {
-    expect(inferFieldRole("lat", { type: "number" })).toBe("coordinate");
+    expect(inferFieldRole("lat", { type: "number" })).toMatchObject({ role: "coordinate" });
   });
 
   it("field named 'lng' → role 'coordinate'", () => {
-    expect(inferFieldRole("lng", { type: "number" })).toBe("coordinate");
+    expect(inferFieldRole("lng", { type: "number" })).toMatchObject({ role: "coordinate" });
   });
 
   it("field named 'coords' → role 'coordinate'", () => {
-    expect(inferFieldRole("coords", {})).toBe("coordinate");
+    expect(inferFieldRole("coords", {})).toMatchObject({ role: "coordinate" });
   });
 
   it("field named 'address' type text → role 'address'", () => {
-    expect(inferFieldRole("address", { type: "text" })).toBe("address");
+    expect(inferFieldRole("address", { type: "text" })).toMatchObject({ role: "address" });
   });
 
   it("field 'deliveryAddress' → role 'address'", () => {
-    expect(inferFieldRole("deliveryAddress", { type: "text" })).toBe("address");
+    expect(inferFieldRole("deliveryAddress", { type: "text" })).toMatchObject({ role: "address" });
   });
 
   it("field с type 'polygon' → role 'zone'", () => {
-    expect(inferFieldRole("area", { type: "polygon" })).toBe("zone");
+    expect(inferFieldRole("area", { type: "polygon" })).toMatchObject({ role: "zone" });
   });
 
   it("field named 'zone' → role 'zone'", () => {
-    expect(inferFieldRole("zone", {})).toBe("zone");
+    expect(inferFieldRole("zone", {})).toMatchObject({ role: "zone" });
   });
 
   it("numeric 'price' НЕ должен стать coordinate", () => {
-    expect(inferFieldRole("price", { type: "number" })).toBe("price");
+    expect(inferFieldRole("price", { type: "number" })).toMatchObject({ role: "price" });
   });
 
   it("existing 'location' правило не сломано — city → 'location'", () => {
-    expect(inferFieldRole("city", {})).toBe("location");
+    expect(inferFieldRole("city", {})).toMatchObject({ role: "location" });
+  });
+});
+
+describe("inferFieldRole — reliability (§15 v1.9 zazor #2)", () => {
+  it("explicit fieldRole declaration → structural", () => {
+    const result = inferFieldRole("price", { type: "number", fieldRole: "price" });
+    expect(result).toEqual({ role: "price", reliability: "structural", basis: "explicit ontology declaration" });
+  });
+
+  it("type-based coordinate → rule-based", () => {
+    const result = inferFieldRole("position", { type: "coordinate" });
+    expect(result.reliability).toBe("rule-based");
+    expect(result.basis).toContain("coordinate");
+  });
+
+  it("name-based price → heuristic", () => {
+    const result = inferFieldRole("currentPrice", { type: "number" });
+    expect(result.role).toBe("price");
+    expect(result.reliability).toBe("heuristic");
+    expect(result.basis).toContain("name substring");
+  });
+
+  it("fallback info → heuristic с fallback basis", () => {
+    const result = inferFieldRole("randomXyz", { type: "text" });
+    expect(result.role).toBe("info");
+    expect(result.reliability).toBe("heuristic");
+    expect(result.basis).toContain("fallback");
   });
 });

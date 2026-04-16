@@ -174,7 +174,7 @@ export function buildFormSpec(editProjection, INTENTS, ONTOLOGY, viewerRole = "s
   const sectionMap = new Map();
   for (const f of fields) {
     if (!f.editable) continue;
-    const role = inferFieldRole(f.name, { type: f.type });
+    const role = inferFieldRole(f.name, { type: f.type })?.role ?? null;
     const sec = getSectionForField(f.name, role);
     if (!sectionMap.has(sec.id)) {
       sectionMap.set(sec.id, { id: sec.id, title: sec.title, order: sec.order, fields: [] });

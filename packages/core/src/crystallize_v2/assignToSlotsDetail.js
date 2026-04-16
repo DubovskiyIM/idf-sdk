@@ -589,7 +589,7 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
   // Группируем поля по семантическим ролям
   const byRole = {};
   for (const field of fields) {
-    const role = inferFieldRole(field.name, field);
+    const role = inferFieldRole(field.name, field)?.role ?? null;
     if (!byRole[role]) byRole[role] = [];
     byRole[role].push(field);
   }
