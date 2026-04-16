@@ -300,10 +300,10 @@ function mergeDeclaredAntagonists(INTENTS, structuralEdges) {
     if (!evidenceMap[id]) evidenceMap[id] = {};
     if (!evidenceMap[declared]) evidenceMap[declared] = {};
     if (!evidenceMap[id][declared]) {
-      evidenceMap[id][declared] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"` } };
+      evidenceMap[id][declared] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"`, pattern: "antagonist-declared" } };
     }
     if (!evidenceMap[declared][id]) {
-      evidenceMap[declared][id] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"` } };
+      evidenceMap[declared][id] = { classification: "heuristic-lifecycle", reliability: "heuristic", witness: { basis: "declared antagonist without structural effect-pair evidence", example: `${id}.antagonist === "${declared}"`, pattern: "antagonist-declared" } };
     }
   }
 
