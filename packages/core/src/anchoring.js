@@ -132,6 +132,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
           particle: { kind: "effect.target", value: target },
           message: `Effect target "${target}" не анкерирован (intent "${id}")`,
           detail: `Коллекция "${base}" не соответствует ни одной сущности в ontology.entities (проверены singular и plural-формы через buildTypeMap-правила). Добавьте сущность или декларируйте в ontology.systemCollections.`,
+          reliability: "structural",
+          witness: { basis: `exhausted: direct lookup ("${baseLower}"), plural rule, systemCollections — no match`, example: target },
         });
         continue;
       }
@@ -147,6 +149,8 @@ export function checkAnchoring(INTENTS, ONTOLOGY) {
             particle: { kind: "field", value: target },
             message: `Поле "${field}" не объявлено в ${entityKey} (intent "${id}")`,
             detail: `Effect target "${target}": поле "${field}" не в ontology.entities.${entityKey}.fields. Добавьте поле в онтологию, либо оставьте как описательную подсказку.`,
+            reliability: "structural",
+            witness: { basis: `known base entity "${entityKey}" but unknown field "${field}"`, example: target },
           });
         }
       }

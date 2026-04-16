@@ -155,6 +155,36 @@ describe("checkAnchoring — effect.target", () => {
     const result = checkAnchoring(intents, ontologyWithSystem);
     expect(result.passed).toBe(true);
   });
+
+  it("MISS effect.target — reliability=structural + witness.basis содержит 'exhausted'", () => {
+    const intents = {
+      create_foo: {
+        particles: {
+          entities: [],
+          effects: [{ type: "add", target: "foos", payload: {} }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.errors[0].reliability).toBe("structural");
+    expect(result.errors[0].witness.basis).toContain("exhausted");
+  });
+
+  it("warning field — reliability=structural + basis про 'unknown field'", () => {
+    const intents = {
+      update_item: {
+        particles: {
+          entities: ["Item"],
+          effects: [{ type: "replace", target: "items.unknownField", payload: "x" }],
+          witnesses: [],
+        },
+      },
+    };
+    const result = checkAnchoring(intents, ontology);
+    expect(result.warnings[0].reliability).toBe("structural");
+    expect(result.warnings[0].witness.basis).toContain("unknown field");
+  });
 });
 
 describe("checkAnchoring — witness/condition info", () => {
