@@ -388,30 +388,37 @@ function ShadcnModalShell({ opened, onClose, title, children }) {
   );
 }
 
-function ShadcnTabs({ tabs, value, onChange }) {
+function ShadcnTabs({ items = [], active, onSelect, extra }) {
   return (
-    <TabsPrimitive.Root value={value} onValueChange={onChange}>
-      <TabsPrimitive.List style={{
-        display: "flex", borderBottom: "2px dashed var(--color-doodle-border)",
-        fontFamily: "var(--font-doodle)", overflowX: "auto", gap: 0,
-      }}>
-        {tabs.map(tab => (
-          <TabsPrimitive.Trigger
-            key={tab.value}
-            value={tab.value}
-            style={{
-              padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap",
-              background: "transparent", border: "none", cursor: "pointer",
-              fontFamily: "inherit",
-              borderBottom: "2px solid transparent", marginBottom: -2,
-              color: "var(--color-doodle-ink-light)",
-            }}
-          >
-            {tab.label}
-          </TabsPrimitive.Trigger>
-        ))}
-      </TabsPrimitive.List>
-    </TabsPrimitive.Root>
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <TabsPrimitive.Root
+        value={active || null}
+        onValueChange={(v) => v && onSelect && onSelect(v)}
+        style={{ flex: 1 }}
+      >
+        <TabsPrimitive.List style={{
+          display: "flex", borderBottom: "2px dashed var(--color-doodle-border)",
+          fontFamily: "var(--font-doodle)", overflowX: "auto", gap: 0,
+        }}>
+          {items.map(item => (
+            <TabsPrimitive.Trigger
+              key={item.value}
+              value={item.value}
+              style={{
+                padding: "8px 16px", fontSize: 13, whiteSpace: "nowrap",
+                background: "transparent", border: "none", cursor: "pointer",
+                fontFamily: "inherit",
+                borderBottom: "2px solid transparent", marginBottom: -2,
+                color: "var(--color-doodle-ink-light)",
+              }}
+            >
+              {item.label}
+            </TabsPrimitive.Trigger>
+          ))}
+        </TabsPrimitive.List>
+      </TabsPrimitive.Root>
+      {extra && <div style={{ marginRight: 8 }}>{extra}</div>}
+    </div>
   );
 }
 

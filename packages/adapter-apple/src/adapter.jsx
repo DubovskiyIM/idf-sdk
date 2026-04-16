@@ -377,36 +377,43 @@ function AppleModalShell({ opened, onClose, title, children }) {
   );
 }
 
-function AppleTabs({ tabs, value, onChange }) {
+function AppleTabs({ items = [], active, onSelect, extra }) {
   return (
-    <TabsPrimitive.Root value={value} onValueChange={onChange}>
-      <TabsPrimitive.List style={{
-        display: "inline-flex",
-        background: "rgba(0,0,0,0.05)",
-        borderRadius: 10,
-        padding: 2,
-        fontFamily: "var(--font-apple)",
-        gap: 0,
-      }}>
-        {tabs.map(tab => (
-          <TabsPrimitive.Trigger
-            key={tab.value}
-            value={tab.value}
-            style={{
-              padding: "6px 14px", fontSize: 13, whiteSpace: "nowrap",
-              background: "transparent", border: "none", cursor: "pointer",
-              fontFamily: "inherit", borderRadius: 8,
-              color: "var(--color-apple-text-secondary)",
-              fontWeight: 500,
-              transition: "all 0.2s",
-            }}
-            data-state-active-style="background: white; color: var(--color-apple-text); box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
-          >
-            {tab.label}
-          </TabsPrimitive.Trigger>
-        ))}
-      </TabsPrimitive.List>
-    </TabsPrimitive.Root>
+    <div style={{ display: "flex", alignItems: "center" }}>
+      <TabsPrimitive.Root
+        value={active || null}
+        onValueChange={(v) => v && onSelect && onSelect(v)}
+        style={{ flex: 1 }}
+      >
+        <TabsPrimitive.List style={{
+          display: "inline-flex",
+          background: "rgba(0,0,0,0.05)",
+          borderRadius: 10,
+          padding: 2,
+          fontFamily: "var(--font-apple)",
+          gap: 0,
+        }}>
+          {items.map(item => (
+            <TabsPrimitive.Trigger
+              key={item.value}
+              value={item.value}
+              style={{
+                padding: "6px 14px", fontSize: 13, whiteSpace: "nowrap",
+                background: "transparent", border: "none", cursor: "pointer",
+                fontFamily: "inherit", borderRadius: 8,
+                color: "var(--color-apple-text-secondary)",
+                fontWeight: 500,
+                transition: "all 0.2s",
+              }}
+              data-state-active-style="background: white; color: var(--color-apple-text); box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
+            >
+              {item.label}
+            </TabsPrimitive.Trigger>
+          ))}
+        </TabsPrimitive.List>
+      </TabsPrimitive.Root>
+      {extra && <div style={{ marginRight: 8 }}>{extra}</div>}
+    </div>
   );
 }
 
