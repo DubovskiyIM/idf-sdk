@@ -30,13 +30,13 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
 
   return (
     <ModalShell onClose={onClose} title={spec.title || "Подтверждение"}>
-      <p style={{ fontSize: 14, color: "var(--mantine-color-text)", lineHeight: 1.5, margin: "0 0 16px" }}>
+      <p style={{ fontSize: 14, color: "var(--idf-text)", lineHeight: 1.5, margin: "0 0 16px" }}>
         {message}
       </p>
 
       {spec.confirmBy?.type === "typeText" && expectedText && (
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, color: "var(--mantine-color-dimmed)", marginBottom: 4 }}>
+          <label style={{ display: "block", fontSize: 12, color: "var(--idf-text-muted)", marginBottom: 4 }}>
             Введите «{expectedText}» для подтверждения:
           </label>
           <input
@@ -46,9 +46,9 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
             autoFocus
             style={{
               width: "100%", padding: "8px 12px", borderRadius: 6,
-              border: "1px solid var(--mantine-color-default-border)",
-              background: "var(--mantine-color-body)",
-              color: "var(--mantine-color-text)",
+              border: "1px solid var(--idf-border)",
+              background: "var(--idf-surface)",
+              color: "var(--idf-text)",
               fontSize: 14, outline: "none",
               boxSizing: "border-box",
             }}
@@ -61,9 +61,9 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
           onClick={onClose}
           style={{
             padding: "8px 16px", borderRadius: 6,
-            border: "1px solid var(--mantine-color-default-border)",
-            background: "var(--mantine-color-default)",
-            color: "var(--mantine-color-text)",
+            border: "1px solid var(--idf-border)",
+            background: "var(--idf-card)",
+            color: "var(--idf-text)",
             cursor: "pointer", fontSize: 13,
           }}
         >Отмена</button>
@@ -72,8 +72,8 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
           disabled={!canConfirm || submitting}
           style={{
             padding: "8px 16px", borderRadius: 6, border: "none",
-            background: canConfirm ? "var(--mantine-color-red-6)" : "var(--mantine-color-default)",
-            color: canConfirm ? "#fff" : "var(--mantine-color-dimmed)",
+            background: canConfirm ? "var(--idf-danger)" : "var(--idf-card)",
+            color: canConfirm ? "#fff" : "var(--idf-text-muted)",
             fontSize: 13, fontWeight: 600,
             cursor: canConfirm && !submitting ? "pointer" : "default",
             opacity: submitting ? 0.6 : 1,

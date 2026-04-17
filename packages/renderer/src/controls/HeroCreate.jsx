@@ -95,7 +95,7 @@ export default function HeroCreate({ spec, ctx }) {
             padding: "10px 18px",
             borderRadius: 8,
             border: "none",
-            background: disabled ? "var(--mantine-color-default)" : "var(--mantine-color-indigo-6)",
+            background: disabled ? "var(--idf-card)" : "var(--idf-accent)",
             color: "#fff",
             fontSize: 14,
             fontWeight: 600,

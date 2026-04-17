@@ -26,15 +26,15 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--mantine-color-body)", position: "relative",
+      background: "var(--idf-surface)", position: "relative",
       overflowX: "hidden", maxWidth: "100%",
     }}>
       {slots.header?.length > 0 && (
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "12px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
         }}>
           <SlotRenderer items={slots.header} ctx={ctx} />
         </div>
@@ -44,8 +44,8 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
           padding: "8px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
           flexWrap: "wrap",
         }}>
           <SlotRenderer items={slots.toolbar} ctx={ctx} />

@@ -69,7 +69,7 @@ export default function ArchetypeDashboard({ slots, ctx }) {
                 title={`Открыть ${w.title || w.projection}`}
               >
                 {w.title || widgetProjection?.name || w.projection}
-                <span style={{ fontSize: 10, color: "var(--mantine-color-dimmed, #9ca3af)", marginLeft: 8 }}>→</span>
+                <span style={{ fontSize: 10, color: "var(--idf-text-muted, #9ca3af)", marginLeft: 8 }}>→</span>
               </div>
               <div style={{ maxHeight: 300, overflow: "auto" }}>
                 <ProjectionRendererV2
@@ -98,10 +98,10 @@ export default function ArchetypeDashboard({ slots, ctx }) {
             <div key={w.key || i} style={wrapStyle}>
               <div style={headerStyle}>{w.title || w.key}</div>
               <div style={{ padding: "20px 16px", textAlign: "center" }}>
-                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--mantine-color-text, #1a1a2e)" }}>
+                <div style={{ fontSize: 28, fontWeight: 700, color: "var(--idf-text, #1a1a2e)" }}>
                   {formatScalar(value, spec?.field)}
                 </div>
-                {w.unit && <div style={{ fontSize: 11, color: "var(--mantine-color-dimmed, #9ca3af)", marginTop: 4 }}>{w.unit}</div>}
+                {w.unit && <div style={{ fontSize: 11, color: "var(--idf-text-muted, #9ca3af)", marginTop: 4 }}>{w.unit}</div>}
               </div>
             </div>
           );
@@ -116,14 +116,14 @@ export default function ArchetypeDashboard({ slots, ctx }) {
           const visible = items.slice(0, 10);
           return (
             <div key={w.key || i} style={wrapStyle}>
-              <div style={headerStyle}>{w.title || w.key} <span style={{ fontSize: 11, color: "var(--mantine-color-dimmed, #9ca3af)", fontWeight: 400 }}>({items.length})</span></div>
+              <div style={headerStyle}>{w.title || w.key} <span style={{ fontSize: 11, color: "var(--idf-text-muted, #9ca3af)", fontWeight: 400 }}>({items.length})</span></div>
               <div style={{ maxHeight: 300, overflow: "auto" }}>
                 {visible.length === 0 ? (
                   <EmptyState size="sm" icon="📭" title="Пока ничего" />
                 ) : visible.map(it => (
-                  <div key={it.id} style={{ padding: "8px 16px", borderBottom: "1px solid var(--mantine-color-default-border, #f3f4f6)", fontSize: 12 }}>
+                  <div key={it.id} style={{ padding: "8px 16px", borderBottom: "1px solid var(--idf-border, #f3f4f6)", fontSize: 12 }}>
                     <div style={{ fontWeight: 500 }}>{it.name || it.title || it.id}</div>
-                    {it.status && <div style={{ color: "var(--mantine-color-dimmed, #9ca3af)", fontSize: 11 }}>{it.status}</div>}
+                    {it.status && <div style={{ color: "var(--idf-text-muted, #9ca3af)", fontSize: 11 }}>{it.status}</div>}
                   </div>
                 ))}
               </div>
@@ -134,7 +134,7 @@ export default function ArchetypeDashboard({ slots, ctx }) {
         return (
           <div key={i} style={wrapStyle}>
             <div style={headerStyle}>{w.title || w.key || `Widget ${i}`}</div>
-            <div style={{ padding: 16, color: "var(--mantine-color-dimmed, #9ca3af)", fontSize: 12 }}>
+            <div style={{ padding: 16, color: "var(--idf-text-muted, #9ca3af)", fontSize: 12 }}>
               Виджет неизвестной формы: ожидается projection / aggregate / inline.
             </div>
           </div>
@@ -145,11 +145,11 @@ export default function ArchetypeDashboard({ slots, ctx }) {
 }
 
 const cardStyle = {
-  background: "var(--color-doodle-bg, var(--mantine-color-body, #fff))",
-  border: "1.5px solid var(--color-doodle-ink, var(--mantine-color-default-border, #e5e7eb))",
-  borderRadius: "var(--radius-doodle, 8px)",
+  background: "var(--idf-surface, #fff))",
+  border: "1.5px solid var(--idf-border, #e5e7eb))",
+  borderRadius: "var(--idf-radius, 8px)",
   overflow: "hidden",
-  boxShadow: "2px 2px 0 var(--color-doodle-ink, transparent)",
+  boxShadow: "2px 2px 0 var(--idf-border, transparent)",
   minWidth: 0,
   maxWidth: "100%",
 };
@@ -158,8 +158,8 @@ const headerStyle = {
   padding: "10px 16px",
   fontSize: 14,
   fontWeight: 600,
-  color: "var(--mantine-color-text, #1a1a2e)",
-  borderBottom: "1px solid var(--mantine-color-default-border, #e5e7eb)",
+  color: "var(--idf-text, #1a1a2e)",
+  borderBottom: "1px solid var(--idf-border, #e5e7eb)",
   cursor: "pointer",
   userSelect: "none",
 };

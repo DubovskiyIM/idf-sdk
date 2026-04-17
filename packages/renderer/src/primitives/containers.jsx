@@ -132,24 +132,24 @@ export function Card({ node, ctx, item }) {
 
   const chatStyle = {
     background: isMine
-      ? "var(--mantine-color-default-hover)"
-      : "var(--mantine-color-default)",
+      ? "var(--idf-hover)"
+      : "var(--idf-card)",
     borderRadius: 12,
     padding: 10,
     border: isMine
-      ? "2px solid var(--mantine-color-primary-light-border, var(--mantine-color-indigo-4))"
-      : "1px solid var(--mantine-color-default-border)",
-    color: "var(--mantine-color-text)",
+      ? "2px solid var(--idf-primary-border, var(--idf-accent))"
+      : "1px solid var(--idf-border)",
+    color: "var(--idf-text)",
     maxWidth: "70%",
     alignSelf: isMine ? "flex-end" : "flex-start",
     ...(node.sx || {}),
   };
 
   const regularFallbackStyle = {
-    background: "var(--mantine-color-default)",
+    background: "var(--idf-card)",
     borderRadius: 8, padding: 14,
-    border: "1px solid var(--mantine-color-default-border)",
-    color: "var(--mantine-color-text)",
+    border: "1px solid var(--idf-border)",
+    color: "var(--idf-text)",
     boxShadow: "0 1px 3px #0001",
     ...(node.sx || {}),
   };
@@ -161,8 +161,8 @@ export function Card({ node, ctx, item }) {
     <>
       {item?.forwarded && (
         <div style={{
-          fontSize: 11, color: "var(--mantine-color-dimmed)",
-          borderLeft: "2px solid var(--mantine-color-primary-light-border, #6366f1)",
+          fontSize: 11, color: "var(--idf-text-muted)",
+          borderLeft: "2px solid var(--idf-primary-border, #6366f1)",
           paddingLeft: 6, marginBottom: 4,
         }}>
           ↗ Переслано от {item.originalSenderName || "неизвестного"}
@@ -176,8 +176,8 @@ export function Card({ node, ctx, item }) {
           {reactionGroups.map(g => (
             <span key={g.emoji} style={{
               fontSize: 12, padding: "2px 6px", borderRadius: 10,
-              background: "var(--mantine-color-default-hover)",
-              border: "1px solid var(--mantine-color-default-border)",
+              background: "var(--idf-hover)",
+              border: "1px solid var(--idf-border)",
               cursor: "default",
             }}>
               {g.emoji} {g.count > 1 ? g.count : ""}
@@ -193,30 +193,34 @@ export function Card({ node, ctx, item }) {
               : <ItemIntentButton key={g.spec.intentId} spec={g.spec} ctx={ctx} item={item} />
           ))}
           {hidden.length > 0 && (
-            // Отдельный relative-контейнер, чтобы popover позиционировался
-            // относительно самой кнопки «⋯», а не всего flex-row карточки.
             <div style={{ position: "relative" }}>
-              <button
-                onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                style={{
-                  padding: "4px 8px", borderRadius: 6,
-                  border: "1px solid var(--mantine-color-default-border)",
-                  background: "var(--mantine-color-default)",
-                  color: "var(--mantine-color-dimmed)",
-                  fontSize: 11, cursor: "pointer", lineHeight: 1,
-                }}
-              >⋯</button>
+              {(() => {
+                const AdaptedSec = getAdaptedComponent("button", "secondary");
+                const btn = AdaptedSec
+                  ? <AdaptedSec onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>⋯</AdaptedSec>
+                  : <button
+                      onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+                      style={{
+                        padding: "4px 8px", borderRadius: 6,
+                        border: "1px solid var(--idf-border)",
+                        background: "var(--idf-card)",
+                        color: "var(--idf-text-muted)",
+                        fontSize: 11, cursor: "pointer", lineHeight: 1,
+                      }}
+                    >⋯</button>;
+                return btn;
+              })()}
               {menuOpen && (
                 <div
                   onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
                   style={{
                     position: "absolute", top: "calc(100% + 4px)", left: 0,
-                    background: "var(--mantine-color-body)",
-                    border: "1px solid var(--mantine-color-default-border)",
+                    background: "var(--idf-surface)",
+                    border: "1px solid var(--idf-border)",
                     borderRadius: 8,
                     boxShadow: "0 4px 12px #0002", padding: 4, zIndex: 10, minWidth: 180,
                     maxHeight: "50vh", overflowY: "auto",
-                    color: "var(--mantine-color-text)",
+                    color: "var(--idf-text)",
                   }}
                 >
                   {hidden.map(spec => (
@@ -262,6 +266,7 @@ function ItemIntentGroup({ group, ctx, item }) {
   const ref = useRef(null);
   const icon = group.icon;
   const count = group.specs.length;
+  const AdaptedSecondary = getAdaptedComponent("button", "secondary");
 
   useEffect(() => {
     if (!open) return;
@@ -270,31 +275,33 @@ function ItemIntentGroup({ group, ctx, item }) {
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const triggerContent = <><Icon emoji={icon} size={14} /><span style={{ fontSize: 9, opacity: 0.6 }}>×{count}</span></>;
+
   return (
     <div ref={ref} style={{ position: "relative" }}>
-      <button
-        onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
-        title={group.specs.map(s => s.label || s.intentId).join(", ")}
-        style={{
-          padding: "6px 8px", borderRadius: 6,
-          border: "1px solid var(--mantine-color-default-border)",
-          background: "var(--mantine-color-default)",
-          color: "var(--mantine-color-text)",
-          fontSize: 11, cursor: "pointer",
-          display: "inline-flex", alignItems: "center", gap: 4,
-          lineHeight: 1,
-        }}
-      >
-        <Icon emoji={icon} size={14} />
-        <span style={{ fontSize: 9, color: "var(--mantine-color-dimmed)" }}>×{count}</span>
-      </button>
+      {AdaptedSecondary
+        ? <AdaptedSecondary onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }} title={group.specs.map(s => s.label || s.intentId).join(", ")}>{triggerContent}</AdaptedSecondary>
+        : <button
+            onClick={(e) => { e.stopPropagation(); setOpen(v => !v); }}
+            title={group.specs.map(s => s.label || s.intentId).join(", ")}
+            style={{
+              padding: "6px 8px", borderRadius: 6,
+              border: "1px solid var(--idf-border)",
+              background: "var(--idf-card)",
+              color: "var(--idf-text)",
+              fontSize: 11, cursor: "pointer",
+              display: "inline-flex", alignItems: "center", gap: 4,
+              lineHeight: 1,
+            }}
+          >{triggerContent}</button>
+      }
       {open && (
         <div
           onClick={(e) => { e.stopPropagation(); setOpen(false); }}
           style={{
             position: "absolute", top: "calc(100% + 4px)", left: 0,
-            background: "var(--mantine-color-body)",
-            border: "1px solid var(--mantine-color-default-border)",
+            background: "var(--idf-surface)",
+            border: "1px solid var(--idf-border)",
             borderRadius: 8,
             boxShadow: "0 4px 12px #0002", padding: 4, zIndex: 10, minWidth: 180,
           }}
@@ -308,9 +315,9 @@ function ItemIntentGroup({ group, ctx, item }) {
                 width: "100%", textAlign: "left",
                 padding: "6px 10px", background: "transparent", border: "none",
                 cursor: "pointer", fontSize: 12,
-                color: "var(--mantine-color-text)",
+                color: "var(--idf-text)",
               }}
-              onMouseEnter={e => e.currentTarget.style.background = "var(--mantine-color-default-hover)"}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--idf-hover)"}
               onMouseLeave={e => e.currentTarget.style.background = "transparent"}
             >
               {spec.icon && <Icon emoji={spec.icon} size={14} />}
@@ -349,9 +356,9 @@ function ItemIntentButton({ spec, ctx, item }) {
       style={{
         padding: showLabel ? "4px 8px" : "6px 8px",
         borderRadius: 6,
-        border: "1px solid var(--mantine-color-default-border)",
-        background: "var(--mantine-color-default)",
-        color: "var(--mantine-color-text)",
+        border: "1px solid var(--idf-border)",
+        background: "var(--idf-card)",
+        color: "var(--idf-text)",
         fontSize: 11,
         cursor: "pointer",
         display: "inline-flex",
@@ -473,14 +480,14 @@ function GridCard({ item, node, ctx }) {
   return (
     <div style={{
       borderRadius: 10,
-      border: "1px solid var(--mantine-color-default-border)",
-      background: "var(--mantine-color-default)",
+      border: "1px solid var(--idf-border)",
+      background: "var(--idf-card)",
       overflow: "hidden",
       display: "flex", flexDirection: "column",
       cursor: node.onItemClick ? "pointer" : "default",
     }}>
       <div style={{
-        height: 160, background: "var(--mantine-color-default-hover)",
+        height: 160, background: "var(--idf-hover)",
         display: "flex", alignItems: "center", justifyContent: "center",
         overflow: "hidden", position: "relative",
       }}>
@@ -492,7 +499,7 @@ function GridCard({ item, node, ctx }) {
         {price && (
           <span style={{
             position: "absolute", bottom: 8, right: 8,
-            background: "var(--mantine-color-body)", color: "var(--mantine-color-text)",
+            background: "var(--idf-surface)", color: "var(--idf-text)",
             padding: "3px 8px", borderRadius: 6, fontSize: 13, fontWeight: 700,
             boxShadow: "0 1px 4px #0002",
           }}>{price}</span>
@@ -500,22 +507,22 @@ function GridCard({ item, node, ctx }) {
       </div>
       <div style={{ padding: "8px 10px", flex: 1, display: "flex", flexDirection: "column", gap: 3 }}>
         <div style={{
-          fontSize: 13, fontWeight: 600, color: "var(--mantine-color-text)",
+          fontSize: 13, fontWeight: 600, color: "var(--idf-text)",
           overflow: "hidden", textOverflow: "ellipsis",
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         }}>{title}</div>
         {(badge || locationVal) && (
-          <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--mantine-color-dimmed)" }}>
+          <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--idf-text-muted)" }}>
             {badge && <span>{badge}</span>}
             {badge && locationVal && <span>·</span>}
             {locationVal && <span>📍 {locationVal}</span>}
           </div>
         )}
         {timerText && (
-          <div style={{ fontSize: 11, color: "var(--mantine-color-dimmed)" }}>⏰ {timerText}</div>
+          <div style={{ fontSize: 11, color: "var(--idf-text-muted)" }}>⏰ {timerText}</div>
         )}
         {metrics.length > 0 && (
-          <div style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--mantine-color-dimmed)" }}>
+          <div style={{ display: "flex", gap: 8, fontSize: 11, color: "var(--idf-text-muted)" }}>
             {metrics.map((m, i) => <span key={i}>{m.label}: {m.val}</span>)}
           </div>
         )}
@@ -535,14 +542,14 @@ function GridCardLegacy({ item, node }) {
   return (
     <div style={{
       borderRadius: 10,
-      border: "1px solid var(--mantine-color-default-border)",
-      background: "var(--mantine-color-default)",
+      border: "1px solid var(--idf-border)",
+      background: "var(--idf-card)",
       overflow: "hidden",
       display: "flex", flexDirection: "column",
       cursor: node.onItemClick ? "pointer" : "default",
     }}>
       <div style={{
-        height: 160, background: "var(--mantine-color-default-hover)",
+        height: 160, background: "var(--idf-hover)",
         display: "flex", alignItems: "center", justifyContent: "center",
         overflow: "hidden", position: "relative",
       }}>
@@ -554,7 +561,7 @@ function GridCardLegacy({ item, node }) {
         {price != null && (
           <span style={{
             position: "absolute", bottom: 8, right: 8,
-            background: "var(--mantine-color-body)", color: "var(--mantine-color-text)",
+            background: "var(--idf-surface)", color: "var(--idf-text)",
             padding: "3px 8px", borderRadius: 6, fontSize: 13, fontWeight: 700,
             boxShadow: "0 1px 4px #0002",
           }}>
@@ -564,12 +571,12 @@ function GridCardLegacy({ item, node }) {
       </div>
       <div style={{ padding: "8px 10px", flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
         <div style={{
-          fontSize: 13, fontWeight: 600, color: "var(--mantine-color-text)",
+          fontSize: 13, fontWeight: 600, color: "var(--idf-text)",
           overflow: "hidden", textOverflow: "ellipsis",
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         }}>{title}</div>
         {(subtitle || location) && (
-          <div style={{ fontSize: 11, color: "var(--mantine-color-dimmed)" }}>
+          <div style={{ fontSize: 11, color: "var(--idf-text-muted)" }}>
             {subtitle}{subtitle && location ? " · " : ""}{location}
           </div>
         )}

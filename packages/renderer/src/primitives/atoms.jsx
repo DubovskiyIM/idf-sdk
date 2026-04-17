@@ -62,7 +62,7 @@ export function Text({ node, ctx, item }) {
   // Fallback: inline-span через CSS variable (адаптируется к dark).
   const style = {
     fontSize: 14,
-    color: "var(--mantine-color-text, #1a1a2e)",
+    color: "var(--idf-text, #1a1a2e)",
     ...getPresetStyle(node.style),
     ...(node.sx || {}),
   };
@@ -86,7 +86,7 @@ export function Heading({ node, ctx, item }) {
   const style = {
     fontSize: level === 1 ? 22 : level === 3 ? 14 : 18,
     fontWeight: 700,
-    color: "var(--mantine-color-text, #1a1a2e)",
+    color: "var(--idf-text, #1a1a2e)",
     margin: "0 0 8px",
     fontFamily: "system-ui, sans-serif",
     ...(node.sx || {}),
@@ -235,17 +235,17 @@ export function StatBar({ node, ctx, item }) {
       {stats.map((s, i) => (
         <div key={i} style={{
           padding: "8px 14px", borderRadius: 8,
-          background: "var(--mantine-color-default-hover)",
-          border: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-hover)",
+          border: "1px solid var(--idf-border)",
           display: "flex", flexDirection: "column", alignItems: "center",
           minWidth: 80, flex: "1 1 0",
         }}>
           <span style={{
             fontSize: 18, fontWeight: 700,
-            color: "var(--mantine-color-text)",
+            color: "var(--idf-text)",
           }}>{s.value}</span>
           <span style={{
-            fontSize: 11, color: "var(--mantine-color-dimmed)",
+            fontSize: 11, color: "var(--idf-text-muted)",
             marginTop: 2,
           }}>{s.label}</span>
         </div>
@@ -274,12 +274,12 @@ export function PriceBlock({ node, ctx, item }) {
       {rendered.map((f, i) => (
         <div key={i} style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           {f.label && (
-            <span style={{ fontSize: 12, color: "var(--mantine-color-dimmed)" }}>{f.label}:</span>
+            <span style={{ fontSize: 12, color: "var(--idf-text-muted)" }}>{f.label}:</span>
           )}
           <span style={{
             fontSize: f.primary ? 24 : 14,
             fontWeight: f.primary ? 700 : 400,
-            color: "var(--mantine-color-text)",
+            color: "var(--idf-text)",
           }}>{f.val}</span>
         </div>
       ))}
@@ -341,16 +341,16 @@ export function InfoSection({ node, ctx, item }) {
       {node.title && (
         <div style={{
           fontSize: 11, fontWeight: 600, textTransform: "uppercase",
-          letterSpacing: "0.06em", color: "var(--mantine-color-dimmed)",
+          letterSpacing: "0.06em", color: "var(--idf-text-muted)",
           marginBottom: 8, paddingBottom: 6,
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          borderBottom: "1px solid var(--idf-border)",
         }}>{node.title}</div>
       )}
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         {rows.map((r, i) => (
           <div key={i} style={{ display: "flex", gap: 8 }}>
-            <span style={{ fontSize: 13, color: "var(--mantine-color-dimmed)", minWidth: 100 }}>{r.label}:</span>
-            <span style={{ fontSize: 13, color: "var(--mantine-color-text)" }}>{r.val}</span>
+            <span style={{ fontSize: 13, color: "var(--idf-text-muted)", minWidth: 100 }}>{r.label}:</span>
+            <span style={{ fontSize: 13, color: "var(--idf-text)" }}>{r.val}</span>
           </div>
         ))}
       </div>
@@ -388,10 +388,10 @@ export function Timer({ node, ctx, item }) {
 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-      {node.label && <span style={{ fontSize: 12, color: "var(--mantine-color-dimmed)" }}>{node.label}:</span>}
+      {node.label && <span style={{ fontSize: 12, color: "var(--idf-text-muted)" }}>{node.label}:</span>}
       <span style={{
         fontSize: 13, fontWeight: 600,
-        color: diff <= 0 ? "var(--mantine-color-red-6, #ef4444)" : diff < 86400000 ? "var(--mantine-color-yellow-6, #f59e0b)" : "var(--mantine-color-text)",
+        color: diff <= 0 ? "var(--idf-danger, #ef4444)" : diff < 86400000 ? "var(--idf-warning, #f59e0b)" : "var(--idf-text)",
       }}>⏰ {text}</span>
     </div>
   );

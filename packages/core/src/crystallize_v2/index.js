@@ -20,6 +20,7 @@ import { generateEditProjections, buildFormSpec } from "./formGrouping.js";
 import { validateArtifact } from "./validateArtifact.js";
 import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
+import { resolvePattern } from "../patterns/index.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -64,6 +65,15 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       continue;
     }
 
+    // UX Pattern Layer: вывод поведенческого паттерна из intent-группы проекции
+    const projIntents = Object.entries(INTENTS)
+      .filter(([, intent]) => {
+        const entities = (intent.particles?.entities || []).map(e => e.split(":").pop().trim().replace(/\[\]$/, ""));
+        return !proj.mainEntity || entities.includes(proj.mainEntity);
+      })
+      .map(([id, intent]) => ({ id, ...intent }));
+    const patternResult = resolvePattern(projIntents, ONTOLOGY, proj);
+
     let slots;
     if (archetype === "form") {
       // Form-архетип: не проходит через обычный assignToSlots.
@@ -101,7 +111,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // Wizard-архетип: steps пробрасываются as-is, рендер управляется ArchetypeWizard.
       slots = { kind: "wizard", steps: proj.steps || [], projection: proj };
     } else {
-      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY);
+      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy);
     }
 
     // onItemClick: (1) явно объявленный автором в проекции, (2) выведенный из navGraph.
@@ -142,6 +152,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       domain: domainId,
       layer: "canonical",
       archetype,
+      pattern: patternResult.pattern,
       version: 2,
       generatedAt,
       generatedBy: "rules",

@@ -53,8 +53,8 @@ export default function ArchetypeCanvas({ slots, ctx }) {
 
   return (
     <div style={{
-      padding: 24, color: "var(--color-doodle-ink-light, #6b7280)",
-      fontFamily: "var(--font-doodle, system-ui)",
+      padding: 24, color: "var(--idf-text-muted, #6b7280)",
+      fontFamily: "var(--idf-font, system-ui)",
       textAlign: "center",
     }}>
       Canvas-компонент не зарегистрирован для проекции «{projectionId}»

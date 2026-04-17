@@ -65,9 +65,9 @@ export default function Overflow({ spec, ctx, item }) {
         title={spec.label || "Ещё"}
         style={{
           padding: "6px 10px", borderRadius: 6,
-          border: "1px solid var(--mantine-color-default-border)",
-          background: "var(--mantine-color-default)",
-          color: "var(--mantine-color-text)",
+          border: "1px solid var(--idf-border)",
+          background: "var(--idf-card)",
+          color: "var(--idf-text)",
           cursor: "pointer", fontSize: 14,
           display: "inline-flex", alignItems: "center", gap: 4,
         }}
@@ -79,8 +79,8 @@ export default function Overflow({ spec, ctx, item }) {
           onClick={() => setOpen(false)}
           style={{
             position: "absolute", top: "100%", right: 0, marginTop: 4,
-            background: "var(--mantine-color-body)",
-            border: "1px solid var(--mantine-color-default-border)",
+            background: "var(--idf-surface)",
+            border: "1px solid var(--idf-border)",
             borderRadius: 8,
             boxShadow: "0 4px 12px #0004", padding: 4, zIndex: 10, minWidth: 220,
             maxHeight: "60vh", overflowY: "auto",

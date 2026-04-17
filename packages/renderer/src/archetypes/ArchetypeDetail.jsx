@@ -102,15 +102,15 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--mantine-color-body)",
+      background: "var(--idf-surface)",
       overflowX: "hidden", maxWidth: "100%",
     }}>
       {(slots.header?.length > 0 || canEdit) && (
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "12px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
           flexWrap: "wrap", minWidth: 0,
         }}>
           <SlotRenderer items={slots.header} ctx={ctx} contextItem={target} />
@@ -137,8 +137,8 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
           padding: "8px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
           flexWrap: "wrap", minWidth: 0, maxWidth: "100%",
           boxSizing: "border-box",
         }}>

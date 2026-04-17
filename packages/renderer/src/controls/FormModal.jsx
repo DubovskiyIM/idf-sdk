@@ -45,7 +45,7 @@ export default function FormModal({ spec, ctx, overlayContext, onClose }) {
   return (
     <ModalShell onClose={onClose} title={spec.title || spec.label || spec.intentId}>
       {spec.witnessPanel?.length > 0 && (
-        <div style={{ padding: 12, background: "var(--mantine-color-default-hover)", borderRadius: 6, marginBottom: 16 }}>
+        <div style={{ padding: 12, background: "var(--idf-hover)", borderRadius: 6, marginBottom: 16 }}>
           {spec.witnessPanel.map((w, i) => (
             <SlotRenderer key={i} item={w} ctx={ctx} />
           ))}
@@ -69,9 +69,9 @@ export default function FormModal({ spec, ctx, overlayContext, onClose }) {
           onClick={onClose}
           style={{
             padding: "8px 16px", borderRadius: 6,
-            border: "1px solid var(--mantine-color-default-border)",
-            background: "var(--mantine-color-default)",
-            color: "var(--mantine-color-text)",
+            border: "1px solid var(--idf-border)",
+            background: "var(--idf-card)",
+            color: "var(--idf-text)",
             cursor: "pointer", fontSize: 13,
           }}
         >Отмена</button>
@@ -80,7 +80,7 @@ export default function FormModal({ spec, ctx, overlayContext, onClose }) {
           disabled={submitting}
           style={{
             padding: "8px 16px", borderRadius: 6, border: "none",
-            background: "var(--mantine-color-indigo-6)", color: "#fff",
+            background: "var(--idf-accent)", color: "#fff",
             cursor: submitting ? "default" : "pointer",
             fontSize: 13, fontWeight: 600, opacity: submitting ? 0.6 : 1,
           }}
@@ -115,7 +115,7 @@ export function ModalShell({ children, onClose, title }) {
       <div
         onClick={e => e.stopPropagation()}
         style={{
-          background: "var(--mantine-color-body)", borderRadius: 12, padding: 20,
+          background: "var(--idf-surface)", borderRadius: 12, padding: 20,
           minWidth: 360, maxWidth: 560, maxHeight: "80vh", overflow: "auto",
           boxShadow: "0 20px 50px #0004",
         }}

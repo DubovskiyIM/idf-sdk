@@ -1,0 +1,25 @@
+/* IDF Token Bridge — semantic CSS variables for adapter-agnostic rendering.
+   Each adapter overrides these in its theme.css. Defaults = neutral light theme. */
+:root {
+  --idf-primary: #6366f1;
+  --idf-primary-light: rgba(99, 102, 241, 0.08);
+  --idf-primary-border: rgba(99, 102, 241, 0.3);
+  --idf-surface: #ffffff;
+  --idf-card: #ffffff;
+  --idf-border: #e5e7eb;
+  --idf-hover: #f9fafb;
+  --idf-text: #1f2937;
+  --idf-text-muted: #9ca3af;
+  --idf-danger: #ef4444;
+  --idf-danger-light: rgba(239, 68, 68, 0.08);
+  --idf-danger-text: #dc2626;
+  --idf-success: #0d9488;
+  --idf-warning: #f59e0b;
+  --idf-accent: #6366f1;
+  --idf-accent-light: rgba(99, 102, 241, 0.06);
+  --idf-gray-1: #f9fafb;
+  --idf-gray-3: #d1d5db;
+  --idf-gray-7: #374151;
+  --idf-font: system-ui, -apple-system, sans-serif;
+  --idf-radius: 8px;
+}

@@ -1,0 +1,24 @@
+/* AntD enterprise-fintech adapter — IDF Token Bridge overrides. */
+[data-adapter="antd"] {
+  --idf-primary: #1677ff;
+  --idf-primary-light: rgba(22, 119, 255, 0.08);
+  --idf-primary-border: rgba(22, 119, 255, 0.3);
+  --idf-surface: #ffffff;
+  --idf-card: #ffffff;
+  --idf-border: #d9d9d9;
+  --idf-hover: #f5f5f5;
+  --idf-text: rgba(0, 0, 0, 0.88);
+  --idf-text-muted: rgba(0, 0, 0, 0.45);
+  --idf-danger: #ff4d4f;
+  --idf-danger-light: rgba(255, 77, 79, 0.06);
+  --idf-danger-text: #cf1322;
+  --idf-success: #52c41a;
+  --idf-warning: #faad14;
+  --idf-accent: #1677ff;
+  --idf-accent-light: rgba(22, 119, 255, 0.06);
+  --idf-gray-1: #fafafa;
+  --idf-gray-3: #d9d9d9;
+  --idf-gray-7: #434343;
+  --idf-font: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --idf-radius: 6px;
+}

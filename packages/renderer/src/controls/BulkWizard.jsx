@@ -71,14 +71,14 @@ export default function BulkWizard({ spec, ctx, onClose }) {
             display: "flex", alignItems: "center", justifyContent: "space-between",
             marginBottom: 10,
           }}>
-            <span style={{ fontSize: 13, color: "var(--mantine-color-dimmed)" }}>
+            <span style={{ fontSize: 13, color: "var(--idf-text-muted)" }}>
               Доступно: {filtered.length} · выбрано: {selected.size}
             </span>
             <button
               onClick={toggleAll}
               style={{
-                padding: "4px 10px", borderRadius: 6, border: "1px solid var(--mantine-color-default-border)",
-                background: "var(--mantine-color-default)", cursor: "pointer", fontSize: 12,
+                padding: "4px 10px", borderRadius: 6, border: "1px solid var(--idf-border)",
+                background: "var(--idf-card)", cursor: "pointer", fontSize: 12,
               }}
             >
               {selected.size === filtered.length && filtered.length > 0 ? "Снять всё" : "Выбрать всё"}
@@ -86,17 +86,17 @@ export default function BulkWizard({ spec, ctx, onClose }) {
           </div>
           <div style={{
             maxHeight: 320, overflow: "auto",
-            border: "1px solid var(--mantine-color-default-border)", borderRadius: 6, marginBottom: 16,
+            border: "1px solid var(--idf-border)", borderRadius: 6, marginBottom: 16,
           }}>
             {filtered.length === 0 && (
-              <div style={{ padding: 20, color: "var(--mantine-color-dimmed)", fontSize: 13, textAlign: "center" }}>
+              <div style={{ padding: 20, color: "var(--idf-text-muted)", fontSize: 13, textAlign: "center" }}>
                 Нет элементов
               </div>
             )}
             {filtered.map(item => (
               <label key={item.id} style={{
                 display: "flex", alignItems: "center", gap: 10,
-                padding: "8px 12px", borderBottom: "1px solid var(--mantine-color-default-border)",
+                padding: "8px 12px", borderBottom: "1px solid var(--idf-border)",
                 cursor: "pointer",
               }}>
                 <input
@@ -104,7 +104,7 @@ export default function BulkWizard({ spec, ctx, onClose }) {
                   checked={selected.has(item.id)}
                   onChange={() => toggleItem(item.id)}
                 />
-                <span style={{ fontSize: 13, color: "var(--mantine-color-text)", flex: 1 }}>
+                <span style={{ fontSize: 13, color: "var(--idf-text)", flex: 1 }}>
                   {itemLabel(item)}
                 </span>
               </label>
@@ -117,7 +117,7 @@ export default function BulkWizard({ spec, ctx, onClose }) {
               disabled={selected.size === 0}
               style={{
                 ...btnPrimary,
-                background: selected.size > 0 ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default)",
+                background: selected.size > 0 ? "var(--idf-primary, #6366f1)" : "var(--idf-card)",
                 cursor: selected.size > 0 ? "pointer" : "default",
               }}
             >Далее ({selected.size})</button>
@@ -127,15 +127,15 @@ export default function BulkWizard({ spec, ctx, onClose }) {
 
       {step === "summary" && (
         <>
-          <p style={{ fontSize: 14, color: "var(--mantine-color-text)" }}>
+          <p style={{ fontSize: 14, color: "var(--idf-text)" }}>
             Применить действие «{spec.label}» к <strong>{selected.size}</strong>{" "}
             {selected.size === 1 ? "элементу" : "элементам"}?
           </p>
           <div style={{
             maxHeight: 180, overflow: "auto",
-            background: "var(--mantine-color-default-hover)", border: "1px solid var(--mantine-color-default-border)",
+            background: "var(--idf-hover)", border: "1px solid var(--idf-border)",
             borderRadius: 6, padding: 8, margin: "12px 0",
-            fontSize: 12, color: "var(--mantine-color-dimmed)",
+            fontSize: 12, color: "var(--idf-text-muted)",
           }}>
             {Array.from(selected).map(id => {
               const it = filtered.find(i => i.id === id);
@@ -153,11 +153,11 @@ export default function BulkWizard({ spec, ctx, onClose }) {
 
       {step === "progress" && (
         <div style={{ padding: "20px 0" }}>
-          <p style={{ fontSize: 14, color: "var(--mantine-color-text)", marginBottom: 12 }}>
+          <p style={{ fontSize: 14, color: "var(--idf-text)", marginBottom: 12 }}>
             Выполнение… {progress} / {selected.size}
           </p>
           <div style={{
-            width: "100%", height: 8, borderRadius: 4, background: "var(--mantine-color-default-border)",
+            width: "100%", height: 8, borderRadius: 4, background: "var(--idf-border)",
             overflow: "hidden",
           }}>
             <div style={{
@@ -171,7 +171,7 @@ export default function BulkWizard({ spec, ctx, onClose }) {
 
       {step === "done" && (
         <>
-          <p style={{ fontSize: 14, color: "var(--mantine-color-text)" }}>
+          <p style={{ fontSize: 14, color: "var(--idf-text)" }}>
             ✓ Готово. Обработано {selected.size - errorIds.length} из {selected.size}.
           </p>
           {errorIds.length > 0 && (
@@ -191,8 +191,8 @@ export default function BulkWizard({ spec, ctx, onClose }) {
 }
 
 const btnSecondary = {
-  padding: "8px 16px", borderRadius: 6, border: "1px solid var(--mantine-color-default-border)",
-  background: "var(--mantine-color-default)", color: "var(--mantine-color-text)", cursor: "pointer", fontSize: 13,
+  padding: "8px 16px", borderRadius: 6, border: "1px solid var(--idf-border)",
+  background: "var(--idf-card)", color: "var(--idf-text)", cursor: "pointer", fontSize: 13,
 };
 
 const btnPrimary = {

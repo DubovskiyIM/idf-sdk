@@ -39,11 +39,11 @@ export default function InlineSearch({ spec, ctx }) {
     <form onSubmit={onSubmit} style={{
       display: "flex", alignItems: "center", gap: 6,
       padding: "6px 12px", borderRadius: 20,
-      border: "1px solid var(--mantine-color-default-border)",
-      background: "var(--mantine-color-default)",
+      border: "1px solid var(--idf-border)",
+      background: "var(--idf-card)",
       minWidth: 220,
     }}>
-      <Icon emoji={spec.icon || "🔍"} size={14} style={{ color: "var(--mantine-color-dimmed)" }} />
+      <Icon emoji={spec.icon || "🔍"} size={14} style={{ color: "var(--idf-text-muted)" }} />
       <input
         ref={inputRef}
         type="search"
@@ -53,7 +53,7 @@ export default function InlineSearch({ spec, ctx }) {
         style={{
           flex: 1, border: "none", outline: "none",
           fontSize: 13, background: "transparent",
-          color: "var(--mantine-color-text)",
+          color: "var(--idf-text)",
           fontFamily: "system-ui, sans-serif",
           lineHeight: 1.2,
         }}
@@ -64,7 +64,7 @@ export default function InlineSearch({ spec, ctx }) {
           onClick={() => setValue("")}
           style={{
             background: "none", border: "none", cursor: "pointer",
-            fontSize: 12, color: "var(--mantine-color-dimmed)", padding: 0,
+            fontSize: 12, color: "var(--idf-text-muted)", padding: 0,
             lineHeight: 1,
           }}
           title="Очистить"

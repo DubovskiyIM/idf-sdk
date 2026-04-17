@@ -25,15 +25,15 @@ export default class ArchetypeErrorBoundary extends Component {
       return (
         <div style={{
           padding: 24, margin: 16, borderRadius: 8,
-          background: "var(--mantine-color-red-light, #fef2f2)",
-          border: "1px solid var(--mantine-color-red-light-color, #fca5a5)",
+          background: "var(--idf-danger-light, #fef2f2)",
+          border: "1px solid var(--idf-danger-text, #fca5a5)",
         }}>
-          <div style={{ fontWeight: 600, color: "var(--mantine-color-red-filled, #dc2626)", marginBottom: 8, fontSize: 14 }}>
+          <div style={{ fontWeight: 600, color: "var(--idf-danger, #dc2626)", marginBottom: 8, fontSize: 14 }}>
             Ошибка рендера{this.props.archetype ? ` (${this.props.archetype})` : ""}
           </div>
           <pre style={{
-            fontSize: 11, color: "var(--mantine-color-text, #374151)",
-            background: "var(--mantine-color-body, #fff)", padding: 12,
+            fontSize: 11, color: "var(--idf-text, #374151)",
+            background: "var(--idf-surface, #fff)", padding: 12,
             borderRadius: 6, overflow: "auto", maxHeight: 200,
             whiteSpace: "pre-wrap", wordBreak: "break-word",
           }}>
@@ -44,9 +44,9 @@ export default class ArchetypeErrorBoundary extends Component {
             onClick={() => this.setState({ error: null, errorInfo: null })}
             style={{
               marginTop: 8, padding: "6px 16px", borderRadius: 6,
-              border: "1px solid var(--mantine-color-default-border, #d1d5db)",
-              background: "var(--mantine-color-body, #fff)",
-              color: "var(--mantine-color-text, #374151)",
+              border: "1px solid var(--idf-border, #d1d5db)",
+              background: "var(--idf-surface, #fff)",
+              color: "var(--idf-text, #374151)",
               fontSize: 12, cursor: "pointer",
             }}
           >

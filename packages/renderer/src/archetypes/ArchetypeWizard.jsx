@@ -11,9 +11,9 @@ function ItemCard({ item, step, isSelected, onSelect }) {
       style={{
         cursor: "pointer", padding: 14, borderRadius: 8,
         border: isSelected
-          ? "2px solid var(--mantine-color-primary, #6366f1)"
-          : "1px solid var(--mantine-color-default-border)",
-        background: "var(--mantine-color-default)",
+          ? "2px solid var(--idf-primary, #6366f1)"
+          : "1px solid var(--idf-border)",
+        background: "var(--idf-card)",
         display: "flex", justifyContent: "space-between", alignItems: "center",
         transition: "border-color 0.15s",
       }}
@@ -23,7 +23,7 @@ function ItemCard({ item, step, isSelected, onSelect }) {
           <div key={field} style={{
             fontSize: fi === 0 ? 15 : 13,
             fontWeight: fi === 0 ? 600 : 400,
-            color: fi === 0 ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
+            color: fi === 0 ? "var(--idf-text)" : "var(--idf-text-muted)",
           }}>
             {fi > 0 && <span>{humanLabel(field)}: </span>}
             {humanValue(field, item[field]) ?? "—"}
@@ -33,7 +33,7 @@ function ItemCard({ item, step, isSelected, onSelect }) {
         ))}
       </div>
       {isSelected && (
-        <span style={{ color: "var(--mantine-color-primary, #6366f1)", fontSize: 20, fontWeight: 700 }}>✓</span>
+        <span style={{ color: "var(--idf-primary, #6366f1)", fontSize: 20, fontWeight: 700 }}>✓</span>
       )}
     </div>
   );
@@ -77,7 +77,7 @@ function GroupedList({ items, step, collected, onSelect, world }) {
         <div key={cat.id}>
           <div style={{
             fontSize: 14, fontWeight: 600, marginBottom: 8,
-            color: "var(--mantine-color-text)",
+            color: "var(--idf-text)",
             display: "flex", alignItems: "center", gap: 6,
           }}>
             {cat[gb.iconField] && <span>{cat[gb.iconField]}</span>}
@@ -92,7 +92,7 @@ function GroupedList({ items, step, collected, onSelect, world }) {
       ))}
       {ungrouped.length > 0 && (
         <div>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "var(--mantine-color-dimmed)" }}>Другое</div>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8, color: "var(--idf-text-muted)" }}>Другое</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {ungrouped.map(item => (
               <ItemCard key={item.id} item={item} step={step} isSelected={collected[step.id]?.id === item.id} onSelect={onSelect} />
@@ -135,9 +135,9 @@ function CalendarView({ items, step, collected, onSelect }) {
             onClick={() => setSelectedDate(d)}
             style={{
               padding: "8px 14px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-              border: d === selectedDate ? "2px solid var(--mantine-color-primary, #6366f1)" : "1px solid var(--mantine-color-default-border)",
-              background: d === selectedDate ? "var(--mantine-color-primary-light, #eef2ff)" : "var(--mantine-color-default)",
-              color: d === selectedDate ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-text)",
+              border: d === selectedDate ? "2px solid var(--idf-primary, #6366f1)" : "1px solid var(--idf-border)",
+              background: d === selectedDate ? "var(--idf-primary-light, #eef2ff)" : "var(--idf-card)",
+              color: d === selectedDate ? "var(--idf-primary, #6366f1)" : "var(--idf-text)",
               cursor: "pointer", whiteSpace: "nowrap",
             }}
           >
@@ -148,7 +148,7 @@ function CalendarView({ items, step, collected, onSelect }) {
 
       {/* Time slots grid */}
       {daySlots.length === 0 ? (
-        <div style={{ padding: 16, textAlign: "center", color: "var(--mantine-color-dimmed)" }}>
+        <div style={{ padding: 16, textAlign: "center", color: "var(--idf-text-muted)" }}>
           Нет свободных слотов на эту дату
         </div>
       ) : (
@@ -161,9 +161,9 @@ function CalendarView({ items, step, collected, onSelect }) {
                 onClick={() => onSelect(slot)}
                 style={{
                   padding: "10px 18px", borderRadius: 8, fontSize: 14, fontWeight: 500,
-                  border: isSelected ? "2px solid var(--mantine-color-primary, #6366f1)" : "1px solid var(--mantine-color-default-border)",
-                  background: isSelected ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default)",
-                  color: isSelected ? "#fff" : "var(--mantine-color-text)",
+                  border: isSelected ? "2px solid var(--idf-primary, #6366f1)" : "1px solid var(--idf-border)",
+                  background: isSelected ? "var(--idf-primary, #6366f1)" : "var(--idf-card)",
+                  color: isSelected ? "#fff" : "var(--idf-text)",
                   cursor: "pointer", transition: "all 0.15s",
                 }}
               >
@@ -277,7 +277,7 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
 
   const AdaptedPaper = getAdaptedComponent("primitive", "paper");
   const Paper = AdaptedPaper || (({ children, ...props }) => (
-    <div style={{ padding: 16, border: "1px solid var(--mantine-color-default-border)", borderRadius: 8, ...props.style }}>{children}</div>
+    <div style={{ padding: 16, border: "1px solid var(--idf-border)", borderRadius: 8, ...props.style }}>{children}</div>
   ));
 
   return (
@@ -290,20 +290,20 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
               width: 28, height: 28, borderRadius: "50%",
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 13, fontWeight: 600,
-              background: i === currentStep ? "var(--mantine-color-primary, #6366f1)"
-                : i < currentStep ? "var(--mantine-color-teal-6, #0d9488)"
-                : "var(--mantine-color-default, #e5e7eb)",
-              color: i <= currentStep ? "#fff" : "var(--mantine-color-dimmed, #6b7280)",
+              background: i === currentStep ? "var(--idf-primary, #6366f1)"
+                : i < currentStep ? "var(--idf-success, #0d9488)"
+                : "var(--idf-card, #e5e7eb)",
+              color: i <= currentStep ? "#fff" : "var(--idf-text-muted, #6b7280)",
             }}>
               {i < currentStep ? "✓" : i + 1}
             </div>
             <span style={{
               fontSize: 13,
               fontWeight: i === currentStep ? 600 : 400,
-              color: i === currentStep ? "var(--mantine-color-text)" : "var(--mantine-color-dimmed)",
+              color: i === currentStep ? "var(--idf-text)" : "var(--idf-text-muted)",
             }}>{s.label}</span>
             {i < steps.length - 1 && (
-              <div style={{ width: 24, height: 1, background: "var(--mantine-color-default-border)" }} />
+              <div style={{ width: 24, height: 1, background: "var(--idf-border)" }} />
             )}
           </div>
         ))}
@@ -312,7 +312,7 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
       {/* Step body */}
       {step.summary ? (
         <Paper>
-          <h3 style={{ margin: "0 0 16px", fontSize: 16, color: "var(--mantine-color-text)" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 16, color: "var(--idf-text)" }}>
             Подтверждение
           </h3>
           {steps.filter(s => collected[s.id]).map(s => {
@@ -322,18 +322,18 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
               || data.id;
             return (
               <div key={s.id} style={{ marginBottom: 12 }}>
-                <div style={{ fontSize: 12, color: "var(--mantine-color-dimmed)", marginBottom: 4 }}>
+                <div style={{ fontSize: 12, color: "var(--idf-text-muted)", marginBottom: 4 }}>
                   {s.label}
                 </div>
-                <div style={{ fontSize: 14, color: "var(--mantine-color-text)", fontWeight: 500 }}>
+                <div style={{ fontSize: 14, color: "var(--idf-text)", fontWeight: 500 }}>
                   {displayVal}
                   {data.price != null && (
-                    <span style={{ marginLeft: 8, color: "var(--mantine-color-dimmed)" }}>
+                    <span style={{ marginLeft: 8, color: "var(--idf-text-muted)" }}>
                       {Number(data.price).toLocaleString("ru")} ₽
                     </span>
                   )}
                   {data.duration != null && (
-                    <span style={{ marginLeft: 8, color: "var(--mantine-color-dimmed)" }}>
+                    <span style={{ marginLeft: 8, color: "var(--idf-text-muted)" }}>
                       {data.duration} мин
                     </span>
                   )}
@@ -346,16 +346,16 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
               onClick={handleBack}
               style={{
                 padding: "10px 20px", background: "transparent",
-                border: "1px solid var(--mantine-color-default-border)",
+                border: "1px solid var(--idf-border)",
                 borderRadius: 8, cursor: "pointer", fontSize: 14,
-                color: "var(--mantine-color-text)",
+                color: "var(--idf-text)",
               }}
             >← Назад</button>
             <button
               onClick={handleConfirm}
               style={{
                 flex: 1, padding: "12px 0",
-                background: "var(--mantine-color-primary, #6366f1)", color: "#fff",
+                background: "var(--idf-primary, #6366f1)", color: "#fff",
                 border: "none", borderRadius: 8, fontSize: 15, fontWeight: 600,
                 cursor: "pointer",
               }}
@@ -364,11 +364,11 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
         </Paper>
       ) : (
         <>
-          <h3 style={{ margin: "0 0 12px", fontSize: 16, color: "var(--mantine-color-text)" }}>
+          <h3 style={{ margin: "0 0 12px", fontSize: 16, color: "var(--idf-text)" }}>
             {step.label}
           </h3>
           {items.length === 0 ? (
-            <div style={{ padding: 24, textAlign: "center", color: "var(--mantine-color-dimmed)" }}>
+            <div style={{ padding: 24, textAlign: "center", color: "var(--idf-text-muted)" }}>
               Нет доступных вариантов
             </div>
           ) : step.displayAs === "calendar" ? (
@@ -383,9 +383,9 @@ export default function ArchetypeWizard({ slots, projection, ctx }) {
               onClick={handleBack}
               style={{
                 marginTop: 16, padding: "8px 20px",
-                background: "transparent", border: "1px solid var(--mantine-color-default-border)",
+                background: "transparent", border: "1px solid var(--idf-border)",
                 borderRadius: 6, cursor: "pointer", fontSize: 13,
-                color: "var(--mantine-color-text)",
+                color: "var(--idf-text)",
               }}
             >← Назад</button>
           )}

@@ -331,9 +331,9 @@ function AppleOverflowMenu({ items }) {
 
 // ─── Shell ───
 
-function AppleModalShell({ opened, onClose, title, children }) {
+function AppleModalShell({ onClose, title, children }) {
   return (
-    <Dialog.Root open={opened} onOpenChange={v => { if (!v) onClose(); }}>
+    <Dialog.Root open={true} onOpenChange={v => { if (!v) onClose(); }}>
       <Dialog.Portal>
         <Dialog.Overlay style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
