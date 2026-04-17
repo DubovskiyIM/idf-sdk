@@ -165,10 +165,10 @@ describe("footer-inline-setter.structure.apply", () => {
     expect(result.toolbar).toHaveLength(1);
   });
 
-  it("пропускает intent без соответствующего toolbar-item (overlay/composer/etc)", () => {
+  it("добавляет в footer даже если toolbar пуст (intent отфильтрован ownership'ом)", () => {
     const intent = makeSingleParamReplaceIntent("set_deadline");
     const slots = {
-      toolbar: [], // intent не в toolbar (например, wrapped как composerEntry)
+      toolbar: [], // intent не дошёл до toolbar (filtered)
       footer: [],
     };
     const result = footerInlineSetter.structure.apply(slots, {
@@ -176,8 +176,10 @@ describe("footer-inline-setter.structure.apply", () => {
       intents: [intent],
       ontology,
     });
-    expect(result).toBe(slots);
-    expect(result.footer).toHaveLength(0);
+    expect(result.footer).toHaveLength(1);
+    expect(result.footer[0].intentId).toBe("set_deadline");
+    // Toolbar остаётся пустым — нечего было изымать.
+    expect(result.toolbar).toHaveLength(0);
   });
 
   it("сохраняет остальные toolbar/footer элементы и другие слоты", () => {

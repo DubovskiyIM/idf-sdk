@@ -57,14 +57,19 @@ export default {
         if (existingFooterIds.has(intentId)) continue;
         if (!isSingleValueReplaceOnMain(intent, mainEntity)) continue;
         const toolbarItem = toolbarItems.find(t => t?.intentId === intentId);
-        if (!toolbarItem) continue;
+        // Parameters: предпочитаем inferred-параметры из toolbar-элемента (их
+        // уже обработал assignToSlotsDetail через inferParameters + inferControlType).
+        // Если intent не попал в toolbar (напр. filtered ownership'ом), берём
+        // authored parameters (if any). Рендереру нужны хоть какие-то данные
+        // для input'а, иначе inline-setter не разместит контрол.
+        const parameters = toolbarItem?.parameters || intent.parameters || [];
         newFooterItems.push({
           intentId,
           label: intent.name,
           conditions: intent.particles?.conditions || [],
-          parameters: toolbarItem.parameters || [],
+          parameters,
         });
-        toolbarIdsToStrip.add(intentId);
+        if (toolbarItem) toolbarIdsToStrip.add(intentId);
       }
 
       if (newFooterItems.length === 0) return slots;
