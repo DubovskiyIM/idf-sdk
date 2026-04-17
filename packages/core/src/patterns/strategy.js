@@ -113,11 +113,16 @@ const PATTERN_STRATEGIES = {
 
   configuration: {
     itemLayout: () => "row",
-    emphasisFields: (fields) => ({
-      primary: fields.slice(0, 5),
-      secondary: [],
-      badge: [],
-    }),
+    emphasisFields: (fields, fieldRoles) => {
+      // Configuration акцентирует редактируемые поля (write-доступ)
+      const editable = fields.filter(f => {
+        const role = fieldRoles?.[f];
+        // Поля с fieldRole (money, percentage) обычно editable в settings
+        return role === "percentage" || role === "money" || role === "metric";
+      });
+      const primary = editable.length > 0 ? editable.slice(0, 5) : fields.slice(0, 5);
+      return { primary, secondary: [], badge: [] };
+    },
     preferControl: (intent, def) => {
       const effects = intent?.particles?.effects || [];
       if (effects.length > 0 && effects.every(e => e.α === "replace")) return "inline-toggle";

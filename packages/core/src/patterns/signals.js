@@ -152,8 +152,8 @@ export function effectDensity(intents, ontology, projection, match) {
   const withEffects = intents.filter(i => (i.particles?.effects || []).length > 0);
   const ratio = withEffects.length / intents.length;
 
-  if (match === "write-sparse") return ratio < 0.3;
+  if (match === "write-sparse") return ratio <= 0.3;
   if (match === "write-dense") return ratio > 0.7;
-  if (match === "balanced") return ratio >= 0.3 && ratio <= 0.7;
+  if (match === "balanced") return ratio > 0.3 && ratio <= 0.7;
   return false;
 }
