@@ -127,10 +127,20 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.
     // Feature-flag ontology.features.structureApply !== false (default true).
     const applyEnabled = ONTOLOGY?.features?.structureApply !== false;
+    let witnesses = [];
     if (applyEnabled && archetype !== "form" && archetype !== "canvas" && archetype !== "dashboard" && archetype !== "wizard") {
       const matchedAugmented = structuralPatterns.map(p => ({
         pattern: p,
         explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, proj),
+      }));
+      // witness-of-crystallization (§15): каждый matched pattern → запись в artifact.witnesses[]
+      witnesses = matchedAugmented.map(({ pattern, explain }) => ({
+        basis: "pattern-bank",
+        pattern: pattern.id,
+        reliability: "rule-based",
+        requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
+        matchFn: explain.matchFn,
+        matchOk: explain.matchOk,
       }));
       const preferences = proj.patterns || {};
       const applyContext = { ontology: ONTOLOGY, mainEntity: proj.mainEntity, intents: projIntents, projection: proj };
@@ -190,6 +200,8 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       editProjection: editProjections[projId + "_edit"] ? (projId + "_edit") : null,
       // Для form: ссылка на исходную detail
       sourceProjection: proj.sourceProjection || null,
+      // witness-of-crystallization (§15 v1.9+): pattern-bank findings
+      witnesses,
     };
 
     const validation = validateArtifact(artifact);
