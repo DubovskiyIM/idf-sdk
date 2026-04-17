@@ -30,7 +30,9 @@ function runApply(fx, projectionId) {
   });
   return {
     original: [...(projection.__originalSectionIds || [])].sort(),
-    derived: (result.artifactAfter?.sections || [])
+    // explainMatch теперь корректно кладёт результат apply в slots.sections
+    // (fix: apply работает на slots, не на артефакте).
+    derived: (result.artifactAfter?.slots?.sections || [])
       .map((s) => s.id)
       .sort(),
     artifact: result.artifactAfter,

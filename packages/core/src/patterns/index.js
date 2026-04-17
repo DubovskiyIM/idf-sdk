@@ -112,8 +112,8 @@ export function explainMatch(intents, ontology, projection, options = {}) {
   const artifactBefore = artifactsBefore[projId] || null;
 
   // artifactAfter — применение одного конкретного паттерна из previewPatternId.
-  // structure.apply принимает "bag" (в реальном pipeline — slots) и возвращает обогащённый bag.
-  // Здесь мы передаём artifactBefore целиком: apply функции спредят его и добавляют свой слот.
+  // structure.apply принимает SLOTS (не артефакт целиком) и возвращает обогащённый slots-bag.
+  // Архетипы-рендереры читают из artifact.slots.*, поэтому обогащать надо именно slot-ветку.
   let artifactAfter = null;
   let previewPatternId = null;
   if (options.previewPatternId) {
@@ -125,7 +125,8 @@ export function explainMatch(intents, ontology, projection, options = {}) {
         intents: intentsArr,
         projection,
       };
-      artifactAfter = pattern.structure.apply(artifactBefore, applyContext);
+      const nextSlots = pattern.structure.apply(artifactBefore?.slots || {}, applyContext);
+      artifactAfter = { ...artifactBefore, slots: nextSlots };
       previewPatternId = options.previewPatternId;
     }
   }

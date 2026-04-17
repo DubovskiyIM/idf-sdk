@@ -38,7 +38,10 @@ describe("explainMatch", () => {
     expect(result.artifactBefore).toBeDefined();
     expect(result.artifactAfter).toBeDefined();
     expect(result.previewPatternId).toBe("subcollections");
-    // artifactAfter has sections slot (from subcollections apply), before does not
-    expect(result.artifactAfter.sections?.length).toBeGreaterThan(0);
+    // subcollections.structure.apply пишет в slots.sections, а не в top-level sections.
+    // Архетипы-рендереры читают именно из artifact.slots.*, поэтому preview должен
+    // обогащать slot-ветку.
+    expect(result.artifactAfter.slots).toBeDefined();
+    expect(result.artifactAfter.slots.sections?.length).toBeGreaterThan(0);
   });
 });
