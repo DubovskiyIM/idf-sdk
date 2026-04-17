@@ -119,4 +119,9 @@ export {
   getDefaultRegistry,
   loadStablePatterns,
 } from "./patterns/registry.js";
-export { validatePattern, evaluateTrigger } from "./patterns/schema.js";
+export {
+  validatePattern,
+  evaluateTrigger,
+  evaluateTriggerExplained,
+} from "./patterns/schema.js";
+export { explainMatch } from "./patterns/index.js";
