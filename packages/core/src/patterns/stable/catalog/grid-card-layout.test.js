@@ -45,6 +45,18 @@ describe("grid-card-layout.structure.apply", () => {
     expect(result.body.cardSpec.title.bind).toBe("custom");
   });
 
+  it("respects author-override: body.layout='list' не перезаписывается", () => {
+    const slots = { body: { type: "list", layout: "list" } };
+    const projection = {
+      mainEntity: "Portfolio",
+      witnesses: ["name", "totalValue"],
+    };
+    const result = gridCardLayout.structure.apply(slots, { projection, ontology });
+    expect(result).toBe(slots);
+    expect(result.body.layout).toBe("list");
+    expect(result.body.cardSpec).toBeUndefined();
+  });
+
   it("обогащает cardSpec на основе witnesses + ontology", () => {
     const slots = { body: { type: "list", source: "listings" } };
     const projection = {
