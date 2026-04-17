@@ -3,6 +3,7 @@
  *
  * validatePattern(pattern) — throws при невалидном формате.
  * evaluateTrigger(trigger, intents, ontology, projection) → boolean
+ * evaluateTriggerExplained(trigger, intents, ontology, projection) → { ok, requirements, matchFn, matchOk }
  */
 
 import { inferFieldRole } from "../crystallize_v2/ontologyHelpers.js";
@@ -40,20 +41,42 @@ export function validatePattern(pattern) {
 }
 
 /**
- * Evaluate trigger условия. Все requires — AND. match() вызывается после requires.
+ * Explained form of evaluateTrigger — per-requirement результат + исход match().
+ * Используется explainMatch для ответа на вопрос "почему этот паттерн не сматчился".
+ *
+ * Возвращает:
+ *   { ok, requirements: [{kind, spec, ok}], matchFn: boolean, matchOk: boolean|null }
+ *
+ * Все requires — AND. match() вызывается только если все requires прошли.
+ */
+export function evaluateTriggerExplained(trigger, intents, ontology, projection) {
+  const mainEntity = projection?.mainEntity;
+  const requirements = (trigger.requires || []).map(req => ({
+    kind: req.kind,
+    spec: req,
+    ok: evaluateRequirement(req, intents, ontology, mainEntity),
+  }));
+  const requiresOk = requirements.every(r => r.ok);
+  const matchFn = typeof trigger.match === "function";
+  let matchOk = null;
+  if (requiresOk && matchFn) {
+    matchOk = !!trigger.match(intents, ontology, projection);
+  } else if (requiresOk && !matchFn) {
+    matchOk = true;
+  }
+  return {
+    ok: requiresOk && (matchFn ? !!matchOk : true),
+    requirements,
+    matchFn,
+    matchOk,
+  };
+}
+
+/**
+ * Evaluate trigger условия. Тонкий wrapper вокруг evaluateTriggerExplained → .ok.
  */
 export function evaluateTrigger(trigger, intents, ontology, projection) {
-  const mainEntity = projection?.mainEntity;
-
-  for (const req of trigger.requires || []) {
-    if (!evaluateRequirement(req, intents, ontology, mainEntity)) return false;
-  }
-
-  if (typeof trigger.match === "function") {
-    return trigger.match(intents, ontology, projection);
-  }
-
-  return true;
+  return evaluateTriggerExplained(trigger, intents, ontology, projection).ok;
 }
 
 function resolveVar(value, mainEntity) {

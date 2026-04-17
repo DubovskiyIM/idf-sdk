@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { createRegistry } from "./registry.js";
+import { createRegistry, loadStablePatterns } from "./registry.js";
 
 const mockPattern = {
   id: "test-hero-create", version: 1, status: "stable", archetype: "catalog",
@@ -90,5 +90,60 @@ describe("registry", () => {
     expect(result.total).toBe(2);
     expect(result.covered).toBe(1); // only detail matches
     expect(result.rate).toBe(0.5);
+  });
+});
+
+describe("matchPatterns with includeNearMiss", () => {
+  let registry;
+  beforeEach(() => {
+    registry = createRegistry();
+    loadStablePatterns(registry);
+  });
+
+  const ontology = {
+    entities: {
+      Poll: {
+        fields: { status: { type: "select", options: ["open", "closed"] } },  // 2 options, not 3
+      },
+    },
+  };
+  const intents = [
+    { id: "close_poll", particles: { effects: [{ α: "replace", target: "poll.status", value: "closed" }] } },
+  ];
+  const projection = { mainEntity: "Poll", kind: "detail" };
+
+  it("returns matched array when no includeNearMiss", () => {
+    const result = registry.matchPatterns(intents, ontology, projection);
+    expect(Array.isArray(result)).toBe(true);   // legacy array shape
+  });
+
+  it("returns { matched, nearMiss } when includeNearMiss=true", () => {
+    const result = registry.matchPatterns(intents, ontology, projection, { includeNearMiss: true });
+    expect(result).toHaveProperty("matched");
+    expect(result).toHaveProperty("nearMiss");
+    expect(Array.isArray(result.matched)).toBe(true);
+    expect(Array.isArray(result.nearMiss)).toBe(true);
+  });
+
+  it("detects near-miss when exactly one requirement fails", () => {
+    // phase-aware-primary-cta: requires minOptions 3 (fails), and intent-effect (passes)
+    const result = registry.matchPatterns(intents, ontology, projection, { includeNearMiss: true });
+    const nearIds = result.nearMiss.map(m => m.pattern.id);
+    expect(nearIds).toContain("phase-aware-primary-cta");
+    const entry = result.nearMiss.find(m => m.pattern.id === "phase-aware-primary-cta");
+    expect(entry.missing).toBe(1);
+    expect(entry.explain.requirements.some(r => !r.ok)).toBe(true);
+  });
+
+  it("does not include full-match patterns in nearMiss", () => {
+    const ontology2 = {
+      entities: {
+        Poll: { fields: { status: { type: "select", options: ["a", "b", "c"] } } },
+      },
+    };
+    const result = registry.matchPatterns(intents, ontology2, projection, { includeNearMiss: true });
+    const matchedIds = result.matched.map(m => m.pattern.id);
+    const nearIds = result.nearMiss.map(m => m.pattern.id);
+    for (const id of matchedIds) expect(nearIds).not.toContain(id);
   });
 });

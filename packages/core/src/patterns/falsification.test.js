@@ -233,8 +233,11 @@ describe("Pattern Bank Falsification", () => {
     it("shouldMatch: planning/poll_overview", () => {
       expect(match("planning", "poll_overview", registry).some(p => p.id === "footer-inline-setter")).toBe(true);
     });
-    it("shouldNotMatch: invest/portfolio_detail", () => {
-      expect(match("invest", "portfolio_detail", registry).some(p => p.id === "footer-inline-setter")).toBe(false);
+    it("shouldMatch: invest/portfolio_detail (rename_portfolio: 1 replace на portfolio.name)", () => {
+      expect(match("invest", "portfolio_detail", registry).some(p => p.id === "footer-inline-setter")).toBe(true);
+    });
+    it("shouldNotMatch: sales/listing_detail (только α:add, нет replace-setter)", () => {
+      expect(match("sales", "listing_detail", registry).some(p => p.id === "footer-inline-setter")).toBe(false);
     });
   });
 

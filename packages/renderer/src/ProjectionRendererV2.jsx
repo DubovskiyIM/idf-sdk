@@ -18,8 +18,31 @@ const ARCHETYPES = {
   wizard: ArchetypeWizard,
 };
 
+/**
+ * ProjectionRendererV2 — рендерер артефакта v2.
+ *
+ * `artifactOverride` (v1.8, §27 authoring-env):
+ *   Dev-only prop для preview-режима PatternInspector и других инструментов
+ *   среды авторства. Когда передан truthy-артефакт, он имеет приоритет над
+ *   обычным `artifact` prop и используется напрямую, минуя штатную деривацию.
+ *   Это НЕ §17.3 personal-layer — override не должен попадать в production
+ *   user-facing пути. Когда `artifactOverride` отсутствует/null — поведение
+ *   не меняется, используется `artifact`.
+ *
+ *   NB: текущий рендерер получает уже-кристаллизованный артефакт как prop
+ *   (внутренний crystallize не вызывается), поэтому семантически
+ *   `artifactOverride` — alias с явным приоритетом.
+ *
+ * `previewPatternId` (v1.8, §27 authoring-env):
+ *   Dev-only prop — идентификатор паттерна, применённого в preview-режиме.
+ *   Прокидывается в ctx и используется архетипами для визуального overlay
+ *   (PatternPreviewOverlay) над секциями/слотами, помеченными `source:
+ *   "derived:..."`. Когда отсутствует — overlay не рендерится.
+ */
 export default function ProjectionRendererV2({
   artifact,
+  artifactOverride,
+  previewPatternId,
   projection,
   world,
   exec,
@@ -33,11 +56,14 @@ export default function ProjectionRendererV2({
   artifacts,
   allProjections,
 }) {
-  if (!artifact) {
+  // §27 authoring-env: override имеет приоритет над artifact (dev-only).
+  const effectiveArtifact = artifactOverride || artifact;
+
+  if (!effectiveArtifact) {
     return <div style={{ padding: 20, color: "#9ca3af", textAlign: "center" }}>Нет артефакта</div>;
   }
 
-  const validation = validateArtifact(artifact);
+  const validation = validateArtifact(effectiveArtifact);
   if (!validation.ok) {
     return (
       <div style={{ padding: 20, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8 }}>
@@ -49,11 +75,11 @@ export default function ProjectionRendererV2({
     );
   }
 
-  const Archetype = ARCHETYPES[artifact.archetype];
+  const Archetype = ARCHETYPES[effectiveArtifact.archetype];
   if (!Archetype) {
     return (
       <div style={{ padding: 20, color: "#9ca3af" }}>
-        Архетип "{artifact.archetype}" пока не поддержан.
+        Архетип "{effectiveArtifact.archetype}" пока не поддержан.
       </div>
     );
   }
@@ -77,18 +103,19 @@ export default function ProjectionRendererV2({
     exec: wrappedExec,
     execBatch: wrappedExecBatch,
     theme,
-    artifact,
+    artifact: effectiveArtifact,
     viewerContext,
     routeParams,
     navigate,
     back,
     artifacts,
     allProjections,
+    previewPatternId,
   };
 
   return (
-    <ArchetypeErrorBoundary archetype={artifact.archetype} key={artifact.projection}>
-      <Archetype slots={artifact.slots} nav={artifact.nav} ctx={ctx} projection={projection} />
+    <ArchetypeErrorBoundary archetype={effectiveArtifact.archetype} key={effectiveArtifact.projection}>
+      <Archetype slots={effectiveArtifact.slots} nav={effectiveArtifact.nav} ctx={ctx} projection={projection} />
     </ArchetypeErrorBoundary>
   );
 }

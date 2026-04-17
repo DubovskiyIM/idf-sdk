@@ -3,7 +3,7 @@
  * Factory function createRegistry() для изоляции (тесты, multiple instances).
  */
 
-import { validatePattern, evaluateTrigger } from "./schema.js";
+import { validatePattern, evaluateTriggerExplained } from "./schema.js";
 
 export function createRegistry() {
   const patterns = new Map();
@@ -24,15 +24,35 @@ export function createRegistry() {
     return [...patterns.values()].filter(p => p.status === status);
   }
 
-  function matchPatterns(intents, ontology, projection) {
+  function matchPatterns(intents, ontology, projection, options = {}) {
     const matched = [];
+    const nearMiss = [];
+    const includeNearMiss = options.includeNearMiss === true;
     for (const pattern of getAllPatterns("stable")) {
       if (pattern.archetype && pattern.archetype !== (projection?.kind || "catalog")) continue;
-      if (evaluateTrigger(pattern.trigger, intents, ontology, projection)) {
-        matched.push(pattern);
+      const explain = evaluateTriggerExplained(pattern.trigger, intents, ontology, projection);
+      if (explain.ok) {
+        matched.push({ pattern, explain });
+        continue;
+      }
+      if (!includeNearMiss) continue;
+      // total = число «слотов» условий: все requires + match() если задан.
+      // passed = сколько из них прошли. missing === 1 ⇒ near-miss (ровно одно условие не сработало).
+      const total = explain.requirements.length + (explain.matchFn ? 1 : 0);
+      const passedReqs = explain.requirements.filter(r => r.ok).length;
+      const matchPassed = explain.matchFn && explain.matchOk === true ? 1 : 0;
+      const passed = passedReqs + matchPassed;
+      const missing = total - passed;
+      if (missing === 1) {
+        nearMiss.push({
+          pattern,
+          explain,
+          missing: explain.requirements.some(r => !r.ok) ? 1 : "match-fn",
+        });
       }
     }
-    return matched;
+    if (includeNearMiss) return { matched, nearMiss };
+    return matched.map(m => m.pattern);   // legacy array shape
   }
 
   function measureCoverage(domains) {

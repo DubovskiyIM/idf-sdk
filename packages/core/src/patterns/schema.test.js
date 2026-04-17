@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { validatePattern, evaluateTrigger } from "./schema.js";
+import { validatePattern, evaluateTrigger, evaluateTriggerExplained } from "./schema.js";
 
 describe("validatePattern", () => {
   const validPattern = {
@@ -155,5 +155,65 @@ describe("evaluateTrigger", () => {
     };
     evaluateTrigger(trigger, [], ontology, { mainEntity: "Poll" });
     expect(called).toBe(false);
+  });
+});
+
+describe("evaluateTriggerExplained", () => {
+  const ontology = {
+    entities: {
+      Poll: { fields: { status: { type: "select", options: ["open", "closed", "draft"] } } },
+    },
+  };
+  const intents = [
+    { id: "close_poll", particles: { effects: [{ α: "replace", target: "poll.status", value: "closed" }] } },
+  ];
+  const projection = { mainEntity: "Poll", kind: "detail" };
+
+  it("returns per-requirement results when all pass", () => {
+    const trigger = {
+      requires: [
+        { kind: "entity-field", field: "status", type: "select", minOptions: 3 },
+        { kind: "intent-effect", α: "replace", targetSuffix: ".status" },
+      ],
+    };
+    const result = evaluateTriggerExplained(trigger, intents, ontology, projection);
+    expect(result.ok).toBe(true);
+    expect(result.requirements).toHaveLength(2);
+    expect(result.requirements.every(r => r.ok)).toBe(true);
+    expect(result.requirements[0].kind).toBe("entity-field");
+    expect(result.requirements[0].spec).toMatchObject({ field: "status" });
+  });
+
+  it("returns per-requirement failures", () => {
+    const trigger = {
+      requires: [
+        { kind: "entity-field", field: "status", type: "select", minOptions: 3 },
+        { kind: "intent-effect", α: "create", targetSuffix: ".status" },  // fails
+      ],
+    };
+    const result = evaluateTriggerExplained(trigger, intents, ontology, projection);
+    expect(result.ok).toBe(false);
+    expect(result.requirements[0].ok).toBe(true);
+    expect(result.requirements[1].ok).toBe(false);
+  });
+
+  it("evaluates match() function when requires pass", () => {
+    const trigger = {
+      requires: [{ kind: "entity-field", field: "status", type: "select", minOptions: 3 }],
+      match: () => false,
+    };
+    const result = evaluateTriggerExplained(trigger, intents, ontology, projection);
+    expect(result.ok).toBe(false);
+    expect(result.requirements[0].ok).toBe(true);
+    expect(result.matchFn).toBe(true);
+    expect(result.matchOk).toBe(false);
+  });
+
+  it("evaluateTrigger legacy wrapper matches explained.ok", () => {
+    const trigger = {
+      requires: [{ kind: "entity-field", field: "status", type: "select", minOptions: 3 }],
+    };
+    expect(evaluateTrigger(trigger, intents, ontology, projection))
+      .toBe(evaluateTriggerExplained(trigger, intents, ontology, projection).ok);
   });
 });
