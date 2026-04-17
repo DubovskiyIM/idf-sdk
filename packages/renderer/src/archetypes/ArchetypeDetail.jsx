@@ -9,6 +9,7 @@ import { evalIntentCondition } from "../eval.js";
 import { getAdaptedComponent } from "../adapters/registry.js";
 import Icon from "../adapters/Icon.jsx";
 import EmptyState from "../primitives/EmptyState.jsx";
+import PatternPreviewOverlay from "../slots/PatternPreviewOverlay.jsx";
 
 /**
  * Detail-архетип: показывает одну сущность по mainEntity+idParam из routeParams.
@@ -169,15 +170,28 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
 
           {/* Sub-collection секции (M4 step B). Каждая секция — блок с заголовком,
               inline-композером добавления (если разрешён в текущей фазе) и
-              списком items с per-item кнопками. */}
-          {(slots.sections || []).map(section => (
-            <SubCollectionSection
-              key={section.id}
-              section={section}
-              target={target}
-              ctx={ctx}
-            />
-          ))}
+              списком items с per-item кнопками.
+              §27 authoring-env (v1.8): если секция добавлена pattern.apply
+              (source: "derived:…") и рендерер в preview-режиме
+              (ctx.previewPatternId задан), оборачиваем в PatternPreviewOverlay
+              — dashed-border + corner-badge с patternId. */}
+          {(slots.sections || []).map(section => {
+            if (ctx.previewPatternId && section.source?.startsWith("derived:")) {
+              return (
+                <PatternPreviewOverlay key={section.id} patternId={ctx.previewPatternId}>
+                  <SubCollectionSection section={section} target={target} ctx={ctx} />
+                </PatternPreviewOverlay>
+              );
+            }
+            return (
+              <SubCollectionSection
+                key={section.id}
+                section={section}
+                target={target}
+                ctx={ctx}
+              />
+            );
+          })}
 
           {/* Progress widget (M4 step E): декларативный прогресс из
               projection.progress, рантайм вычисляет значения из world. */}

@@ -32,10 +32,17 @@ const ARCHETYPES = {
  *   NB: текущий рендерер получает уже-кристаллизованный артефакт как prop
  *   (внутренний crystallize не вызывается), поэтому семантически
  *   `artifactOverride` — alias с явным приоритетом.
+ *
+ * `previewPatternId` (v1.8, §27 authoring-env):
+ *   Dev-only prop — идентификатор паттерна, применённого в preview-режиме.
+ *   Прокидывается в ctx и используется архетипами для визуального overlay
+ *   (PatternPreviewOverlay) над секциями/слотами, помеченными `source:
+ *   "derived:..."`. Когда отсутствует — overlay не рендерится.
  */
 export default function ProjectionRendererV2({
   artifact,
   artifactOverride,
+  previewPatternId,
   projection,
   world,
   exec,
@@ -103,6 +110,7 @@ export default function ProjectionRendererV2({
     back,
     artifacts,
     allProjections,
+    previewPatternId,
   };
 
   return (
