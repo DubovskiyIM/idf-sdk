@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.8.0
+
+### Minor Changes
+
+- feat: UX Pattern Layer + Pattern Bank + 3 Gravitino patterns
+
+  - UX Pattern Layer: 5 behavioral patterns (monitoring/triage/execution/exploration/configuration), signal classifier, rendering strategy
+  - Pattern Bank: 13 stable structural patterns с trigger/structure/rationale triple, falsification framework, 9 trigger kinds
+  - Claude Researcher Pipeline integration: 3 patterns extracted from Apache Gravitino WebUI (hierarchy-tree-nav, discriminator-wizard, m2m-attach-dialog)
+  - matchedPatterns field в артефакте кристаллизатора
+  - 410 тестов core pass, полная обратная совместимость
+
 ## 0.7.2
 
 ### Patch Changes
