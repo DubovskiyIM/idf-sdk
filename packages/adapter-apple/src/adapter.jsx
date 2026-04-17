@@ -53,26 +53,29 @@ function resolveLucide(emoji) {
   return EMOJI_TO_LUCIDE[emoji] || null;
 }
 
-// ─── Shared input style ───
+// ─── Shared input style (Apple HIG) ───
 const inputStyle = {
   width: "100%",
-  borderRadius: "var(--radius-apple-input)",
-  border: "0.5px solid var(--color-apple-divider)",
-  background: "rgba(255, 255, 255, 0.6)",
-  padding: "10px 14px",
-  fontFamily: "var(--font-apple)",
-  fontSize: 15,
-  color: "var(--color-apple-text)",
+  borderRadius: 10,
+  border: "1px solid rgba(60, 60, 67, 0.18)",
+  background: "rgba(255, 255, 255, 0.9)",
+  padding: "12px 16px",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue', system-ui, sans-serif",
+  fontSize: 17,
+  letterSpacing: "-0.41px",
+  color: "#1c1c1e",
   outline: "none",
-  transition: "all 0.2s",
+  transition: "border-color 0.2s",
+  boxSizing: "border-box",
 };
 
 const labelStyle = {
-  fontSize: 13,
-  fontWeight: 500,
-  color: "var(--color-apple-text-secondary)",
-  fontFamily: "var(--font-apple)",
-  marginBottom: 4,
+  fontSize: 15,
+  fontWeight: 400,
+  letterSpacing: "-0.24px",
+  color: "#3c3c43",
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
+  marginBottom: 6,
 };
 
 // ─── Parameter Controls ───
@@ -124,6 +127,32 @@ function AppleNumber({ spec, value, onChange }) {
   );
 }
 
+function AppleRange({ spec, value, onChange }) {
+  const min = spec.min ?? 0;
+  const max = spec.max ?? 100;
+  const current = value ?? min;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {spec.label && <label style={labelStyle}>{spec.label}</label>}
+      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <input
+          type="range"
+          min={min}
+          max={max}
+          value={current}
+          onChange={e => onChange(Number(e.target.value))}
+          style={{ flex: 1, accentColor: "#007aff" }}
+        />
+        <span style={{
+          fontSize: 22, fontWeight: 700, minWidth: 48, textAlign: "center",
+          color: "#007aff",
+          fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
+        }}>{current}%</span>
+      </div>
+    </div>
+  );
+}
+
 function AppleDateTime({ spec, value, onChange }) {
   const isTimeOnly = spec.name && /time/i.test(spec.name) && !/date/i.test(spec.name);
   return (
@@ -158,14 +187,14 @@ function AppleSelect({ spec, value, onChange }) {
         <SelectPrimitive.Portal>
           <SelectPrimitive.Content
             style={{
-              background: "rgba(255,255,255,0.95)",
-              backdropFilter: "blur(40px) saturate(180%)",
-              WebkitBackdropFilter: "blur(40px) saturate(180%)",
-              border: "0.5px solid var(--color-apple-divider)",
-              borderRadius: "var(--radius-apple-input)",
-              boxShadow: "var(--shadow-apple-glass)",
+              background: "rgba(255, 255, 255, 0.97)",
+              backdropFilter: "blur(60px) saturate(200%)",
+              WebkitBackdropFilter: "blur(60px) saturate(200%)",
+              border: "0.5px solid rgba(0, 0, 0, 0.08)",
+              borderRadius: 14,
+              boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
               zIndex: 9999,
-              fontFamily: "var(--font-apple)",
+              fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
               minWidth: 200,
             }}
             position="popper" sideOffset={4}
@@ -194,13 +223,15 @@ function AppleSelect({ spec, value, onChange }) {
 // ─── Buttons ───
 
 const btnBase = {
-  borderRadius: "var(--radius-apple-input)",
-  fontFamily: "var(--font-apple)",
+  borderRadius: 12,
+  fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
   cursor: "pointer",
-  transition: "all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1)",
-  fontSize: 15,
+  transition: "all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1)",
+  fontSize: 17,
   fontWeight: 600,
+  letterSpacing: "-0.41px",
   border: "none",
+  WebkitTapHighlightColor: "transparent",
 };
 
 function ApplePrimaryButton({ children, onClick, disabled, ...props }) {
@@ -208,10 +239,9 @@ function ApplePrimaryButton({ children, onClick, disabled, ...props }) {
     <button
       onClick={onClick} disabled={disabled}
       style={{
-        ...btnBase, padding: "10px 20px",
-        background: "var(--color-apple-accent)", color: "white",
-        boxShadow: "0 1px 3px rgba(0, 122, 255, 0.3)",
-        opacity: disabled ? 0.4 : 1,
+        ...btnBase, padding: "12px 24px",
+        background: "#007aff", color: "#ffffff",
+        opacity: disabled ? 0.35 : 1,
       }}
       {...props}
     >{children}</button>
@@ -223,9 +253,9 @@ function AppleSecondaryButton({ children, onClick, disabled, ...props }) {
     <button
       onClick={onClick} disabled={disabled}
       style={{
-        ...btnBase, padding: "10px 20px",
-        background: "rgba(0, 122, 255, 0.1)", color: "var(--color-apple-accent)",
-        opacity: disabled ? 0.4 : 1,
+        ...btnBase, padding: "12px 24px",
+        background: "rgba(0, 122, 255, 0.12)", color: "#007aff",
+        opacity: disabled ? 0.35 : 1,
       }}
       {...props}
     >{children}</button>
@@ -237,10 +267,9 @@ function AppleDangerButton({ children, onClick, disabled, ...props }) {
     <button
       onClick={onClick} disabled={disabled}
       style={{
-        ...btnBase, padding: "10px 20px",
-        background: "var(--color-apple-danger)", color: "white",
-        boxShadow: "0 1px 3px rgba(255, 59, 48, 0.3)",
-        opacity: disabled ? 0.4 : 1,
+        ...btnBase, padding: "12px 24px",
+        background: "#ff3b30", color: "#ffffff",
+        opacity: disabled ? 0.35 : 1,
       }}
       {...props}
     >{children}</button>
@@ -294,14 +323,15 @@ function AppleOverflowMenu({ items }) {
         <DropdownMenu.Content
           align="end" collisionPadding={16}
           style={{
-            background: "rgba(255,255,255,0.95)",
-            backdropFilter: "blur(40px) saturate(180%)",
-            WebkitBackdropFilter: "blur(40px) saturate(180%)",
-            border: "0.5px solid var(--color-apple-divider)",
-            borderRadius: "var(--radius-apple-input)",
-            boxShadow: "var(--shadow-apple-glass)",
-            padding: 4, zIndex: 9999, fontFamily: "var(--font-apple)",
-            minWidth: 180, maxWidth: "90vw",
+            background: "rgba(255, 255, 255, 0.97)",
+            backdropFilter: "blur(60px) saturate(200%)",
+            WebkitBackdropFilter: "blur(60px) saturate(200%)",
+            border: "0.5px solid rgba(0, 0, 0, 0.08)",
+            borderRadius: 14,
+            boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)",
+            padding: 6, zIndex: 9999,
+            fontFamily: "-apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif",
+            minWidth: 200, maxWidth: "90vw",
           }}
           sideOffset={6}
         >
@@ -337,38 +367,41 @@ function AppleModalShell({ onClose, title, children }) {
       <Dialog.Portal>
         <Dialog.Overlay style={{
           position: "fixed", inset: 0, background: "rgba(0,0,0,0.4)",
-          backdropFilter: "blur(8px)", zIndex: 9999,
+          backdropFilter: "blur(12px)", zIndex: 9999,
+          animation: "fadeIn 0.2s ease",
         }} />
         <Dialog.Content style={{
           position: "fixed", left: "50%", top: "50%",
           transform: "translate(-50%, -50%)", zIndex: 9999,
-          width: "calc(100% - 32px)", maxWidth: 480, maxHeight: "85vh",
+          width: "calc(100% - 40px)", maxWidth: 480, maxHeight: "85vh",
           overflowY: "auto",
-          background: "rgba(255,255,255,0.85)",
-          backdropFilter: "blur(40px) saturate(180%)",
-          WebkitBackdropFilter: "blur(40px) saturate(180%)",
-          border: "1px solid var(--color-apple-glass-border)",
-          borderRadius: "var(--radius-apple)",
-          padding: 24,
+          background: "rgba(255, 255, 255, 0.88)",
+          backdropFilter: "blur(60px) saturate(200%)",
+          WebkitBackdropFilter: "blur(60px) saturate(200%)",
+          border: "0.5px solid var(--color-apple-glass-border)",
+          borderRadius: 14,
+          padding: "24px 20px",
           fontFamily: "var(--font-apple)",
-          boxShadow: "var(--shadow-apple-glass)",
+          boxShadow: "var(--shadow-apple-elevated, 0 8px 40px rgba(0,0,0,0.12))",
         }}>
           <Dialog.Title style={{
-            fontSize: 22, fontWeight: 700,
+            fontSize: 20, fontWeight: 600, letterSpacing: "0.38px",
             color: "var(--color-apple-text)",
-            marginBottom: 16, marginTop: 0,
+            marginBottom: 20, marginTop: 0,
+            textAlign: "center",
           }}>
             {title}
           </Dialog.Title>
           {children}
           <Dialog.Close asChild>
             <button style={{
-              position: "absolute", top: 16, right: 16, background: "rgba(0,0,0,0.04)",
+              position: "absolute", top: 12, right: 12,
+              background: "rgba(120, 120, 128, 0.12)",
               border: "none", color: "var(--color-apple-text-secondary)", cursor: "pointer",
-              padding: 6, borderRadius: 12, width: 28, height: 28,
+              padding: 0, borderRadius: "50%", width: 30, height: 30,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>
-              <X size={16} />
+              <X size={14} strokeWidth={2.5} />
             </button>
           </Dialog.Close>
         </Dialog.Content>
@@ -387,29 +420,34 @@ function AppleTabs({ items = [], active, onSelect, extra }) {
       >
         <TabsPrimitive.List style={{
           display: "inline-flex",
-          background: "rgba(0,0,0,0.05)",
-          borderRadius: 10,
+          background: "rgba(120, 120, 128, 0.12)",
+          borderRadius: 9,
           padding: 2,
           fontFamily: "var(--font-apple)",
           gap: 0,
         }}>
-          {items.map(item => (
-            <TabsPrimitive.Trigger
-              key={item.value}
-              value={item.value}
-              style={{
-                padding: "6px 14px", fontSize: 13, whiteSpace: "nowrap",
-                background: "transparent", border: "none", cursor: "pointer",
-                fontFamily: "inherit", borderRadius: 8,
-                color: "var(--color-apple-text-secondary)",
-                fontWeight: 500,
-                transition: "all 0.2s",
-              }}
-              data-state-active-style="background: white; color: var(--color-apple-text); box-shadow: 0 1px 3px rgba(0,0,0,0.08);"
-            >
-              {item.label}
-            </TabsPrimitive.Trigger>
-          ))}
+          {items.map(item => {
+            const isActive = active === item.value;
+            return (
+              <TabsPrimitive.Trigger
+                key={item.value}
+                value={item.value}
+                style={{
+                  padding: "7px 16px", fontSize: 13, whiteSpace: "nowrap",
+                  background: isActive ? "white" : "transparent",
+                  border: "none", cursor: "pointer",
+                  fontFamily: "inherit", borderRadius: 7,
+                  color: isActive ? "var(--color-apple-text, #1c1c1e)" : "var(--color-apple-text-secondary, #8e8e93)",
+                  fontWeight: isActive ? 600 : 500,
+                  letterSpacing: "-0.08px",
+                  transition: "all 0.2s cubic-bezier(0.25, 0.1, 0.25, 1)",
+                  boxShadow: isActive ? "0 1px 4px rgba(0,0,0,0.08), 0 0.5px 1px rgba(0,0,0,0.04)" : "none",
+                }}
+              >
+                {item.label}
+              </TabsPrimitive.Trigger>
+            );
+          })}
         </TabsPrimitive.List>
       </TabsPrimitive.Root>
       {extra && <div style={{ marginRight: 8 }}>{extra}</div>}
@@ -421,15 +459,21 @@ function AppleTabs({ items = [], active, onSelect, extra }) {
 
 function AppleHeading({ children, level = 2, ...props }) {
   const Tag = `h${Math.min(level, 6)}`;
-  const sizes = { 1: 34, 2: 28, 3: 22, 4: 17, 5: 15, 6: 13 };
+  // Apple HIG Dynamic Type scale
+  const typeScale = {
+    1: { fontSize: 34, fontWeight: 700, letterSpacing: "0.37px", lineHeight: "41px" },  // Large Title
+    2: { fontSize: 28, fontWeight: 700, letterSpacing: "0.36px", lineHeight: "34px" },  // Title 1
+    3: { fontSize: 22, fontWeight: 700, letterSpacing: "0.35px", lineHeight: "28px" },  // Title 2
+    4: { fontSize: 20, fontWeight: 600, letterSpacing: "0.38px", lineHeight: "25px" },  // Title 3
+    5: { fontSize: 17, fontWeight: 600, letterSpacing: "-0.41px", lineHeight: "22px" }, // Headline
+    6: { fontSize: 15, fontWeight: 600, letterSpacing: "-0.24px", lineHeight: "20px" }, // Subheadline
+  };
+  const scale = typeScale[level] || typeScale[3];
   return (
     <Tag style={{
-      fontSize: sizes[level] || 22,
-      fontWeight: 700,
+      ...scale,
       fontFamily: "var(--font-apple)",
-      color: "var(--color-apple-text)",
-      letterSpacing: "-0.02em",
-      lineHeight: 1.2,
+      color: "var(--color-apple-text, #1c1c1e)",
       margin: 0,
     }} {...props}>
       {children}
@@ -494,13 +538,13 @@ function AppleAvatar({ src, name, size = 32, ...props }) {
 function ApplePaper({ children, ...props }) {
   return (
     <div style={{
-      borderRadius: "var(--radius-apple)",
-      border: "1px solid var(--color-apple-glass-border)",
-      background: "var(--color-apple-glass-bg)",
+      borderRadius: "var(--radius-apple-card, 10px)",
+      border: "0.5px solid var(--color-apple-glass-border, rgba(0,0,0,0.06))",
+      background: "rgba(255, 255, 255, 0.8)",
       backdropFilter: "blur(40px) saturate(180%)",
       WebkitBackdropFilter: "blur(40px) saturate(180%)",
-      padding: 20,
-      boxShadow: "var(--shadow-apple-glass)",
+      padding: 16,
+      boxShadow: "var(--shadow-apple-glass, 0 2px 16px rgba(0,0,0,0.08))",
     }} {...props}>
       {children}
     </div>
@@ -518,6 +562,7 @@ export const appleAdapter = {
     url: AppleTextInput,
     tel: AppleTextInput,
     number: AppleNumber,
+    range: AppleRange,
     datetime: AppleDateTime,
     select: AppleSelect,
   },

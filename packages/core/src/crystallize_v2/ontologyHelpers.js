@@ -186,7 +186,9 @@ export function mapOntologyTypeToControl(ontologyType) {
     multiImage: "multiImage",
     file: "file",
     enum: "select",
+    entityRef: "select", // ссылка на другую сущность — select
     id: "text", // id обычно не редактируется через форму
+    boolean: "select",
   };
   return map[ontologyType] || "text";
 }

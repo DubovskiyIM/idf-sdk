@@ -42,49 +42,90 @@ export default function FormModal({ spec, ctx, overlayContext, onClose }) {
     }
   };
 
+  // Адаптерные кнопки
+  const PrimaryBtn = getAdaptedComponent("button", "primary");
+  const SecondaryBtn = getAdaptedComponent("button", "secondary");
+
   return (
     <ModalShell onClose={onClose} title={spec.title || spec.label || spec.intentId}>
       {spec.witnessPanel?.length > 0 && (
-        <div style={{ padding: 12, background: "var(--idf-hover)", borderRadius: 6, marginBottom: 16 }}>
+        <div style={{ padding: 12, background: "var(--idf-hover)", borderRadius: 8, marginBottom: 16 }}>
           {spec.witnessPanel.map((w, i) => (
             <SlotRenderer key={i} item={w} ctx={ctx} />
           ))}
         </div>
       )}
 
-      <div>
-        {(spec.parameters || []).map(param => (
-          <ParameterControl
-            key={param.name}
-            spec={param}
-            value={values[param.name]}
-            onChange={v => setValues(p => ({ ...p, [param.name]: v }))}
-            error={errors[param.name]}
-          />
-        ))}
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {(spec.parameters || []).map(param => {
+          // visibleWhen: условная видимость поля
+          if (param.visibleWhen) {
+            const { field, value } = param.visibleWhen;
+            if (values[field] !== value) return null;
+          }
+          // entityRef → select с options из world
+          let enrichedParam = param;
+          if (param.control === "select" && !param.options && param.name?.endsWith("Id")) {
+            const refName = param.name.replace(/Id$/, "").toLowerCase();
+            const collName = refName.endsWith("y") ? refName.slice(0, -1) + "ies"
+              : refName.endsWith("s") ? refName + "es" : refName + "s";
+            const items = ctx.world?.[collName] || [];
+            if (items.length > 0) {
+              enrichedParam = {
+                ...param,
+                options: items.map(it => ({
+                  value: it.id,
+                  label: it.icon ? `${it.icon} ${it.name || it.title || it.id}` : (it.name || it.title || it.id),
+                })),
+              };
+            }
+          }
+          return (
+            <ParameterControl
+              key={param.name}
+              spec={enrichedParam}
+              value={values[param.name]}
+              onChange={v => setValues(p => ({ ...p, [param.name]: v }))}
+              error={errors[param.name]}
+            />
+          );
+        })}
       </div>
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end", marginTop: 16 }}>
-        <button
-          onClick={onClose}
-          style={{
-            padding: "8px 16px", borderRadius: 6,
-            border: "1px solid var(--idf-border)",
-            background: "var(--idf-card)",
-            color: "var(--idf-text)",
-            cursor: "pointer", fontSize: 13,
-          }}
-        >Отмена</button>
-        <button
-          onClick={onSubmit}
-          disabled={submitting}
-          style={{
-            padding: "8px 16px", borderRadius: 6, border: "none",
-            background: "var(--idf-accent)", color: "#fff",
-            cursor: submitting ? "default" : "pointer",
-            fontSize: 13, fontWeight: 600, opacity: submitting ? 0.6 : 1,
-          }}
-        >{submitting ? "…" : (item ? "Сохранить" : "Выполнить")}</button>
+      <div style={{ display: "flex", gap: 10, justifyContent: "flex-end", marginTop: 24 }}>
+        {SecondaryBtn ? (
+          <SecondaryBtn onClick={onClose}>Отмена</SecondaryBtn>
+        ) : (
+          <button
+            onClick={onClose}
+            style={{
+              padding: "10px 20px", borderRadius: "var(--idf-radius, 8px)",
+              border: "1px solid var(--idf-border)",
+              background: "var(--idf-card)",
+              color: "var(--idf-text)",
+              cursor: "pointer", fontSize: 15, fontWeight: 500,
+              fontFamily: "var(--idf-font, system-ui)",
+            }}
+          >Отмена</button>
+        )}
+        {PrimaryBtn ? (
+          <PrimaryBtn onClick={onSubmit} disabled={submitting}>
+            {submitting ? "…" : (item ? "Сохранить" : "Создать")}
+          </PrimaryBtn>
+        ) : (
+          <button
+            onClick={onSubmit}
+            disabled={submitting}
+            style={{
+              padding: "10px 20px", borderRadius: "var(--idf-radius, 8px)",
+              border: "none",
+              background: "var(--idf-accent)", color: "#fff",
+              cursor: submitting ? "default" : "pointer",
+              fontSize: 15, fontWeight: 600, opacity: submitting ? 0.6 : 1,
+              fontFamily: "var(--idf-font, system-ui)",
+            }}
+          >{submitting ? "…" : (item ? "Сохранить" : "Создать")}</button>
+        )}
       </div>
     </ModalShell>
   );

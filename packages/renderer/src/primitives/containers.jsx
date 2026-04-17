@@ -106,24 +106,21 @@ function groupByIcon(intents) {
 
 export function Card({ node, ctx, item }) {
   const [menuOpen, setMenuOpen] = useState(false);
+  const isChat = node.variant === "chat";
+  const isMine = isChat && item?.senderId && ctx.viewer?.id && item.senderId === ctx.viewer.id;
+
   const allIntents = (node.intents || [])
     .map(normalizeIntent)
     .filter(spec => {
-      // Фильтруем по условиям намерения против item + viewer.
       const conditions = spec.conditions || [];
       return conditions.every(c => evalIntentCondition(c, item, ctx.viewer));
     });
-  // Группировка по иконке до применения MAX_VISIBLE — одинаковые иконки
-  // превращаются в одну кнопку-группу.
   const grouped = groupByIcon(allIntents);
-  const visible = grouped.slice(0, MAX_VISIBLE_ITEM_INTENTS);
-  const hidden = grouped.slice(MAX_VISIBLE_ITEM_INTENTS)
-    // Overflow всегда содержит плоский список — разворачиваем группы
+  // Non-chat: все intents в overflow menu; chat: inline кнопки
+  const effectiveMax = isChat ? MAX_VISIBLE_ITEM_INTENTS : 0;
+  const visible = grouped.slice(0, effectiveMax);
+  const hidden = grouped.slice(effectiveMax)
     .flatMap(g => g.type === "group" ? g.specs : [g.spec]);
-
-  // Chat-вариант: выравнивание «свои справа, чужие слева» по senderId === viewer.id.
-  const isChat = node.variant === "chat";
-  const isMine = isChat && item?.senderId && ctx.viewer?.id && item.senderId === ctx.viewer.id;
 
   // Regular-вариант (не чат) — Mantine Paper с hover.
   // Chat-вариант — оставляем inline чтобы сохранить bubble-выравнивание и
@@ -157,6 +154,15 @@ export function Card({ node, ctx, item }) {
   const reactions = item?.id ? (ctx.world?.reactions || []).filter(r => r.messageId === item.id) : [];
   const reactionGroups = reactions.length > 0 ? groupReactions(reactions) : [];
 
+  // Overflow menu component (используется адаптерный или fallback)
+  const AdaptedOverflow = getAdaptedComponent("button", "overflow");
+  const overflowMenuItems = hidden.map(spec => ({
+    key: spec.intentId,
+    label: spec.label || spec.intentId,
+    icon: spec.icon,
+    onClick: () => fireItemIntent(spec, ctx, item),
+  }));
+
   const content = (
     <>
       {item?.forwarded && (
@@ -168,9 +174,19 @@ export function Card({ node, ctx, item }) {
           ↗ Переслано от {item.originalSenderName || "неизвестного"}
         </div>
       )}
-      {(node.children || []).map((child, i) => (
-        <SlotRenderer key={i} item={child} ctx={ctx} contextItem={item} />
-      ))}
+      <div style={{ display: "flex", alignItems: "flex-start" }}>
+        <div style={{ flex: 1 }}>
+          {(node.children || []).map((child, i) => (
+            <SlotRenderer key={i} item={child} ctx={ctx} contextItem={item} />
+          ))}
+        </div>
+        {/* Overflow menu — inline с контентом для non-chat */}
+        {!isChat && hidden.length > 0 && (
+          AdaptedOverflow
+            ? <AdaptedOverflow items={overflowMenuItems} />
+            : <InlineOverflowMenu items={hidden} ctx={ctx} item={item} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
+        )}
+      </div>
       {reactionGroups.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginTop: 4, flexWrap: "wrap" }}>
           {reactionGroups.map(g => (
@@ -185,7 +201,8 @@ export function Card({ node, ctx, item }) {
           ))}
         </div>
       )}
-      {allIntents.length > 0 && (
+      {/* Chat: inline intent buttons */}
+      {isChat && visible.length > 0 && (
         <div style={{ display: "flex", gap: 4, marginTop: 8, flexWrap: "wrap", alignItems: "center" }}>
           {visible.map((g, gi) => (
             g.type === "group"
@@ -193,54 +210,7 @@ export function Card({ node, ctx, item }) {
               : <ItemIntentButton key={g.spec.intentId} spec={g.spec} ctx={ctx} item={item} />
           ))}
           {hidden.length > 0 && (
-            <div style={{ position: "relative" }}>
-              {(() => {
-                const AdaptedSec = getAdaptedComponent("button", "secondary");
-                const btn = AdaptedSec
-                  ? <AdaptedSec onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}>⋯</AdaptedSec>
-                  : <button
-                      onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
-                      style={{
-                        padding: "4px 8px", borderRadius: 6,
-                        border: "1px solid var(--idf-border)",
-                        background: "var(--idf-card)",
-                        color: "var(--idf-text-muted)",
-                        fontSize: 11, cursor: "pointer", lineHeight: 1,
-                      }}
-                    >⋯</button>;
-                return btn;
-              })()}
-              {menuOpen && (
-                <div
-                  onClick={(e) => { e.stopPropagation(); setMenuOpen(false); }}
-                  style={{
-                    position: "absolute", top: "calc(100% + 4px)", left: 0,
-                    background: "var(--idf-surface)",
-                    border: "1px solid var(--idf-border)",
-                    borderRadius: 8,
-                    boxShadow: "0 4px 12px #0002", padding: 4, zIndex: 10, minWidth: 180,
-                    maxHeight: "50vh", overflowY: "auto",
-                    color: "var(--idf-text)",
-                  }}
-                >
-                  {hidden.map(spec => (
-                    <button
-                      key={spec.intentId}
-                      onClick={(e) => { e.stopPropagation(); setMenuOpen(false); fireItemIntent(spec, ctx, item); }}
-                      style={{
-                        display: "flex", alignItems: "center", gap: 8,
-                        width: "100%", textAlign: "left",
-                        padding: "6px 10px", background: "transparent", border: "none",
-                        cursor: "pointer", fontSize: 12,
-                      }}
-                    >
-                      {spec.icon && <Icon emoji={spec.icon} size={14} />}
-                      <span>{spec.label || spec.intentId}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+            <InlineOverflowMenu items={hidden} ctx={ctx} item={item} menuOpen={menuOpen} setMenuOpen={setMenuOpen} />
           )}
         </div>
       )}
@@ -370,6 +340,71 @@ function ItemIntentButton({ spec, ctx, item }) {
       {icon && <Icon emoji={icon} size={13} />}
       {showLabel && <span>{label}</span>}
     </button>
+  );
+}
+
+function InlineOverflowMenu({ items, ctx, item, menuOpen, setMenuOpen }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setMenuOpen(false); };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [menuOpen, setMenuOpen]);
+
+  return (
+    <div ref={ref} style={{ position: "relative", flexShrink: 0 }}>
+      <button
+        onClick={(e) => { e.stopPropagation(); setMenuOpen(v => !v); }}
+        style={{
+          width: 32, height: 32, borderRadius: "50%",
+          border: "none",
+          background: menuOpen ? "var(--idf-hover, rgba(0,0,0,0.04))" : "transparent",
+          color: "var(--idf-text-muted)",
+          fontSize: 16, cursor: "pointer",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "background 0.15s",
+          fontFamily: "var(--idf-font, system-ui)",
+        }}
+        title="Действия"
+      >⋯</button>
+      {menuOpen && (
+        <div
+          style={{
+            position: "absolute", top: "calc(100% + 4px)", right: 0,
+            background: "rgba(255, 255, 255, 0.97)",
+            backdropFilter: "blur(60px) saturate(200%)",
+            WebkitBackdropFilter: "blur(60px) saturate(200%)",
+            border: "0.5px solid rgba(0,0,0,0.08)",
+            borderRadius: 14,
+            boxShadow: "0 12px 40px rgba(0,0,0,0.18), 0 2px 8px rgba(0,0,0,0.06)", padding: 6, zIndex: 100, minWidth: 220,
+            maxHeight: "50vh", overflowY: "auto",
+            color: "var(--idf-text)",
+            fontFamily: "var(--idf-font, system-ui)",
+          }}
+        >
+          {items.map(spec => (
+            <button
+              key={spec.intentId}
+              onClick={(e) => { e.stopPropagation(); setMenuOpen(false); fireItemIntent(spec, ctx, item); }}
+              style={{
+                display: "flex", alignItems: "center", gap: 10,
+                width: "100%", textAlign: "left",
+                padding: "10px 14px", background: "transparent", border: "none",
+                cursor: "pointer", fontSize: 15,
+                color: "var(--idf-text)", borderRadius: 8,
+                fontFamily: "inherit", letterSpacing: "-0.24px",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = "var(--idf-hover, rgba(0,0,0,0.04))"}
+              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+            >
+              {spec.icon && <Icon emoji={spec.icon} size={18} />}
+              <span>{spec.label || spec.intentId}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 

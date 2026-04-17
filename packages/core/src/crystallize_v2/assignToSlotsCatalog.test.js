@@ -77,13 +77,13 @@ describe("assignToSlotsCatalog", () => {
     expect(hero.paramName).toBe("title");
   });
 
-  it("creator без параметров с extra entity (create_direct_chat) → customCapture entityPicker в fab", () => {
+  it("creator без параметров с extra entity (create_direct_chat) → customCapture entityPicker в toolbar", () => {
     // M3.5b: create_direct_chat creates Conversation + entity User
     // (вне route scope conversation_list). customCapture.entityPicker
-    // перехватывает такие intents и кладёт их в fab с trigger+overlay.
+    // перехватывает такие intents и кладёт их в toolbar с trigger+overlay.
     const slots = assignToSlotsCatalog(INTENTS, conversationList, ONTOLOGY);
-    const fabIds = slots.fab.map(s => s.trigger?.intentId || s.intentId);
-    expect(fabIds).toContain("create_direct_chat");
+    const toolbarIds = slots.toolbar.map(s => s.trigger?.intentId || s.intentId);
+    expect(toolbarIds).toContain("create_direct_chat");
     const overlayTypes = slots.overlay.map(o => o.type);
     expect(overlayTypes).toContain("customCapture");
     const picker = slots.overlay.find(o => o.widgetId === "entityPicker");
