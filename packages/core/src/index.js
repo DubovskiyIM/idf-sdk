@@ -112,3 +112,11 @@ export {
   BUILT_IN_PATTERNS,
   DEFAULT_STRATEGY,
 } from "./patterns/index.js";
+
+// Pattern Bank — формальный банк правил деривации
+export {
+  createRegistry,
+  getDefaultRegistry,
+  loadStablePatterns,
+} from "./patterns/registry.js";
+export { validatePattern, evaluateTrigger } from "./patterns/schema.js";
