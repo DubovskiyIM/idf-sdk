@@ -48,7 +48,10 @@ const DOMAINS = {
         Transaction: { fields: { id: { type: "text" }, portfolioId: { type: "text" }, total: { type: "number", fieldRole: "money" } } },
         Goal: { ownerField: "userId", fields: { id: { type: "text" }, name: { type: "text" } } },
       },
-      roles: { agent: { base: "agent", preapproval: { entity: "AgentPreapproval" } } },
+      roles: {
+        agent: { base: "agent", preapproval: { entity: "AgentPreapproval" } },
+        advisor: { base: "owner", scope: { User: { via: "assignments", viewerField: "advisorId" } } },
+      },
     },
     intents: {
       create_portfolio: { creates: "Portfolio", heroCreate: true, particles: { entities: ["p: Portfolio"], effects: [{ α: "add", target: "portfolios" }] } },
@@ -122,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("10 stable patterns loaded", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(10);
+  it("13 stable patterns loaded", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(13);
   });
 
   // ─── hero-create ───
@@ -232,6 +235,54 @@ describe("Pattern Bank Falsification", () => {
     });
     it("shouldNotMatch: invest/portfolio_detail", () => {
       expect(match("invest", "portfolio_detail", registry).some(p => p.id === "footer-inline-setter")).toBe(false);
+    });
+  });
+
+  // ─── hierarchy-tree-nav (Gravitino) ───
+  describe("hierarchy-tree-nav", () => {
+    it("shouldMatch: workflow/workflow_detail (3-level: Workflow→Node→NodeResult)", () => {
+      // Добавляем workflow domain inline
+      const wfOntology = {
+        entities: {
+          Workflow: { fields: { id: { type: "text" }, name: { type: "text" } } },
+          Node: { fields: { id: { type: "text" }, workflowId: { type: "text" }, type: { type: "select" } } },
+          Edge: { fields: { id: { type: "text" }, workflowId: { type: "text" } } },
+          NodeResult: { fields: { id: { type: "text" }, nodeId: { type: "text" }, status: { type: "select" } } },
+        },
+      };
+      const intents = [{ id: "view", particles: { entities: ["w: Workflow"], effects: [] } }];
+      const matched = registry.matchPatterns(intents, wfOntology, { kind: "detail", mainEntity: "Workflow" });
+      expect(matched.some(p => p.id === "hierarchy-tree-nav")).toBe(true);
+    });
+    it("shouldNotMatch: messenger/chat_view (flat)", () => {
+      expect(match("messenger", "chat_view", registry).some(p => p.id === "hierarchy-tree-nav")).toBe(false);
+    });
+  });
+
+  // ─── discriminator-wizard (Gravitino) ───
+  describe("discriminator-wizard", () => {
+    it("shouldNotMatch: planning/my_polls (Poll нет discriminator)", () => {
+      expect(match("planning", "my_polls", registry).some(p => p.id === "discriminator-wizard")).toBe(false);
+    });
+    it("shouldMatch: catalog with type select ≥2", () => {
+      const ontology = {
+        entities: {
+          Catalog: { fields: { name: { type: "text" }, type: { type: "select", options: ["relational", "messaging", "fileset"] } } },
+        },
+      };
+      const intents = [{ id: "create_catalog", creates: "Catalog", particles: { entities: ["c: Catalog"], effects: [{ α: "add", target: "catalogs" }] } }];
+      const matched = registry.matchPatterns(intents, ontology, { kind: "catalog", mainEntity: "Catalog" });
+      expect(matched.some(p => p.id === "discriminator-wizard")).toBe(true);
+    });
+  });
+
+  // ─── m2m-attach-dialog (Gravitino) ───
+  describe("m2m-attach-dialog", () => {
+    it("shouldMatch: invest/portfolio_detail (advisor scope via assignments)", () => {
+      expect(match("invest", "portfolio_detail", registry).some(p => p.id === "m2m-attach-dialog")).toBe(true);
+    });
+    it("shouldNotMatch: planning/poll_overview (1:N, не m2m)", () => {
+      expect(match("planning", "poll_overview", registry).some(p => p.id === "m2m-attach-dialog")).toBe(false);
     });
   });
 });
