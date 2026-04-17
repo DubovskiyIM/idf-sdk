@@ -22,6 +22,8 @@ import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
 import { resolvePattern } from "../patterns/index.js";
 import { getDefaultRegistry, loadStablePatterns } from "../patterns/registry.js";
+import { evaluateTriggerExplained } from "../patterns/schema.js";
+import { applyStructuralPatterns } from "./applyStructuralPatterns.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -120,6 +122,19 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       slots = { kind: "wizard", steps: proj.steps || [], projection: proj };
     } else {
       slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy);
+    }
+
+    // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.
+    // Feature-flag ontology.features.structureApply !== false (default true).
+    const applyEnabled = ONTOLOGY?.features?.structureApply !== false;
+    if (applyEnabled && archetype !== "form" && archetype !== "canvas" && archetype !== "dashboard" && archetype !== "wizard") {
+      const matchedAugmented = structuralPatterns.map(p => ({
+        pattern: p,
+        explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, proj),
+      }));
+      const preferences = proj.patterns || {};
+      const applyContext = { ontology: ONTOLOGY, mainEntity: proj.mainEntity, intents: projIntents, projection: proj };
+      slots = applyStructuralPatterns(slots, matchedAugmented, applyContext, preferences, patternRegistry);
     }
 
     // onItemClick: (1) явно объявленный автором в проекции, (2) выведенный из navGraph.
