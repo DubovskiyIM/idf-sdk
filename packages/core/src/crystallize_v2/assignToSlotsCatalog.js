@@ -14,7 +14,7 @@ import {
 import { getIntentIcon } from "./getIntentIcon.js";
 import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 
-export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY) {
+export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy) {
   const slots = {
     header: [],
     toolbar: [],
@@ -60,6 +60,14 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY) {
 
     let wrapped = wrapByConfirmation(intent, id, parameters, { projection });
     if (wrapped === null) continue;
+
+    // Strategy: override control type
+    if (strategy?.preferControl) {
+      const preferred = strategy.preferControl(intent, wrapped.type);
+      if (preferred !== wrapped.type && preferred === "quick-action-pair") {
+        wrapped = { ...wrapped, quickAction: true, patternHint: preferred };
+      }
+    }
 
     const isPerItem = isPerItemIntent(intent, projection);
     const isComposerEntry = wrapped.type === "composerEntry";
@@ -157,6 +165,31 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY) {
   if (slots.toolbar.length > 5) {
     const overflow = slots.toolbar.splice(5);
     slots.toolbar.push({ type: "overflow", children: overflow });
+  }
+
+  // Strategy metadata для renderer
+  if (strategy) {
+    if (strategy.itemLayout) slots.body.itemLayout = strategy.itemLayout(projection.mainEntity, []);
+    if (strategy.emphasisFields) {
+      const fieldNames = (projection.witnesses || []).map(w => typeof w === "string" ? w : w.field);
+      const fieldRoles = {};
+      const entity = ONTOLOGY?.entities?.[projection.mainEntity];
+      if (entity?.fields && typeof entity.fields === "object") {
+        for (const [name, def] of Object.entries(entity.fields)) {
+          const role = def?.fieldRole || inferFieldRole(name, def)?.role;
+          if (role) fieldRoles[name] = role;
+        }
+      }
+      slots.body.emphasisFields = strategy.emphasisFields(fieldNames, fieldRoles);
+    }
+    if (strategy.aggregateHeader) {
+      const agg = strategy.aggregateHeader();
+      if (agg) slots.body.aggregateHeader = agg;
+    }
+    if (strategy.extraSlots) {
+      const extras = strategy.extraSlots();
+      if (Object.keys(extras).length > 0) slots.body.extras = extras;
+    }
   }
 
   return slots;
