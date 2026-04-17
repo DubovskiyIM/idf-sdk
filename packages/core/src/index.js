@@ -105,3 +105,10 @@ export {
 
 // Asset-boundary helpers (§19 v1.7) — декларация внешних asset-источников
 export { getAssets, validateAsset, ASSET_KINDS } from "./ontology/assets.js";
+
+// UX Pattern Layer — поведенческие паттерны поверх архетипов
+export {
+  resolvePattern,
+  BUILT_IN_PATTERNS,
+  DEFAULT_STRATEGY,
+} from "./patterns/index.js";
