@@ -158,58 +158,103 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--idf-surface)",
+      background: "var(--idf-surface, #f2f2f7)",
+      fontFamily: "var(--idf-font, -apple-system, system-ui, sans-serif)",
     }}>
+      {/* Navigation bar — Apple HIG style */}
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
-        padding: "12px 16px", background: "var(--idf-card)", borderBottom: "1px solid var(--idf-border)",
+        padding: "10px 16px",
+        background: "var(--idf-card, rgba(255,255,255,0.94))",
+        backdropFilter: "blur(20px) saturate(180%)",
+        WebkitBackdropFilter: "blur(20px) saturate(180%)",
+        borderBottom: "0.5px solid var(--idf-border, rgba(60,60,67,0.12))",
       }}>
         <button onClick={goBack} style={{
-          padding: "6px 12px", borderRadius: 6, border: "1px solid var(--idf-border)",
-          background: "var(--idf-card)", color: "var(--idf-text)", cursor: "pointer", fontSize: 13,
-        }}>← Отмена</button>
-        <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, flex: 1 }}>
+          padding: "6px 4px", border: "none",
+          background: "transparent", color: "var(--idf-primary, #007aff)",
+          cursor: "pointer", fontSize: 17, fontWeight: 400,
+          fontFamily: "inherit", letterSpacing: "-0.41px",
+          display: "inline-flex", alignItems: "center", gap: 4,
+        }}>
+          <span style={{ fontSize: 20 }}>‹</span> Отмена
+        </button>
+        <h1 style={{
+          margin: 0, fontSize: 17, fontWeight: 600, flex: 1,
+          textAlign: "center", letterSpacing: "-0.41px",
+          color: "var(--idf-text, #1c1c1e)",
+        }}>
           {projection.name}
         </h1>
         <button
           onClick={onSave}
           disabled={submitting || dirtyFields.length === 0}
           style={{
-            padding: "8px 18px", borderRadius: 6, border: "none",
-            background: dirtyFields.length > 0 && !submitting ? "var(--idf-primary, #6366f1)" : "var(--idf-card)",
-            color: dirtyFields.length > 0 ? "#fff" : "var(--idf-text-muted)", fontWeight: 600,
+            padding: "6px 4px", border: "none",
+            background: "transparent",
+            color: dirtyFields.length > 0 && !submitting
+              ? "var(--idf-primary, #007aff)"
+              : "var(--idf-text-muted, #8e8e93)",
+            fontWeight: 600, fontSize: 17,
             cursor: dirtyFields.length > 0 && !submitting ? "pointer" : "default",
             opacity: submitting ? 0.6 : 1,
+            fontFamily: "inherit", letterSpacing: "-0.41px",
           }}
         >
-          {submitting ? "…" : `Сохранить${dirtyFields.length > 0 ? ` (${dirtyFields.length})` : ""}`}
+          {submitting ? "…" : "Сохранить"}
         </button>
       </div>
 
-      <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
-        <div style={{
-          maxWidth: 640, margin: "0 auto", background: "var(--idf-card)",
-          borderRadius: 12, padding: 24, border: "1px solid var(--idf-border)",
-        }}>
+      {/* Form content — iOS grouped inset style */}
+      <div style={{ flex: 1, overflow: "auto", padding: "20px 16px" }}>
+        <div style={{ maxWidth: 640, margin: "0 auto" }}>
           {body.sections ? (
             body.sections.map(section => (
-              <div key={section.id} style={{ marginBottom: 28 }}>
+              <div key={section.id} style={{ marginBottom: 24 }}>
                 <div style={{
-                  fontSize: 13, fontWeight: 700, textTransform: "uppercase",
-                  letterSpacing: "0.04em",
-                  color: "var(--idf-text-muted)",
-                  marginBottom: 12, paddingBottom: 8,
-                  borderBottom: "1px solid var(--idf-border)",
+                  fontSize: 13, fontWeight: 400, textTransform: "uppercase",
+                  letterSpacing: "-0.08px",
+                  color: "var(--idf-text-muted, #8e8e93)",
+                  marginBottom: 8, paddingLeft: 16,
+                  fontFamily: "inherit",
                 }}>{section.title}</div>
-                {section.fields.filter(f => f.editable).map(field => (
-                  <FormField key={field.name} field={field} values={values} setValues={setValues} errors={errors} world={parentCtx.world} />
-                ))}
+                <div style={{
+                  background: "var(--idf-card, rgba(255,255,255,0.85))",
+                  borderRadius: "var(--idf-radius, 10px)",
+                  border: "0.5px solid var(--idf-border, rgba(60,60,67,0.12))",
+                  overflow: "hidden",
+                }}>
+                  {section.fields.filter(f => f.editable).map((field, i, arr) => (
+                    <div key={field.name} style={{
+                      padding: "4px 16px",
+                      borderBottom: i < arr.length - 1
+                        ? "0.5px solid var(--idf-border, rgba(60,60,67,0.12))"
+                        : "none",
+                    }}>
+                      <FormField field={field} values={values} setValues={setValues} errors={errors} world={parentCtx.world} />
+                    </div>
+                  ))}
+                </div>
               </div>
             ))
           ) : (
-            (body.fields || []).filter(f => f.editable).map(field => (
-              <FormField key={field.name} field={field} values={values} setValues={setValues} errors={errors} world={parentCtx.world} />
-            ))
+            <div style={{
+              background: "var(--idf-card, rgba(255,255,255,0.85))",
+              borderRadius: "var(--idf-radius, 10px)",
+              border: "0.5px solid var(--idf-border, rgba(60,60,67,0.12))",
+              overflow: "hidden",
+            }}>
+              {(body.fields || []).filter(f => f.editable).map((field, i, arr) => (
+                <div key={field.name} style={{
+                  padding: "4px 16px",
+                  borderBottom: i < arr.length - 1
+                    ? "0.5px solid var(--idf-border, rgba(60,60,67,0.12))"
+                    : "none",
+                }}>
+                  <FormField field={field} values={values} setValues={setValues} errors={errors} world={parentCtx.world} />
+                </div>
+              ))}
+            </div>
           )}
         </div>
       </div>
@@ -235,7 +280,7 @@ function FormField({ field, values, setValues, errors, world }) {
   }
 
   return (
-    <div style={{ marginBottom: 18 }}>
+    <div style={{ marginBottom: 0 }}>
       <ParameterControl
         spec={{
           name: field.name,

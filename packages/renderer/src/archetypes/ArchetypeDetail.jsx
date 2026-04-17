@@ -97,7 +97,9 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
     );
   }
 
-  const canEdit = editEdge && isViewerOwner(target);
+  // Показываем editEdge только если нет edit-overlay в toolbar (избегаем дублирования)
+  const hasEditOverlay = (slots.overlay || []).some(o => o.type === "formModal" && /edit/i.test(o.intentId || ""));
+  const canEdit = editEdge && isViewerOwner(target) && !hasEditOverlay;
 
   return (
     <div style={{
@@ -105,46 +107,52 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
       background: "var(--idf-surface)",
       overflowX: "hidden", maxWidth: "100%",
     }}>
-      {(slots.header?.length > 0 || canEdit) && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 12,
-          padding: "12px 16px",
-          background: "var(--idf-card)",
-          borderBottom: "1px solid var(--idf-border)",
-          flexWrap: "wrap", minWidth: 0,
-        }}>
-          <SlotRenderer items={slots.header} ctx={ctx} contextItem={target} />
-          <div style={{ flex: 1 }} />
-          {canEdit && (
-            <button
-              onClick={onEditClick}
-              title="Редактировать"
-              style={{
+      {(slots.header?.length > 0 || canEdit || slots.toolbar?.length > 0) && (() => {
+        // Toolbar → overflow menu items
+        const AdaptedOverflow = getAdaptedComponent("button", "overflow");
+        const toolbarItems = (slots.toolbar || []).map(spec => ({
+          key: spec.intentId || spec.type,
+          label: spec.label || spec.intentId || "",
+          icon: spec.icon,
+          onClick: () => {
+            if (spec.opens === "overlay" && ctx.openOverlay) {
+              ctx.openOverlay(spec.overlayKey, { item: target });
+            } else if (spec.intentId) {
+              ctx.exec(spec.intentId, { id: target?.id, entity: target });
+            }
+          },
+        }));
+
+        return (
+          <div style={{
+            display: "flex", alignItems: "center", gap: 12,
+            padding: "12px 16px",
+            background: "var(--idf-card)",
+            borderBottom: "1px solid var(--idf-border)",
+            flexWrap: "wrap", minWidth: 0,
+          }}>
+            <SlotRenderer items={slots.header} ctx={ctx} contextItem={target} />
+            <div style={{ flex: 1 }} />
+            {canEdit && (
+              <button onClick={onEditClick} title="Редактировать" style={{
                 padding: "6px 14px", borderRadius: 6, border: "1px solid #6366f1",
                 background: "#eef2ff", color: "#6366f1", fontSize: 13,
                 fontWeight: 600, cursor: "pointer",
                 display: "inline-flex", alignItems: "center", gap: 6,
-              }}
-            >
-              <span>✎</span>
-              <span>Редактировать</span>
-            </button>
-          )}
-        </div>
-      )}
+              }}>
+                <span>✎</span><span>Редактировать</span>
+              </button>
+            )}
+            {toolbarItems.length > 0 && (
+              AdaptedOverflow
+                ? <AdaptedOverflow items={toolbarItems} />
+                : <SlotRenderer items={slots.toolbar} ctx={ctx} contextItem={target} />
+            )}
+          </div>
+        );
+      })()}
 
-      {slots.toolbar?.length > 0 && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8,
-          padding: "8px 16px",
-          background: "var(--idf-card)",
-          borderBottom: "1px solid var(--idf-border)",
-          flexWrap: "wrap", minWidth: 0, maxWidth: "100%",
-          boxSizing: "border-box",
-        }}>
-          <SlotRenderer items={slots.toolbar} ctx={ctx} contextItem={target} />
-        </div>
-      )}
+      {/* Toolbar rendered as overflow in header — see toolbarOverflow below */}
 
       <div style={{ flex: 1, overflow: "auto", padding: 16, maxWidth: "100%", boxSizing: "border-box" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
@@ -260,11 +268,11 @@ function PrimaryCTAList({ items, target, ctx }) {
           return (
             <AdaptedPrimary
               key={spec.intentId}
-              label={spec.label}
-              icon={spec.icon}
               onClick={onClick}
-              size="md"
-            />
+            >
+              {spec.icon && <Icon emoji={spec.icon} size={18} />}
+              {spec.label || spec.intentId}
+            </AdaptedPrimary>
           );
         }
         return (

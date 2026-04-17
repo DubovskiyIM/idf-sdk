@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { ModalShell } from "./FormModal.jsx";
 import { template, resolve } from "../eval.js";
+import { getAdaptedComponent } from "../adapters/registry.js";
 
 export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
   const [typed, setTyped] = useState("");
@@ -28,15 +29,25 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
     }
   };
 
+  const DangerBtn = getAdaptedComponent("button", "danger");
+  const SecondaryBtn = getAdaptedComponent("button", "secondary");
+
   return (
     <ModalShell onClose={onClose} title={spec.title || "Подтверждение"}>
-      <p style={{ fontSize: 14, color: "var(--idf-text)", lineHeight: 1.5, margin: "0 0 16px" }}>
+      <p style={{
+        fontSize: 17, color: "#1c1c1e", lineHeight: 1.5, margin: "0 0 20px",
+        fontFamily: "-apple-system, system-ui, sans-serif",
+        letterSpacing: "-0.41px", textAlign: "center",
+      }}>
         {message}
       </p>
 
       {spec.confirmBy?.type === "typeText" && expectedText && (
         <div style={{ marginBottom: 16 }}>
-          <label style={{ display: "block", fontSize: 12, color: "var(--idf-text-muted)", marginBottom: 4 }}>
+          <label style={{
+            display: "block", fontSize: 13, color: "#8e8e93", marginBottom: 6,
+            fontFamily: "-apple-system, system-ui, sans-serif",
+          }}>
             Введите «{expectedText}» для подтверждения:
           </label>
           <input
@@ -45,40 +56,47 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
             onChange={e => setTyped(e.target.value)}
             autoFocus
             style={{
-              width: "100%", padding: "8px 12px", borderRadius: 6,
-              border: "1px solid var(--idf-border)",
-              background: "var(--idf-surface)",
-              color: "var(--idf-text)",
-              fontSize: 14, outline: "none",
+              width: "100%", padding: "12px 16px", borderRadius: 10,
+              border: "1px solid rgba(60,60,67,0.18)",
+              background: "rgba(255,255,255,0.9)",
+              color: "#1c1c1e", fontSize: 17, outline: "none",
               boxSizing: "border-box",
+              fontFamily: "-apple-system, system-ui, sans-serif",
             }}
           />
         </div>
       )}
 
-      <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-        <button
-          onClick={onClose}
-          style={{
-            padding: "8px 16px", borderRadius: 6,
-            border: "1px solid var(--idf-border)",
-            background: "var(--idf-card)",
-            color: "var(--idf-text)",
-            cursor: "pointer", fontSize: 13,
-          }}
-        >Отмена</button>
-        <button
-          onClick={onConfirm}
-          disabled={!canConfirm || submitting}
-          style={{
-            padding: "8px 16px", borderRadius: 6, border: "none",
-            background: canConfirm ? "var(--idf-danger)" : "var(--idf-card)",
-            color: canConfirm ? "#fff" : "var(--idf-text-muted)",
-            fontSize: 13, fontWeight: 600,
-            cursor: canConfirm && !submitting ? "pointer" : "default",
-            opacity: submitting ? 0.6 : 1,
-          }}
-        >{submitting ? "…" : "Подтвердить"}</button>
+      <div style={{ display: "flex", gap: 10, justifyContent: "center", marginTop: 8 }}>
+        {SecondaryBtn ? (
+          <SecondaryBtn onClick={onClose}>Отмена</SecondaryBtn>
+        ) : (
+          <button onClick={onClose} style={{
+            padding: "12px 24px", borderRadius: 12, border: "none",
+            background: "rgba(0,122,255,0.12)", color: "#007aff",
+            fontSize: 17, fontWeight: 600, cursor: "pointer",
+            fontFamily: "-apple-system, system-ui, sans-serif",
+          }}>Отмена</button>
+        )}
+        {DangerBtn ? (
+          <DangerBtn onClick={onConfirm} disabled={!canConfirm || submitting}>
+            {submitting ? "…" : "Удалить"}
+          </DangerBtn>
+        ) : (
+          <button
+            onClick={onConfirm}
+            disabled={!canConfirm || submitting}
+            style={{
+              padding: "12px 24px", borderRadius: 12, border: "none",
+              background: canConfirm ? "#ff3b30" : "rgba(120,120,128,0.12)",
+              color: canConfirm ? "#fff" : "#8e8e93",
+              fontSize: 17, fontWeight: 600,
+              cursor: canConfirm && !submitting ? "pointer" : "default",
+              opacity: submitting ? 0.6 : 1,
+              fontFamily: "-apple-system, system-ui, sans-serif",
+            }}
+          >{submitting ? "…" : "Удалить"}</button>
+        )}
       </div>
     </ModalShell>
   );

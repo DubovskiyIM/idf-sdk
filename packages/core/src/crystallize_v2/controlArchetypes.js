@@ -277,12 +277,12 @@ function registerHeroCreate() {
       if (!creates) return false;
       const mainEntity = context?.projection?.mainEntity;
       if (!mainEntity || creates !== mainEntity) return false;
-      // Должна быть catalog-проекция
       if (context?.projection?.kind !== "catalog") return false;
-      // Если автор явно попросил другое (confirmation:form с несколькими
-      // полями) — не перехватываем.
+      // confirmation:"form" с несколькими witnesses → formModal, не heroCreate.
+      // heroCreate подходит только для простых creator'ов (1 текстовое поле).
       const c = intent.particles?.confirmation;
-      if (c === "form" && intent.parameters && intent.parameters.length > 1) return false;
+      const witnesses = intent.particles?.witnesses || [];
+      if (c === "form" && witnesses.length > 1) return false;
       return true;
     },
     build: (intent, intentId, parameters) => {

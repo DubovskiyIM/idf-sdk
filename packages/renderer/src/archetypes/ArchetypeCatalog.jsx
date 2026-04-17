@@ -63,11 +63,13 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
 
       {slots.fab?.length > 0 && (
         <div style={{
-          position: "absolute", bottom: 24, right: 24,
-          display: "flex", flexDirection: "column", gap: 8,
-          zIndex: 5,
+          position: "absolute", bottom: 24, left: 0, right: 0,
+          display: "flex", justifyContent: "center", gap: 8,
+          zIndex: 5, pointerEvents: "none",
         }}>
-          <SlotRenderer items={slots.fab} ctx={ctx} />
+          <div style={{ pointerEvents: "auto" }}>
+            <SlotRenderer items={slots.fab} ctx={ctx} />
+          </div>
         </div>
       )}
 

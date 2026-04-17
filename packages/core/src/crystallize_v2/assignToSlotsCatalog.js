@@ -109,13 +109,13 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy) {
     // внутри виджета, inferParameters его не видит.
     if (isCreator && parameters.length === 0 && !hasOverlay) continue;
 
-    // fab: создание главной сущности
+    // Creator главной сущности → toolbar (iOS "+"-паттерн, не FAB)
     if (isCreator && !isPerItem) {
       if (hasOverlay) {
         slots.overlay.push(wrapped.overlay);
-        slots.fab.push(wrapped.trigger);
+        slots.toolbar.push(wrapped.trigger);
       } else {
-        slots.fab.push(wrapped);
+        slots.toolbar.push(wrapped);
       }
       continue;
     }
@@ -203,6 +203,10 @@ function isPerItemIntent(intent, projection) {
     .map(e => e.split(":").pop().trim().replace(/\[\]$/, ""));
   if (!intentEntities.includes(mainEntity)) return false;
 
+  // Creator-интент НИКОГДА не per-item — он создаёт новую сущность,
+  // а не оперирует существующей. Проверяем ДО witnesses/conditions.
+  if (normalizeCreates(intent.creates) === mainEntity) return false;
+
   const witnesses = intent.particles?.witnesses || [];
   const hasDottedMainWitness = witnesses.some(w => {
     const base = w.split(".")[0];
@@ -213,8 +217,6 @@ function isPerItemIntent(intent, projection) {
   const conditions = intent.particles?.conditions || [];
   const hasMainCondition = conditions.some(c => c.toLowerCase().startsWith(mainLower + "."));
   if (hasMainCondition) return true;
-
-  if (normalizeCreates(intent.creates) === mainEntity) return false;
 
   return true;
 }

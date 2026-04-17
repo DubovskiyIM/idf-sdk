@@ -55,10 +55,23 @@ export function inferParameters(intent, ONTOLOGY) {
     if (typeof w === "object" && w !== null && w.compute) continue;
 
     if (w.includes(".")) {
-      // Точечный: read-only preview, если не investigation
-      if (phase === "investigation") {
+      // Точечный: editable если investigation ИЛИ confirmation="form" (edit-формы)
+      const isForm = intent.particles?.confirmation === "form";
+      if (phase === "investigation" || isForm) {
         const field = w.split(".").pop();
-        params.push({ name: field, bind: w, editable: true, inferredFrom: "phase-investigation" });
+        // Достаём label из ontology
+        const entityAlias = w.split(".")[0];
+        const entityName = (intent.particles?.entities || [])
+          .map(e => { const parts = e.split(":"); return { alias: parts[0].trim(), entity: (parts[1] || parts[0]).trim() }; })
+          .find(e => e.alias.toLowerCase() === entityAlias.toLowerCase())?.entity;
+        const ontField = entityName && ONTOLOGY?.entities?.[entityName]?.fields?.[field];
+        const label = ontField?.label || field;
+        const param = { name: field, label, bind: w, editable: true, inferredFrom: isForm ? "form-witness" : "phase-investigation" };
+        if (ontField?.visibleWhen) param.visibleWhen = ontField.visibleWhen;
+        if (ontField?.control) param.type = ontField.control;
+        if (ontField?.min != null) param.min = ontField.min;
+        if (ontField?.max != null) param.max = ontField.max;
+        params.push(param);
       }
       // Иначе — preview, не параметр
       continue;
@@ -87,15 +100,24 @@ export function inferParameters(intent, ONTOLOGY) {
       ? entity.fields.map(f => ({ name: f }))
       : Object.entries(entity.fields || {}).map(([n, def]) => ({ name: n, ...def }));
     const existingNames = new Set(params.map(p => p.name));
+    const ownerField = entity.ownerField;
     for (const field of fieldsRaw) {
       if (SYSTEM_FIELDS.has(field.name)) continue;
-      if (isForeignKey(field.name)) continue;
+      // FK'и пропускаем, кроме entityRef-полей с write-доступом (sphereId, goalId).
+      // ownerField (userId) всегда пропускаем — устанавливается из viewer.
+      if (field.name === ownerField) continue;
+      if (isForeignKey(field.name) && field.type !== "entityRef") continue;
       if (existingNames.has(field.name)) continue;
       // Поля без write-доступа — computed/read-only (bidCount, viewCount),
       // не собираются при создании.
       if (field.write && !field.write.includes("*") && !field.write.includes("self")) continue;
       if (field.read && !field.write) continue; // read-only поле
-      params.push({ name: field.name, inferredFrom: "creates-entity", entity: createsNorm });
+      const param = { name: field.name, label: field.label || field.name, inferredFrom: "creates-entity", entity: createsNorm };
+      if (field.visibleWhen) param.visibleWhen = field.visibleWhen;
+      if (field.control) param.type = field.control;
+      if (field.min != null) param.min = field.min;
+      if (field.max != null) param.max = field.max;
+      params.push(param);
     }
   }
 
