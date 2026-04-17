@@ -6,11 +6,16 @@ export default {
   trigger: {
     requires: [],
     match(intents) {
-      // ≥2 intent с creates=Entity(discriminator) — одна base entity
+      // ≥2 intent с creates=Entity(discriminator) с ОДИНАКОВОЙ base entity
       const discriminated = intents.filter(i => typeof i.creates === "string" && /\(.+\)/.test(i.creates));
       if (discriminated.length < 2) return false;
-      const bases = new Set(discriminated.map(i => i.creates.replace(/\(.*\)$/, "").trim()));
-      return bases.size === 1;
+      // Группировка по base: хотя бы одна группа с ≥2
+      const groups = {};
+      for (const i of discriminated) {
+        const base = i.creates.replace(/\(.*\)$/, "").trim();
+        groups[base] = (groups[base] || 0) + 1;
+      }
+      return Object.values(groups).some(count => count >= 2);
     },
   },
   structure: { slot: "sections.itemIntents", description: "Взаимоисключающие creator-intents как voteGroup с цветными опциями" },

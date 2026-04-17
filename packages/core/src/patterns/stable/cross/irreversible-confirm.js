@@ -29,7 +29,7 @@ export default {
       { domain: "invest", projection: "portfolio_detail", reason: "archive_portfolio: irreversibility=high" },
     ],
     shouldNotMatch: [
-      { domain: "invest", projection: "portfolios_root", reason: "create/rename не деструктивны" },
+      { domain: "invest", projection: "goals_root", reason: "create_goal не деструктивен" },
     ],
   },
 };

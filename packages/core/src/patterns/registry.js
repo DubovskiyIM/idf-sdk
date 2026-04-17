@@ -59,6 +59,33 @@ export function createRegistry() {
   return { registerPattern, getPattern, getAllPatterns, matchPatterns, measureCoverage };
 }
 
+// Auto-load stable patterns
+import heroCreate from "./stable/catalog/hero-create.js";
+import phaseAwarePrimaryCta from "./stable/detail/phase-aware-primary-cta.js";
+import subcollections from "./stable/detail/subcollections.js";
+import irreversibleConfirm from "./stable/cross/irreversible-confirm.js";
+import gridCardLayout from "./stable/catalog/grid-card-layout.js";
+import inlineSearch from "./stable/cross/inline-search.js";
+import composerEntry from "./stable/feed/composer-entry.js";
+import voteGroup from "./stable/detail/vote-group.js";
+import antagonistToggle from "./stable/feed/antagonist-toggle.js";
+import footerInlineSetter from "./stable/detail/footer-inline-setter.js";
+
+const STABLE_PATTERNS = [
+  heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
+  gridCardLayout, inlineSearch, composerEntry, voteGroup,
+  antagonistToggle, footerInlineSetter,
+];
+
+export function loadStablePatterns(registry) {
+  for (const pattern of STABLE_PATTERNS) {
+    if (!registry.getPattern(pattern.id)) {
+      registry.registerPattern(pattern);
+    }
+  }
+  return registry;
+}
+
 let _defaultRegistry = null;
 
 export function getDefaultRegistry() {
