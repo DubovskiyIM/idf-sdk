@@ -17,10 +17,10 @@ import {
 } from "./assignToSlotsShared.js";
 import { getIntentIcon } from "./getIntentIcon.js";
 
-export function assignToSlots(INTENTS, projection, ONTOLOGY) {
+export function assignToSlots(INTENTS, projection, ONTOLOGY, strategy) {
   const kind = projection.kind;
-  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY);
-  if (kind === "detail") return assignToSlotsDetail(INTENTS, projection, ONTOLOGY);
+  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy);
+  if (kind === "detail") return assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy);
   if (kind === "wizard") return { kind: "wizard", steps: projection.steps || [], projection };
   return assignToSlotsFeed(INTENTS, projection, ONTOLOGY);
 }
