@@ -1,3 +1,5 @@
+import { buildCardSpec } from "../../../crystallize_v2/cardSpec.js";
+
 export default {
   id: "grid-card-layout",
   version: 1,
@@ -28,6 +30,24 @@ export default {
   structure: {
     slot: "body",
     description: "Grid layout с visual-rich карточками. Для entities с image — grid с preview. Для ≥3 metrics — KPI cards.",
+    /**
+     * Обогащает body: выставляет layout="grid" и генерирует cardSpec
+     * из witnesses проекции. Idempotent: если body.layout уже "grid",
+     * возвращает slots без изменений (author-override или уже применено).
+     *
+     * Чистая функция: не мутирует входной slots.
+     */
+    apply(slots, context) {
+      const { projection, ontology } = context;
+      const body = slots?.body || {};
+      // Idempotent no-op: author уже указал grid или pattern уже применён.
+      if (body.layout === "grid") return slots;
+      const witnesses = projection?.witnesses || [];
+      const cardSpec = buildCardSpec(witnesses, projection?.mainEntity, ontology);
+      const newBody = { ...body, layout: "grid" };
+      if (Object.keys(cardSpec).length > 0) newBody.cardSpec = cardSpec;
+      return { ...slots, body: newBody };
+    },
   },
   rationale: {
     hypothesis: "Визуально плотные entities лучше сканируются в grid чем в list",
