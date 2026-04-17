@@ -55,6 +55,13 @@ export const projections = {
     idParam: "pollId",
     entities: ["Poll", "TimeOption", "Vote", "Participant"],
     witnesses: ["title", "status"],
+    // Автор curated: только TimeOption + Participant. Vote и Meeting
+    // также имеют pollId, но они — служебные (голоса — детали Participant,
+    // Meeting — артефакт после подтверждения). Apply должен уважать этот выбор.
+    subCollections: [
+      { collection: "timeoptions", entity: "TimeOption", foreignKey: "pollId", title: "Варианты" },
+      { collection: "participants", entity: "Participant", foreignKey: "pollId", title: "Участники" },
+    ],
     __originalSectionIds: ["timeoptions", "participants"],
   },
 };

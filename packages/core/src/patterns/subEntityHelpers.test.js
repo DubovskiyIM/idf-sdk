@@ -67,4 +67,84 @@ describe("sectionIdFor", () => {
     expect(sectionIdFor("Position")).toBe("positions");
     expect(sectionIdFor("Transaction")).toBe("transactions");
   });
+
+  it("consonant+y → ies", () => {
+    expect(sectionIdFor("Delivery")).toBe("deliveries");
+    expect(sectionIdFor("Category")).toBe("categories");
+    expect(sectionIdFor("Story")).toBe("stories");
+  });
+
+  it("ends in is → es", () => {
+    expect(sectionIdFor("Hypothesis")).toBe("hypotheses");
+    expect(sectionIdFor("Analysis")).toBe("analyses");
+  });
+
+  it("ends in s/x/z/ch/sh → +es", () => {
+    expect(sectionIdFor("Box")).toBe("boxes");
+    expect(sectionIdFor("Bus")).toBe("buses");
+    expect(sectionIdFor("Match")).toBe("matches");
+    expect(sectionIdFor("Dish")).toBe("dishes");
+  });
+
+  it("vowel+y → +s (не ies)", () => {
+    expect(sectionIdFor("Survey")).toBe("surveys");
+    expect(sectionIdFor("Key")).toBe("keys");
+  });
+
+  it("review / payment / portfolio — regular +s", () => {
+    expect(sectionIdFor("Review")).toBe("reviews");
+    expect(sectionIdFor("Payment")).toBe("payments");
+    expect(sectionIdFor("Portfolio")).toBe("portfolios");
+  });
+});
+
+describe("findSubEntities — last camelCase-segment FK", () => {
+  const reflectLike = {
+    entities: {
+      MoodEntry: {
+        fields: { id: { type: "text" }, userId: { type: "text" } },
+      },
+      HypothesisEvidence: {
+        fields: {
+          id: { type: "text" },
+          entryId: { type: "text" },   // last-segment convention
+        },
+      },
+      EntryActivity: {
+        kind: "assignment",
+        fields: {
+          id: { type: "text" },
+          entryId: { type: "text" },
+          activityId: { type: "text" },
+        },
+      },
+      Unrelated: {
+        fields: { id: { type: "text" } },
+      },
+    },
+  };
+
+  it("finds entities via last camelCase-segment + Id convention (MoodEntry → entryId)", () => {
+    const subs = findSubEntities(reflectLike, "MoodEntry");
+    expect(subs.map(s => s.entity).sort()).toEqual(["EntryActivity", "HypothesisEvidence"]);
+    expect(subs.find(s => s.entity === "HypothesisEvidence").fkField).toBe("entryId");
+    expect(subs.find(s => s.entity === "EntryActivity").fkField).toBe("entryId");
+  });
+
+  it("не находит entities без FK-match (Unrelated)", () => {
+    const subs = findSubEntities(reflectLike, "MoodEntry");
+    expect(subs.find(s => s.entity === "Unrelated")).toBeUndefined();
+  });
+
+  it("single-segment entity — только <mainLower>Id candidate", () => {
+    const ont = {
+      entities: {
+        Portfolio: { fields: { id: {} } },
+        Position: { fields: { portfolioId: {} } },
+        // Нет entity с fkField = "portfolioId" по last-segment — single segment.
+      },
+    };
+    const subs = findSubEntities(ont, "Portfolio");
+    expect(subs.map(s => s.entity)).toEqual(["Position"]);
+  });
 });

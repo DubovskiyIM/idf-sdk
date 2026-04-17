@@ -14,7 +14,12 @@ export default {
     slot: "sections",
     description: "Sub-entity коллекции как inline-секции с add-control и per-item actions. foreignKey определяет связь.",
     apply(slots, context) {
-      const { ontology, mainEntity, intents } = context;
+      const { ontology, mainEntity, intents, projection } = context;
+      // Author curation (§16): если projection.subCollections задан автором —
+      // apply не вмешивается. Автор имеет полный контроль над списком sub-entity.
+      if (Array.isArray(projection?.subCollections) && projection.subCollections.length > 0) {
+        return slots;
+      }
       const subs = findSubEntities(ontology, mainEntity);
       if (subs.length === 0) return slots;
       const existingIds = new Set((slots?.sections || []).map(s => s.id));

@@ -95,6 +95,12 @@ export const projections = {
     idParam: "listingId",
     entities: ["Listing", "Bid"],
     witnesses: ["title", "status"],
+    // Автор curated: только Bid. Order/Watchlist/Message также имеют
+    // listingId, но это не sub-collections лота (Order — после продажи;
+    // Watchlist — user-scope; Message — отдельный чат). Apply no-op.
+    subCollections: [
+      { collection: "bids", entity: "Bid", foreignKey: "listingId", title: "Ставки" },
+    ],
     __originalSectionIds: ["bids"],
   },
   seller_profile: {

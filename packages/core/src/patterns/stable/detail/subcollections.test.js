@@ -65,4 +65,32 @@ describe("subcollections.structure.apply", () => {
     const assignments = result.sections.find(s => s.id === "assignments");
     expect(assignments.layout).toBe("m2m");
   });
+
+  it("author curation — projection.subCollections задан → apply no-op", () => {
+    const slots = { sections: [] };
+    const projection = {
+      mainEntity: "Portfolio",
+      subCollections: [{ entity: "Position" }],
+    };
+    const result = subcollections.structure.apply(slots, {
+      ontology,
+      mainEntity: "Portfolio",
+      intents,
+      projection,
+    });
+    // apply не должен добавить Transaction — автор зафиксировал curated список.
+    expect(result).toBe(slots);
+  });
+
+  it("empty projection.subCollections — НЕ считается curated (apply отрабатывает)", () => {
+    const slots = {};
+    const projection = { mainEntity: "Portfolio", subCollections: [] };
+    const result = subcollections.structure.apply(slots, {
+      ontology,
+      mainEntity: "Portfolio",
+      intents,
+      projection,
+    });
+    expect(result.sections).toHaveLength(2);
+  });
 });

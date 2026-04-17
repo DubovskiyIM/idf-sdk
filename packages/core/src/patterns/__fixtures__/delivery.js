@@ -74,6 +74,12 @@ export const projections = {
     entities: ["Order", "OrderItem", "Delivery"],
     idParam: "orderId",
     witnesses: ["status", "totalAmount"],
+    // Автор curated: только OrderItem. Delivery/Payment/Review — связанные
+    // артефакты, но рендерятся отдельно (tracker, payment flow, отдельный
+    // review-projection). Apply должен уважать этот выбор.
+    subCollections: [
+      { collection: "orderitems", entity: "OrderItem", foreignKey: "orderId", title: "Позиции" },
+    ],
     __originalSectionIds: ["orderitems"],
   },
   cart: {
@@ -83,6 +89,9 @@ export const projections = {
     entities: ["Order", "OrderItem", "MenuItem"],
     filter: "item.status === 'draft'",
     witnesses: ["totalAmount", "status"],
+    subCollections: [
+      { collection: "orderitems", entity: "OrderItem", foreignKey: "orderId", title: "В корзине" },
+    ],
     __originalSectionIds: ["orderitems"],
   },
 };
