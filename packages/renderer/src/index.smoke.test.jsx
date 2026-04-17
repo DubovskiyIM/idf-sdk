@@ -50,4 +50,19 @@ describe("@intent-driven/renderer public API", () => {
     const { container } = render(<ProjectionRendererV2 />);
     expect(container.textContent).toMatch(/Нет артефакта/);
   });
+
+  it("ProjectionRendererV2 uses artifactOverride when provided (§27 authoring-env)", () => {
+    // Минимальный валидный артефакт v2 с distinctive projection-id,
+    // который canvas-архетип выведет в placeholder'е, т.к. не зарегистрирован.
+    const overrideArtifact = {
+      version: 2,
+      projection: "inspector-preview-marker-xyz",
+      archetype: "canvas",
+      slots: { body: {} },
+    };
+    const { container } = render(
+      <ProjectionRendererV2 artifactOverride={overrideArtifact} world={{}} />
+    );
+    expect(container.textContent).toMatch(/inspector-preview-marker-xyz/);
+  });
 });
