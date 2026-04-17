@@ -53,21 +53,34 @@ export function sectionIdFor(entity) {
 /**
  * Build section descriptor for sub-entity.
  * Collects intents that create/modify/remove the sub-entity.
+ *
+ * Intent target matching — проверяем три формы:
+ *   1. singular lowercase: "position" / "position.x" (canonical convention)
+ *   2. camelCase plural (collection form): "transactions" / "marketSignals"
+ *   3. explicit entity collection если объявлена в ontology.entities[E].collection
  */
 export function buildSection(entity, fkField, intents, ontology) {
+  const entityDef = ontology?.entities?.[entity];
   const entityLower = entity.toLowerCase();
+  const collectionFromDef = typeof entityDef?.collection === "string" ? entityDef.collection : null;
+  const camelPlural = entity.charAt(0).toLowerCase() + entity.slice(1) + "s";
+  const targets = new Set([entityLower, camelPlural]);
+  if (collectionFromDef) targets.add(collectionFromDef);
+
   const relevantIntents = (intents || [])
     .filter(intent => {
       if (intent.creates && stripCreatesArgs(intent.creates) === entity) return true;
       const effects = intent.particles?.effects || [];
       return effects.some(e => {
         if (typeof e.target !== "string") return false;
-        return e.target === entityLower || e.target.startsWith(entityLower + ".");
+        for (const t of targets) {
+          if (e.target === t || e.target.startsWith(t + ".")) return true;
+        }
+        return false;
       });
     })
     .map(i => i.id);
 
-  const entityDef = ontology?.entities?.[entity];
   const layout = entityDef?.kind === "assignment" ? "m2m" : "list";
 
   return {
