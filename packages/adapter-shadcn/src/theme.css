@@ -21,12 +21,9 @@
 /* Sketch-шрифты для рукописного UI (как в wireframe-mockup) */
 @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@400;600;700&family=Architects+Daughter&display=swap');
 
-/* Глобально предотвращаем горизонтальный scroll на корне */
-html, body {
+/* Scoped к shadcn-адаптеру, не глобально */
+[data-adapter="shadcn"] {
   overflow-x: hidden;
-  max-width: 100vw;
-}
-body {
   background-color: var(--color-doodle-bg);
 }
 
@@ -80,4 +77,29 @@ body {
   text-decoration-style: wavy;
   text-decoration-color: var(--color-doodle-border);
   text-underline-offset: 4px;
+}
+
+/* IDF Token Bridge overrides */
+[data-adapter="shadcn"] {
+  --idf-primary: #4a7c59;
+  --idf-primary-light: rgba(74, 124, 89, 0.1);
+  --idf-primary-border: #2c2420;
+  --idf-surface: #fdfaf3;
+  --idf-card: #fdfaf3;
+  --idf-border: #b8a890;
+  --idf-hover: #f5efe3;
+  --idf-text: #2c2420;
+  --idf-text-muted: #6b5d52;
+  --idf-danger: #c25a3a;
+  --idf-danger-light: rgba(194, 90, 58, 0.08);
+  --idf-danger-text: #c25a3a;
+  --idf-success: #4a7c59;
+  --idf-warning: #c98f3f;
+  --idf-accent: #4a7c59;
+  --idf-accent-light: rgba(74, 124, 89, 0.06);
+  --idf-gray-1: #fdfaf3;
+  --idf-gray-3: #b8a890;
+  --idf-gray-7: #6b5d52;
+  --idf-font: 'Caveat', 'Comic Sans MS', 'Segoe Print', cursive;
+  --idf-radius: 14px;
 }

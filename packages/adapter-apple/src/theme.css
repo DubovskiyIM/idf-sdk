@@ -37,3 +37,28 @@
 .apple-transition {
   transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
 }
+
+/* IDF Token Bridge overrides */
+[data-adapter="apple"] {
+  --idf-primary: #007aff;
+  --idf-primary-light: rgba(0, 122, 255, 0.08);
+  --idf-primary-border: rgba(0, 122, 255, 0.2);
+  --idf-surface: #f5f5f7;
+  --idf-card: rgba(255, 255, 255, 0.85);
+  --idf-border: rgba(0, 0, 0, 0.08);
+  --idf-hover: rgba(0, 0, 0, 0.03);
+  --idf-text: #1d1d1f;
+  --idf-text-muted: #86868b;
+  --idf-danger: #ff3b30;
+  --idf-danger-light: rgba(255, 59, 48, 0.06);
+  --idf-danger-text: #ff3b30;
+  --idf-success: #34c759;
+  --idf-warning: #ff9500;
+  --idf-accent: #007aff;
+  --idf-accent-light: rgba(175, 82, 222, 0.06);
+  --idf-gray-1: #f5f5f7;
+  --idf-gray-3: rgba(0, 0, 0, 0.08);
+  --idf-gray-7: #48484a;
+  --idf-font: -apple-system, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  --idf-radius: 18px;
+}

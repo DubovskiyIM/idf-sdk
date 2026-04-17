@@ -26,12 +26,12 @@ export default function InlineSetter({ spec, target, ctx }) {
     <div style={{
       display: "flex", alignItems: "center", gap: 10,
       padding: 12,
-      background: "var(--mantine-color-default)",
-      border: "1px solid var(--mantine-color-default-border)",
+      background: "var(--idf-card)",
+      border: "1px solid var(--idf-border)",
       borderRadius: 8,
     }}>
       {spec.icon && <Icon emoji={spec.icon} size={16} />}
-      <span style={{ fontSize: 13, color: "var(--mantine-color-text)", fontWeight: 500 }}>
+      <span style={{ fontSize: 13, color: "var(--idf-text)", fontWeight: 500 }}>
         {spec.label}:
       </span>
       <div style={{ flex: 1, minWidth: 180 }}>

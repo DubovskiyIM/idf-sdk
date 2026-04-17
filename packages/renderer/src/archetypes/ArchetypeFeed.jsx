@@ -33,14 +33,14 @@ export default function ArchetypeFeed({ slots, ctx: parentCtx }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--mantine-color-body)",
+      background: "var(--idf-surface)",
     }}>
       {slots.header?.length > 0 && (
         <div style={{
           display: "flex", alignItems: "center", gap: 12,
           padding: "12px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
         }}>
           <SlotRenderer items={slots.header} ctx={ctx} />
         </div>
@@ -50,8 +50,8 @@ export default function ArchetypeFeed({ slots, ctx: parentCtx }) {
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
           padding: "8px 16px",
-          background: "var(--mantine-color-default)",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-card)",
+          borderBottom: "1px solid var(--idf-border)",
         }}>
           <SlotRenderer items={slots.toolbar} ctx={ctx} />
         </div>
@@ -66,7 +66,7 @@ export default function ArchetypeFeed({ slots, ctx: parentCtx }) {
 
         {isDesktop && slots.context?.length > 0 && (
           <aside style={{
-            width: 300, background: "var(--mantine-color-default)", borderLeft: "1px solid var(--mantine-color-default-border)",
+            width: 300, background: "var(--idf-card)", borderLeft: "1px solid var(--idf-border)",
             padding: 16, overflow: "auto",
           }}>
             <SlotRenderer items={slots.context} ctx={ctx} />
@@ -104,14 +104,14 @@ function PinnedMessageBanner({ ctx }) {
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
       padding: "6px 16px",
-      background: "var(--mantine-color-primary-light, rgba(99,102,241,0.08))",
-      borderBottom: "1px solid var(--mantine-color-default-border)",
-      fontSize: 12, color: "var(--mantine-color-text)",
+      background: "var(--idf-primary-light, rgba(99,102,241,0.08))",
+      borderBottom: "1px solid var(--idf-border)",
+      fontSize: 12, color: "var(--idf-text)",
     }}>
       <Icon emoji="📌" size={14} />
       <div style={{ flex: 1, overflow: "hidden" }}>
         {senderName && <span style={{ fontWeight: 600, marginRight: 6 }}>{senderName}</span>}
-        <span style={{ color: "var(--mantine-color-dimmed)" }}>
+        <span style={{ color: "var(--idf-text-muted)" }}>
           {(msg.content || "").slice(0, 80)}{(msg.content || "").length > 80 ? "…" : ""}
         </span>
       </div>
@@ -120,7 +120,7 @@ function PinnedMessageBanner({ ctx }) {
         title="Открепить"
         style={{
           background: "transparent", border: "none", cursor: "pointer",
-          color: "var(--mantine-color-dimmed)", fontSize: 14, padding: 4,
+          color: "var(--idf-text-muted)", fontSize: 14, padding: 4,
         }}
       >✕</button>
     </div>

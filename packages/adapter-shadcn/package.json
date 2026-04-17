@@ -21,7 +21,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup && node -e \"require('fs').writeFileSync('dist/theme.css', require('fs').readFileSync('src/theme.css','utf8').replace(/@import \\\"tailwindcss\\\";\\n?/g, ''))\"",
+    "build": "tsup && node -e \"const f=require('fs'),s=f.readFileSync('src/theme.css','utf8').replace(/@import \\\"tailwindcss\\\";\\n?/g,'');const i=[];const r=s.replace(/@import\\s+url\\([^)]+\\);\\s*/g,m=>{i.push(m.trim());return''});f.writeFileSync('dist/theme.css',i.join('\\n')+(i.length?'\\n':'')+r)\"",
     "test": "vitest run"
   },
   "peerDependencies": {

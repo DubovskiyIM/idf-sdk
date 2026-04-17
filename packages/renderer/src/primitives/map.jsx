@@ -159,8 +159,8 @@ function SvgMapFallback({ layers, height = 400, width = "100%" }) {
       <div style={{
         height, width, display: "flex", alignItems: "center",
         justifyContent: "center", color: "#9ca3af", fontSize: 12,
-        border: "1px solid var(--mantine-color-gray-3, #e5e7eb)",
-        borderRadius: 8, background: "var(--mantine-color-gray-0, #f9fafb)"
+        border: "1px solid var(--idf-gray-3, #e5e7eb)",
+        borderRadius: 8, background: "var(--idf-gray-1, #f9fafb)"
       }}>
         Нет географических данных
       </div>
@@ -188,8 +188,8 @@ function SvgMapFallback({ layers, height = 400, width = "100%" }) {
     <svg viewBox={`0 0 ${viewW} ${viewH}`} width={width} height={height}
          preserveAspectRatio="xMidYMid meet" style={{ display: "block" }}>
       <rect x={0} y={0} width={viewW} height={viewH}
-            fill="var(--mantine-color-gray-0, #f9fafb)"
-            stroke="var(--mantine-color-gray-3, #e5e7eb)" strokeWidth="1" />
+            fill="var(--idf-gray-1, #f9fafb)"
+            stroke="var(--idf-gray-3, #e5e7eb)" strokeWidth="1" />
       {(layers || []).map((raw, i) => {
         const layer = normalizeLayer(raw);
         switch (layer.kind) {
@@ -246,7 +246,7 @@ function SvgMapFallback({ layers, height = 400, width = "100%" }) {
                               stroke="#fff" strokeWidth="2" />
                       {it.label && (
                         <text x={p.x + 8} y={p.y + 4} fontSize="11"
-                              fill="var(--mantine-color-gray-7, #374151)">
+                              fill="var(--idf-gray-7, #374151)">
                           {it.label}
                         </text>
                       )}

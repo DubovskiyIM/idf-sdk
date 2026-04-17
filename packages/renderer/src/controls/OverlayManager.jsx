@@ -55,9 +55,9 @@ export default function OverlayManager({ activeKey, activeContext, overlayMap, o
     if (!widget) {
       console.warn("[OverlayManager] unknown capture widget:", overlay.widgetId);
       return (
-        <div style={{ padding: 24, textAlign: "center", color: "var(--mantine-color-dimmed)" }}>
+        <div style={{ padding: 24, textAlign: "center", color: "var(--idf-text-muted)" }}>
           Виджет «{overlay.widgetId}» не найден
-          <button onClick={onClose} style={{ marginTop: 12, display: "block", margin: "12px auto 0", padding: "6px 16px", borderRadius: 6, border: "1px solid var(--mantine-color-default-border)", background: "var(--mantine-color-default)", cursor: "pointer" }}>Закрыть</button>
+          <button onClick={onClose} style={{ marginTop: 12, display: "block", margin: "12px auto 0", padding: "6px 16px", borderRadius: 6, border: "1px solid var(--idf-border)", background: "var(--idf-card)", cursor: "pointer" }}>Закрыть</button>
         </div>
       );
     }
@@ -69,9 +69,9 @@ export default function OverlayManager({ activeKey, activeContext, overlayMap, o
   if (!Component) {
     console.warn("[OverlayManager] unknown overlay type:", overlay.type);
     return (
-      <div style={{ padding: 24, textAlign: "center", color: "var(--mantine-color-dimmed)" }}>
+      <div style={{ padding: 24, textAlign: "center", color: "var(--idf-text-muted)" }}>
         Тип overlay «{overlay.type}» не поддержан
-        <button onClick={onClose} style={{ marginTop: 12, display: "block", margin: "12px auto 0", padding: "6px 16px", borderRadius: 6, border: "1px solid var(--mantine-color-default-border)", background: "var(--mantine-color-default)", cursor: "pointer" }}>Закрыть</button>
+        <button onClick={onClose} style={{ marginTop: 12, display: "block", margin: "12px auto 0", padding: "6px 16px", borderRadius: 6, border: "1px solid var(--idf-border)", background: "var(--idf-card)", cursor: "pointer" }}>Закрыть</button>
       </div>
     );
   }

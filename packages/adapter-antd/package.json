@@ -11,7 +11,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
       "require": "./dist/index.cjs"
-    }
+    },
+    "./styles.css": "./dist/theme.css"
   },
   "files": [
     "dist",
@@ -20,7 +21,7 @@
     "LICENSE"
   ],
   "scripts": {
-    "build": "tsup",
+    "build": "tsup && cp src/theme.css dist/theme.css",
     "test": "vitest run"
   },
   "peerDependencies": {
@@ -66,5 +67,7 @@
     "ui-adapter",
     "react"
   ],
-  "sideEffects": false
+  "sideEffects": [
+    "*.css"
+  ]
 }

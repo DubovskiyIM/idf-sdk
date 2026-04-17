@@ -48,30 +48,30 @@ export default function Composer({ spec, ctx }) {
   };
 
   return (
-    <div style={{ background: "var(--mantine-color-default)", borderTop: "1px solid var(--mantine-color-default-border)" }}>
+    <div style={{ background: "var(--idf-card)", borderTop: "1px solid var(--idf-border)" }}>
       {/* Reply banner */}
       {replyContext && (
         <div style={{
           display: "flex", alignItems: "center", gap: 8,
           padding: "6px 12px",
-          background: "var(--mantine-color-primary-light, rgba(99,102,241,0.08))",
-          borderBottom: "1px solid var(--mantine-color-default-border)",
+          background: "var(--idf-primary-light, rgba(99,102,241,0.08))",
+          borderBottom: "1px solid var(--idf-border)",
           fontSize: 12,
         }}>
-          <span style={{ color: "var(--mantine-color-primary, #6366f1)", fontWeight: 600 }}>↩</span>
+          <span style={{ color: "var(--idf-primary, #6366f1)", fontWeight: 600 }}>↩</span>
           <div style={{ flex: 1, overflow: "hidden" }}>
             {replyContext.senderName && (
-              <span style={{ fontWeight: 600, color: "var(--mantine-color-primary, #6366f1)", marginRight: 6 }}>
+              <span style={{ fontWeight: 600, color: "var(--idf-primary, #6366f1)", marginRight: 6 }}>
                 {replyContext.senderName}
               </span>
             )}
-            <span style={{ color: "var(--mantine-color-dimmed)" }}>
+            <span style={{ color: "var(--idf-text-muted)" }}>
               {(replyContext.preview || "").slice(0, 60)}{(replyContext.preview || "").length > 60 ? "…" : ""}
             </span>
           </div>
           <button
             onClick={() => ctx.setComposerMode?.(null)}
-            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--mantine-color-dimmed)", fontSize: 14, padding: 4 }}
+            style={{ background: "transparent", border: "none", cursor: "pointer", color: "var(--idf-text-muted)", fontSize: 14, padding: 4 }}
           >✕</button>
         </div>
       )}
@@ -83,13 +83,13 @@ export default function Composer({ spec, ctx }) {
               onClick={() => setAttachMenuOpen(!attachMenuOpen)}
               style={{
                 background: "transparent", border: "none", cursor: "pointer",
-                fontSize: 20, padding: 4, color: "var(--mantine-color-dimmed)",
+                fontSize: 20, padding: 4, color: "var(--idf-text-muted)",
               }}
             >+</button>
             {attachMenuOpen && (
               <div style={{
                 position: "absolute", bottom: "100%", left: 0, marginBottom: 4,
-                background: "var(--mantine-color-default)", border: "1px solid var(--mantine-color-default-border)", borderRadius: 8,
+                background: "var(--idf-card)", border: "1px solid var(--idf-border)", borderRadius: 8,
                 boxShadow: "0 4px 12px rgba(0,0,0,0.08)", padding: 4, zIndex: 10, minWidth: 180,
               }}>
                 {spec.attachments.map(id => (
@@ -117,9 +117,9 @@ export default function Composer({ spec, ctx }) {
           autoFocus={!!replyContext}
           style={{
             flex: 1, padding: "8px 12px", borderRadius: 20,
-            border: `1px solid ${replyContext ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default-border)"}`,
-            background: "var(--mantine-color-body)",
-            color: "var(--mantine-color-text)",
+            border: `1px solid ${replyContext ? "var(--idf-primary, #6366f1)" : "var(--idf-border)"}`,
+            background: "var(--idf-surface)",
+            color: "var(--idf-text)",
             fontSize: 14, outline: "none",
           }}
         />
@@ -128,8 +128,8 @@ export default function Composer({ spec, ctx }) {
           disabled={!text.trim()}
           style={{
             padding: "8px 16px", borderRadius: 20, border: "none",
-            background: text.trim() ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default-hover)",
-            color: text.trim() ? "#fff" : "var(--mantine-color-dimmed)", cursor: text.trim() ? "pointer" : "default",
+            background: text.trim() ? "var(--idf-primary, #6366f1)" : "var(--idf-hover)",
+            color: text.trim() ? "#fff" : "var(--idf-text-muted)", cursor: text.trim() ? "pointer" : "default",
             fontWeight: 600,
           }}
         >↑</button>

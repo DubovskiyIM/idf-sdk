@@ -501,8 +501,8 @@ function AntdAvatar({ src, name, size = 40 }) {
 function AntdPaper({ children, padding, withBorder, style }) {
   return (
     <Card
-      size={padding === "sm" ? "small" : "default"}
-      bordered={withBorder !== false}
+      size={padding === "sm" ? "small" : "medium"}
+      variant={withBorder !== false ? "bordered" : "borderless"}
       style={{ borderRadius: 8, ...(style || {}) }}
       styles={{ body: { padding: padding ?? 16 } }}
     >

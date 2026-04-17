@@ -68,11 +68,11 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
   if (!isOwner) {
     return (
       <div style={{
-        padding: 40, textAlign: "center", color: "var(--mantine-color-dimmed)",
+        padding: 40, textAlign: "center", color: "var(--idf-text-muted)",
         display: "flex", flexDirection: "column", alignItems: "center", gap: 12,
       }}>
         <div style={{ fontSize: 40 }}>🔒</div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--mantine-color-text)" }}>
+        <div style={{ fontSize: 14, fontWeight: 600, color: "var(--idf-text)" }}>
           Нет доступа к редактированию
         </div>
         <div style={{ fontSize: 12 }}>
@@ -158,15 +158,15 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
   return (
     <div style={{
       display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--mantine-color-body)",
+      background: "var(--idf-surface)",
     }}>
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
-        padding: "12px 16px", background: "var(--mantine-color-default)", borderBottom: "1px solid var(--mantine-color-default-border)",
+        padding: "12px 16px", background: "var(--idf-card)", borderBottom: "1px solid var(--idf-border)",
       }}>
         <button onClick={goBack} style={{
-          padding: "6px 12px", borderRadius: 6, border: "1px solid var(--mantine-color-default-border)",
-          background: "var(--mantine-color-default)", color: "var(--mantine-color-text)", cursor: "pointer", fontSize: 13,
+          padding: "6px 12px", borderRadius: 6, border: "1px solid var(--idf-border)",
+          background: "var(--idf-card)", color: "var(--idf-text)", cursor: "pointer", fontSize: 13,
         }}>← Отмена</button>
         <h1 style={{ margin: 0, fontSize: 18, fontWeight: 700, flex: 1 }}>
           {projection.name}
@@ -176,8 +176,8 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
           disabled={submitting || dirtyFields.length === 0}
           style={{
             padding: "8px 18px", borderRadius: 6, border: "none",
-            background: dirtyFields.length > 0 && !submitting ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default)",
-            color: dirtyFields.length > 0 ? "#fff" : "var(--mantine-color-dimmed)", fontWeight: 600,
+            background: dirtyFields.length > 0 && !submitting ? "var(--idf-primary, #6366f1)" : "var(--idf-card)",
+            color: dirtyFields.length > 0 ? "#fff" : "var(--idf-text-muted)", fontWeight: 600,
             cursor: dirtyFields.length > 0 && !submitting ? "pointer" : "default",
             opacity: submitting ? 0.6 : 1,
           }}
@@ -188,8 +188,8 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
 
       <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
         <div style={{
-          maxWidth: 640, margin: "0 auto", background: "var(--mantine-color-default)",
-          borderRadius: 12, padding: 24, border: "1px solid var(--mantine-color-default-border)",
+          maxWidth: 640, margin: "0 auto", background: "var(--idf-card)",
+          borderRadius: 12, padding: 24, border: "1px solid var(--idf-border)",
         }}>
           {body.sections ? (
             body.sections.map(section => (
@@ -197,9 +197,9 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
                 <div style={{
                   fontSize: 13, fontWeight: 700, textTransform: "uppercase",
                   letterSpacing: "0.04em",
-                  color: "var(--mantine-color-dimmed)",
+                  color: "var(--idf-text-muted)",
                   marginBottom: 12, paddingBottom: 8,
-                  borderBottom: "1px solid var(--mantine-color-default-border)",
+                  borderBottom: "1px solid var(--idf-border)",
                 }}>{section.title}</div>
                 {section.fields.filter(f => f.editable).map(field => (
                   <FormField key={field.name} field={field} values={values} setValues={setValues} errors={errors} world={parentCtx.world} />

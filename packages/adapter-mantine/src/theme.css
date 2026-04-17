@@ -1,0 +1,24 @@
+/* Mantine adapter — IDF Token Bridge: map --idf-* to --mantine-color-* */
+[data-adapter="mantine"], :root {
+  --idf-primary: var(--mantine-color-primary, #6366f1);
+  --idf-primary-light: var(--mantine-color-primary-light, rgba(99, 102, 241, 0.08));
+  --idf-primary-border: var(--mantine-color-primary-light-border, rgba(99, 102, 241, 0.3));
+  --idf-surface: var(--mantine-color-body, #fff);
+  --idf-card: var(--mantine-color-default, #fff);
+  --idf-border: var(--mantine-color-default-border, #e5e7eb);
+  --idf-hover: var(--mantine-color-default-hover, #f9fafb);
+  --idf-text: var(--mantine-color-text, #1f2937);
+  --idf-text-muted: var(--mantine-color-dimmed, #9ca3af);
+  --idf-danger: var(--mantine-color-red-6, #ef4444);
+  --idf-danger-light: var(--mantine-color-red-light, rgba(239, 68, 68, 0.08));
+  --idf-danger-text: var(--mantine-color-red-light-color, #dc2626);
+  --idf-success: var(--mantine-color-teal-6, #0d9488);
+  --idf-warning: var(--mantine-color-yellow-6, #f59e0b);
+  --idf-accent: var(--mantine-color-indigo-6, #6366f1);
+  --idf-accent-light: var(--mantine-color-violet-light, rgba(99, 102, 241, 0.06));
+  --idf-gray-1: var(--mantine-color-gray-0, #f9fafb);
+  --idf-gray-3: var(--mantine-color-gray-3, #d1d5db);
+  --idf-gray-7: var(--mantine-color-gray-7, #374151);
+  --idf-font: system-ui, -apple-system, sans-serif;
+  --idf-radius: 8px;
+}

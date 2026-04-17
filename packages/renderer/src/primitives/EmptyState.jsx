@@ -13,13 +13,13 @@ export default function EmptyState({ title, hint, icon = "📭", size = "md" }) 
     <div style={{
       padding: isSm ? "24px 16px" : "64px 32px",
       textAlign: "center",
-      color: "var(--mantine-color-dimmed, #9ca3af)",
+      color: "var(--idf-text-muted, #9ca3af)",
       display: "flex", flexDirection: "column", alignItems: "center", gap: isSm ? 6 : 12,
     }}>
       <div style={{ fontSize: isSm ? 28 : 48, opacity: 0.5, lineHeight: 1 }}>{icon}</div>
       <div style={{
         fontSize: isSm ? 13 : 15,
-        color: "var(--mantine-color-text, #374151)",
+        color: "var(--idf-text, #374151)",
         fontWeight: 500,
       }}>{title}</div>
       {hint && (

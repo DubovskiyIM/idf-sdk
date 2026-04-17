@@ -56,9 +56,9 @@ function SvgLineFallback({ data, xField = "x", yField = "y", height = 220, width
   return (
     <svg viewBox={`0 0 ${viewW} ${viewH}`} width={width} height={height} preserveAspectRatio="none" style={{ display: "block" }}>
       <path d={area} fill="rgba(99, 102, 241, 0.15)" />
-      <path d={path} stroke="var(--mantine-color-indigo-6, #6366f1)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d={path} stroke="var(--idf-accent, #6366f1)" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round" />
       {pts.map(([x, y], i) => (
-        <circle key={i} cx={x} cy={y} r="2.5" fill="var(--mantine-color-indigo-6, #6366f1)" />
+        <circle key={i} cx={x} cy={y} r="2.5" fill="var(--idf-accent, #6366f1)" />
       ))}
     </svg>
   );
@@ -87,7 +87,7 @@ function SvgPieFallback({ data, xField = "type", yField = "value", height = 220 
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 16, height }}>
       <svg viewBox="0 0 220 220" width="220" height={height} style={{ flexShrink: 0 }}>
-        {slices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="var(--mantine-color-body, #fff)" strokeWidth="2" />)}
+        {slices.map((s, i) => <path key={i} d={s.path} fill={s.color} stroke="var(--idf-surface, #fff)" strokeWidth="2" />)}
       </svg>
       <div style={{ fontSize: 12, lineHeight: 1.7 }}>
         {slices.map((s, i) => (

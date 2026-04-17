@@ -84,7 +84,7 @@ export default function VoterSelector({ spec, target, ctx }) {
             fontWeight: 600,
             textTransform: "uppercase",
             letterSpacing: "0.06em",
-            color: "var(--mantine-color-dimmed)",
+            color: "var(--idf-text-muted)",
             marginBottom: 8,
           }}>
             Голосовать как
@@ -96,9 +96,9 @@ export default function VoterSelector({ spec, target, ctx }) {
               width: "100%",
               padding: "8px 12px",
               borderRadius: 6,
-              border: "1px solid var(--mantine-color-default-border)",
-              background: "var(--mantine-color-default)",
-              color: "var(--mantine-color-text)",
+              border: "1px solid var(--idf-border)",
+              background: "var(--idf-card)",
+              color: "var(--idf-text)",
               fontSize: 14,
             }}
           >
@@ -116,10 +116,10 @@ export default function VoterSelector({ spec, target, ctx }) {
 function FallbackPaper({ children }) {
   return (
     <div style={{
-      background: "var(--mantine-color-default)",
+      background: "var(--idf-card)",
       borderRadius: 12,
       padding: 16,
-      border: "1px solid var(--mantine-color-default-border)",
+      border: "1px solid var(--idf-border)",
     }}>
       {children}
     </div>

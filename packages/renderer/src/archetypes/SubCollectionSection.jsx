@@ -50,7 +50,7 @@ export default function SubCollectionSection({ section, target, ctx }) {
         fontWeight: 600,
         textTransform: "uppercase",
         letterSpacing: "0.06em",
-        color: "var(--mantine-color-dimmed)",
+        color: "var(--idf-text-muted)",
         marginBottom: 12,
       }}>
         {title} ({items.length})
@@ -63,7 +63,7 @@ export default function SubCollectionSection({ section, target, ctx }) {
 
       {/* Список элементов */}
       {items.length === 0 && !canAdd && (
-        <div style={{ color: "var(--mantine-color-dimmed)", fontSize: 13, textAlign: "center", padding: 12 }}>
+        <div style={{ color: "var(--idf-text-muted)", fontSize: 13, textAlign: "center", padding: 12 }}>
           {emptyLabel || "Пусто"}
         </div>
       )}
@@ -91,10 +91,10 @@ export default function SubCollectionSection({ section, target, ctx }) {
 function FallbackPaper({ children }) {
   return (
     <div style={{
-      background: "var(--mantine-color-default)",
+      background: "var(--idf-card)",
       borderRadius: 12,
       padding: 20,
-      border: "1px solid var(--mantine-color-default-border)",
+      border: "1px solid var(--idf-border)",
     }}>
       {children}
     </div>
@@ -146,8 +146,8 @@ function SubCollectionItem({ item, itemView, itemIntents, ctx, target, editableF
       alignItems: "center",
       gap: 12,
       padding: "10px 14px",
-      background: "var(--mantine-color-default-hover)",
-      border: `1px solid ${editing ? "var(--mantine-color-primary, #6366f1)" : "var(--mantine-color-default-border)"}`,
+      background: "var(--idf-hover)",
+      border: `1px solid ${editing ? "var(--idf-primary, #6366f1)" : "var(--idf-border)"}`,
       borderRadius: 8,
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
@@ -161,9 +161,9 @@ function SubCollectionItem({ item, itemView, itemIntents, ctx, target, editableF
                 placeholder={field}
                 style={{
                   padding: "4px 8px", borderRadius: 4, fontSize: 13,
-                  border: "1px solid var(--mantine-color-default-border)",
-                  background: "var(--mantine-color-body)",
-                  color: "var(--mantine-color-text)",
+                  border: "1px solid var(--idf-border)",
+                  background: "var(--idf-surface)",
+                  color: "var(--idf-text)",
                   outline: "none",
                 }}
                 onKeyDown={e => { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") setEditing(false); }}
@@ -172,7 +172,7 @@ function SubCollectionItem({ item, itemView, itemIntents, ctx, target, editableF
             ))}
             <div style={{ display: "flex", gap: 4 }}>
               <button onClick={saveEdit} style={miniBtn}>Сохранить</button>
-              <button onClick={() => setEditing(false)} style={{ ...miniBtn, color: "var(--mantine-color-dimmed)" }}>Отмена</button>
+              <button onClick={() => setEditing(false)} style={{ ...miniBtn, color: "var(--idf-text-muted)" }}>Отмена</button>
             </div>
           </div>
         ) : (
@@ -222,15 +222,15 @@ function SubCollectionItem({ item, itemView, itemIntents, ctx, target, editableF
 
 const actionBtn = {
   padding: "6px 10px", borderRadius: 6,
-  border: "1px solid var(--mantine-color-default-border)",
-  background: "var(--mantine-color-default)",
+  border: "1px solid var(--idf-border)",
+  background: "var(--idf-card)",
   cursor: "pointer", fontSize: 12,
   display: "inline-flex", alignItems: "center", gap: 4,
 };
 
 const miniBtn = {
   padding: "3px 10px", borderRadius: 4, border: "none",
-  background: "var(--mantine-color-primary, #6366f1)", color: "#fff",
+  background: "var(--idf-primary, #6366f1)", color: "#fff",
   cursor: "pointer", fontSize: 11,
 };
 

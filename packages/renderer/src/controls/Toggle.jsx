@@ -12,15 +12,15 @@ export default function Toggle({ spec, ctx }) {
       onClick={() => ctx.exec(activeIntent, {})}
       style={{
         padding: "6px 10px", borderRadius: 6,
-        border: "1px solid var(--mantine-color-default-border)",
-        background: "var(--mantine-color-default)",
+        border: "1px solid var(--idf-border)",
+        background: "var(--idf-card)",
         cursor: "pointer", fontSize: 12,
         display: "inline-flex", alignItems: "center", gap: 4,
       }}
       title={label}
     >
       <Icon emoji={icon} size={14} />
-      <span style={{ fontSize: 11, color: "var(--mantine-color-dimmed)" }}>{label}</span>
+      <span style={{ fontSize: 11, color: "var(--idf-text-muted)" }}>{label}</span>
     </button>
   );
 }
