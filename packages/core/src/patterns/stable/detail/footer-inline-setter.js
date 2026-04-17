@@ -1,3 +1,20 @@
+// Квалификация footer-inline-setter: intent с ровно одним replace-эффектом
+// на поле mainEntity (`entityLower.field`). Семантически — «один value-param»:
+// сам field в target является единственным вводимым значением. Авторские
+// parameters (если объявлены) имеют entity-ref для mainEntity как implicit
+// context → их счётчик не надёжен и здесь не используется.
+function isSingleValueReplaceOnMain(intent, mainEntity) {
+  const mainLower = (mainEntity || "").toLowerCase();
+  const effects = intent?.particles?.effects || [];
+  if (effects.length !== 1 || effects[0].α !== "replace") return false;
+  const target = effects[0].target;
+  if (typeof target !== "string" || !target.startsWith(mainLower + ".")) return false;
+  // Target должен быть именно `entityLower.field`, без глубокой вложенности
+  // (`entity.subObj.field` — не single-setter, скорее nested form).
+  const rest = target.slice(mainLower.length + 1);
+  return rest.length > 0 && !rest.includes(".");
+}
+
 export default {
   id: "footer-inline-setter",
   version: 1,
@@ -6,14 +23,8 @@ export default {
   trigger: {
     requires: [],
     match(intents, ontology, projection) {
-      const mainLower = (projection?.mainEntity || "").toLowerCase();
-      return intents.some(i => {
-        const params = i.parameters || [];
-        if (params.length !== 1) return false;
-        const effects = i.particles?.effects || [];
-        return effects.length === 1 && effects[0].α === "replace" &&
-          typeof effects[0].target === "string" && effects[0].target.startsWith(mainLower + ".");
-      });
+      const mainEntity = projection?.mainEntity;
+      return (intents || []).some(i => isSingleValueReplaceOnMain(i, mainEntity));
     },
   },
   structure: {
@@ -35,7 +46,6 @@ export default {
     apply(slots, context) {
       const { projection, intents } = context || {};
       const mainEntity = projection?.mainEntity || "";
-      const mainLower = mainEntity.toLowerCase();
       const existingFooterIds = new Set((slots?.footer || []).map(f => f?.intentId));
       const toolbarItems = slots?.toolbar || [];
       const newFooterItems = [];
@@ -45,12 +55,7 @@ export default {
         const intentId = intent?.id;
         if (!intentId) continue;
         if (existingFooterIds.has(intentId)) continue;
-        const params = intent.parameters || [];
-        if (params.length !== 1) continue;
-        const effects = intent.particles?.effects || [];
-        if (effects.length !== 1 || effects[0].α !== "replace") continue;
-        const target = effects[0].target;
-        if (typeof target !== "string" || !target.startsWith(mainLower + ".")) continue;
+        if (!isSingleValueReplaceOnMain(intent, mainEntity)) continue;
         const toolbarItem = toolbarItems.find(t => t?.intentId === intentId);
         if (!toolbarItem) continue;
         newFooterItems.push({
@@ -83,10 +88,11 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "planning", projection: "poll_overview", reason: "set_deadline: 1 param, replace poll.deadline" },
+      { domain: "planning", projection: "poll_overview", reason: "set_deadline: 1 replace-effect на poll.deadline" },
+      { domain: "invest", projection: "portfolio_detail", reason: "rename_portfolio: 1 replace-effect на portfolio.name" },
     ],
     shouldNotMatch: [
-      { domain: "invest", projection: "portfolio_detail", reason: "set_target_allocation: 4 параметра" },
+      { domain: "sales", projection: "listing_detail", reason: "create_listing — α:add, не replace; нет single-field setter intent'а" },
     ],
   },
 };

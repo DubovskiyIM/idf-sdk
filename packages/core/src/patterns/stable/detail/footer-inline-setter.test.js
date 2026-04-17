@@ -120,25 +120,21 @@ describe("footer-inline-setter.structure.apply", () => {
     expect(footer).toHaveLength(0);
   });
 
-  it("не трогает intents с > 1 параметром", () => {
-    const multiParam = {
-      id: "set_multi",
-      name: "set_multi",
-      parameters: [
-        { name: "deadline", type: "datetime" },
-        { name: "note", type: "text" },
-      ],
+  it("не трогает intents с nested target (entity.sub.field)", () => {
+    const nested = {
+      id: "set_nested",
+      name: "set_nested",
       particles: {
-        effects: [{ α: "replace", target: "poll.deadline" }],
+        effects: [{ α: "replace", target: "poll.settings.deadline" }],
       },
     };
     const slots = {
-      toolbar: [makeToolbarItem("set_multi")],
+      toolbar: [makeToolbarItem("set_nested")],
       footer: [],
     };
     const result = footerInlineSetter.structure.apply(slots, {
       projection: { mainEntity: "Poll" },
-      intents: [multiParam],
+      intents: [nested],
       ontology,
     });
     expect(result).toBe(slots);
