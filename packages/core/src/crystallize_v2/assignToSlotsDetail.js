@@ -27,7 +27,7 @@ const SYSTEM_SUB_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt",
 ]);
 
-export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY) {
+export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
   const slots = {
     header: [],
     toolbar: [],
@@ -157,6 +157,12 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY) {
   }
 
   slots.toolbar = collapseToolbar(slots.toolbar);
+
+  // Strategy metadata для renderer
+  if (strategy?.extraSlots) {
+    const extras = strategy.extraSlots();
+    if (Object.keys(extras).length > 0) slots.extras = extras;
+  }
 
   return slots;
 }
