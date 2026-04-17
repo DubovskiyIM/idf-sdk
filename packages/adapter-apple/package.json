@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-apple",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Apple visionOS-glass adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
