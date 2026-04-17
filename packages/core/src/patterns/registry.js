@@ -70,11 +70,15 @@ import composerEntry from "./stable/feed/composer-entry.js";
 import voteGroup from "./stable/detail/vote-group.js";
 import antagonistToggle from "./stable/feed/antagonist-toggle.js";
 import footerInlineSetter from "./stable/detail/footer-inline-setter.js";
+import hierarchyTreeNav from "./stable/cross/hierarchy-tree-nav.js";
+import discriminatorWizard from "./stable/catalog/discriminator-wizard.js";
+import m2mAttachDialog from "./stable/detail/m2m-attach-dialog.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
   gridCardLayout, inlineSearch, composerEntry, voteGroup,
   antagonistToggle, footerInlineSetter,
+  hierarchyTreeNav, discriminatorWizard, m2mAttachDialog,
 ];
 
 export function loadStablePatterns(registry) {
