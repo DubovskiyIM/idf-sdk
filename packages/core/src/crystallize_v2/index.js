@@ -21,6 +21,7 @@ import { validateArtifact } from "./validateArtifact.js";
 import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
 import { resolvePattern } from "../patterns/index.js";
+import { getDefaultRegistry, loadStablePatterns } from "../patterns/registry.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -50,6 +51,12 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
 
   const artifacts = {};
 
+  // Pattern Bank: загрузить stable паттерны при первом вызове
+  const patternRegistry = getDefaultRegistry();
+  if (patternRegistry.getAllPatterns("stable").length === 0) {
+    loadStablePatterns(patternRegistry);
+  }
+
   // Автогенерация edit-проекций (М3.4b)
   const editProjections = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
   const allProjections = { ...PROJECTIONS, ...editProjections };
@@ -73,6 +80,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       })
       .map(([id, intent]) => ({ id, ...intent }));
     const patternResult = resolvePattern(projIntents, ONTOLOGY, proj);
+    const structuralPatterns = patternRegistry.matchPatterns(projIntents, ONTOLOGY, proj);
 
     let slots;
     if (archetype === "form") {
@@ -153,6 +161,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       layer: "canonical",
       archetype,
       pattern: patternResult.pattern,
+      matchedPatterns: structuralPatterns.map(p => p.id),
       version: 2,
       generatedAt,
       generatedBy: "rules",
