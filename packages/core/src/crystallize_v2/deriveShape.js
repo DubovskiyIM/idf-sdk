@@ -13,25 +13,15 @@
  * - default: fallback
  */
 
-const DATE_FIELD_HINTS = new Set([
-  "date",
-  "createdAt",
-  "updatedAt",
-  "recordDate",
-  "administeredDate",
-  "eventDate",
-  "startDate",
-  "scheduledAt",
-  "visitDate",
-  "dueDate",
-  "birthDate",
-]);
+import { inferFieldRole } from "./ontologyHelpers.js";
+
 const CONTACT_FIELD_HINTS = new Set(["phone", "email", "address"]);
+const TEMPORAL_ROLES = new Set(["timestamp", "deadline", "scheduled", "occurred", "timer"]);
 
 function isDateField(fieldName, fieldDef) {
   if (fieldDef?.type === "date" || fieldDef?.type === "datetime") return true;
-  if (DATE_FIELD_HINTS.has(fieldName)) return true;
-  return fieldName.endsWith("At") || fieldName.endsWith("Date");
+  const result = inferFieldRole(fieldName, fieldDef || {});
+  return TEMPORAL_ROLES.has(result?.role);
 }
 
 function isContactField(fieldName) {
