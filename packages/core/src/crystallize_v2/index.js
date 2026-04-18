@@ -153,6 +153,28 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       slots = applyStructuralPatterns(slots, matchedAugmented, applyContext, preferences, patternRegistry);
     }
 
+    // Polymorphic entities (v0.15): rule-based witness для projection с
+    // mainEntity, имеющим discriminator + variants.
+    if (proj.mainEntity) {
+      const mainEntityDef = ONTOLOGY?.entities?.[proj.mainEntity];
+      if (mainEntityDef?.discriminator && mainEntityDef?.variants) {
+        witnesses.push({
+          basis: "polymorphic-variant",
+          pattern: "polymorphic:variant-resolution",
+          reliability: "rule-based",
+          requirements: [{
+            kind: "entity-has-discriminator",
+            ok: true,
+            spec: {
+              entity: proj.mainEntity,
+              discriminator: mainEntityDef.discriminator,
+              variants: Object.keys(mainEntityDef.variants),
+            },
+          }],
+        });
+      }
+    }
+
     // Temporal sections (v0.14): rule-based witness для каждой detail-секции
     // с renderAs.type === "eventTimeline". Declarative temporality в онтологии
     // → rule-based reliability (не heuristic).
