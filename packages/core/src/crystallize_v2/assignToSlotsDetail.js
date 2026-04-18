@@ -55,6 +55,9 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     // секциями. VoteGroup потом читает ctx.viewState[stateKey]. Открытая
     // граница §23 — пока ограничен planning-доменом.
     voterSelector: projection.voterSelector || null,
+    // hubSections (R8, v1.13) — absorbed child-каталоги из absorbHubChildren.
+    // Рендерер показывает их как табы/аккордеон внутри detail-хаба.
+    hubSections: projection.hubSections || null,
   };
 
   const mainEntity = projection.mainEntity;
