@@ -18,7 +18,7 @@ import {
 } from "./assignToSlotsShared.js";
 import { getEntityFields, canRead, inferFieldRole } from "./ontologyHelpers.js";
 import { getIntentIcon } from "./getIntentIcon.js";
-import { computeSalience, bySalienceDesc } from "./salience.js";
+import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
@@ -163,7 +163,11 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     }
   }
 
-  slots.toolbar = collapseToolbar(slots.toolbar);
+  const collapsed = collapseToolbar(slots.toolbar, projection.id);
+  slots.toolbar = collapsed.toolbar;
+  if (collapsed.witnesses.length > 0) {
+    slots._witnesses = [...(slots._witnesses || []), ...collapsed.witnesses];
+  }
 
   // Strategy metadata для renderer
   if (strategy?.extraSlots) {
@@ -184,12 +188,13 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
  *  - Overflow: организован секциями. Антагонистические пары — рядом,
  *    одиночные — группируются по иконке.
  */
-function collapseToolbar(toolbar) {
+function collapseToolbar(toolbar, projectionId) {
   // Salience sort применяется всегда, не только при overflow — иначе
   // пара-тройка кнопок в detail toolbar наследует alphabetical порядок
   // от INTENTS iteration, а не семантический приоритет spec'и.
   const sortedToolbar = [...toolbar].sort(bySalienceDesc);
-  if (sortedToolbar.length <= 3) return sortedToolbar;
+  const witnesses = detectTiedGroups(sortedToolbar, { slot: "toolbar", projection: projectionId });
+  if (sortedToolbar.length <= 3) return { toolbar: sortedToolbar, witnesses };
 
   // 1. Собрать антагонистические пары
   const paired = new Set();
@@ -249,7 +254,7 @@ function collapseToolbar(toolbar) {
     visible.push({ type: "overflow", children: overflowChildren });
   }
 
-  return visible;
+  return { toolbar: visible, witnesses };
 }
 
 /**
