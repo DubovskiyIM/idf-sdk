@@ -221,6 +221,13 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       }
     }
 
+    // Slot-level witnesses (из assignToSlots* — alphabetical-fallback, и т.п.)
+    // сливаются в artifact.witnesses как first-class находки § 15.
+    if (Array.isArray(slots?._witnesses) && slots._witnesses.length > 0) {
+      witnesses.push(...slots._witnesses);
+      delete slots._witnesses;
+    }
+
     const artifact = {
       projection: projId,
       name: proj.name || projId,

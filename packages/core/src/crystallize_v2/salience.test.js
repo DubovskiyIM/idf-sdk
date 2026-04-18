@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeSalience, bySalienceDesc } from "./salience.js";
+import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 
 describe("computeSalience — explicit override", () => {
   it("число как salience возвращается напрямую", () => {
@@ -86,5 +86,79 @@ describe("bySalienceDesc — comparator", () => {
       { intentId: "high", salience: 70 },
     ].sort(bySalienceDesc);
     expect(items.map(i => i.intentId)).toEqual(["high", "unset", "low"]);
+  });
+});
+
+describe("detectTiedGroups — witness alphabetical-fallback", () => {
+  const ctx = { slot: "toolbar", projection: "listing_detail" };
+
+  it("нет tied групп → witness-ов нет", () => {
+    const items = [
+      { intentId: "a", salience: 100 },
+      { intentId: "b", salience: 70 },
+      { intentId: "c", salience: 40 },
+    ];
+    expect(detectTiedGroups(items, ctx)).toEqual([]);
+  });
+
+  it("одна tied пара → один witness", () => {
+    const items = [
+      { intentId: "apply_template", salience: 60 },
+      { intentId: "edit_listing", salience: 60 },
+      { intentId: "delete_listing", salience: 30 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0]).toMatchObject({
+      basis: "alphabetical-fallback",
+      reliability: "heuristic",
+      slot: "toolbar",
+      projection: "listing_detail",
+      salience: 60,
+      chosen: "apply_template",
+      peers: ["edit_listing"],
+    });
+    expect(ws[0].recommendation).toContain("apply_template");
+    expect(ws[0].recommendation).toContain("edit_listing");
+  });
+
+  it("несколько групп — отдельный witness на каждую", () => {
+    const items = [
+      { intentId: "a", salience: 100 },
+      { intentId: "b", salience: 100 },
+      { intentId: "c", salience: 60 },
+      { intentId: "d", salience: 60 },
+      { intentId: "e", salience: 60 },
+      { intentId: "f", salience: 30 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(2);
+    expect(ws[0].salience).toBe(100);
+    expect(ws[0].peers).toEqual(["b"]);
+    expect(ws[1].salience).toBe(60);
+    expect(ws[1].peers).toEqual(["d", "e"]);
+  });
+
+  it("элементы без intentId (overflow/divider) игнорируются", () => {
+    const items = [
+      { intentId: "a", salience: 60 },
+      { intentId: "b", salience: 60 },
+      { type: "overflow" },
+      { type: "divider" },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0].peers).toEqual(["b"]);
+  });
+
+  it("singleton группа (только один элемент с данным salience) → witness не создаётся", () => {
+    const items = [
+      { intentId: "solo", salience: 70 },
+      { intentId: "x", salience: 40 },
+      { intentId: "y", salience: 40 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0].salience).toBe(40);
   });
 });

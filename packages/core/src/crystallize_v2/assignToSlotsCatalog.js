@@ -14,7 +14,7 @@ import {
 import { getIntentIcon } from "./getIntentIcon.js";
 import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
-import { computeSalience, bySalienceDesc } from "./salience.js";
+import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
   const slots = {
@@ -176,6 +176,11 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
   // primary intent'ы попадают в visible, остальные — в overflow. Tied salience
   // → alphabetical (наследуется из функториальной нормализации INTENTS).
   slots.toolbar.sort(bySalienceDesc);
+
+  const tiedWitnesses = detectTiedGroups(slots.toolbar, { slot: "toolbar", projection: projection.id });
+  if (tiedWitnesses.length > 0) {
+    slots._witnesses = [...(slots._witnesses || []), ...tiedWitnesses];
+  }
 
   if (slots.toolbar.length > 5) {
     const overflow = slots.toolbar.splice(5);

@@ -106,3 +106,52 @@ export function bySalienceDesc(a, b) {
   if (sA !== sB) return sB - sA;
   return a.intentId.localeCompare(b.intentId);
 }
+
+/**
+ * Найти группы элементов с равным salience в **уже отсортированном** массиве.
+ * Tied (≥2 элемента с одинаковым salience) → порядок определяется
+ * alphabetical tie-break'ом, что делает выбор детерминированным, но
+ * семантически пустым. Формат должен помечать такие выборы явно:
+ *
+ *   artifact.witnesses.push({
+ *     basis: "alphabetical-fallback",
+ *     reliability: "heuristic",            // не rule-based!
+ *     slot, projection,
+ *     chosen, peers,
+ *     recommendation,
+ *   })
+ *
+ * «Spec smell» становится first-class содержимым артефакта — Studio
+ * может подсвечивать эти случаи, автор видит неполноту спеки.
+ *
+ * Элементы без `intentId` (type:"overflow", type:"divider") пропускаются.
+ *
+ * @param {Array<{intentId?: string, salience?: number}>} sortedItems
+ * @param {{slot: string, projection: string}} ctx
+ * @returns {Array} witness records
+ */
+export function detectTiedGroups(sortedItems, { slot, projection }) {
+  const items = sortedItems.filter((i) => typeof i?.intentId === "string");
+  const witnesses = [];
+  let i = 0;
+  while (i < items.length) {
+    const salience = items[i].salience ?? 40;
+    const start = i;
+    while (i < items.length && (items[i].salience ?? 40) === salience) i++;
+    const group = items.slice(start, i).map((x) => x.intentId);
+    if (group.length >= 2) {
+      const [chosen, ...peers] = group;
+      witnesses.push({
+        basis: "alphabetical-fallback",
+        reliability: "heuristic",
+        slot,
+        projection,
+        salience,
+        chosen,
+        peers,
+        recommendation: `Проставьте intent.salience одному из [${group.join(", ")}] чтобы зафиксировать порядок явно.`,
+      });
+    }
+  }
+  return witnesses;
+}
