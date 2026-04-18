@@ -64,15 +64,15 @@ describe("buildCardSpec", () => {
         Auction: {
           fields: {
             status: { type: "enum" },
-            endAt: { type: "datetime" },
+            expiresAt: { type: "datetime" },
             city: { type: "text" },
           },
         },
       },
     };
-    const spec = buildCardSpec(["status", "endAt", "city"], "Auction", ontology);
+    const spec = buildCardSpec(["status", "expiresAt", "city"], "Auction", ontology);
     expect(spec.badge).toEqual({ bind: "status" });
-    expect(spec.timer).toEqual({ bind: "endAt", format: "countdown" });
+    expect(spec.timer).toEqual({ bind: "expiresAt", format: "countdown" });
     expect(spec.location).toEqual({ bind: "city" });
   });
 

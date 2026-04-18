@@ -113,6 +113,54 @@ export function inferFieldRole(fieldName, fieldDef) {
     return { role: "ref", reliability: "rule-based", basis: "type 'entityRef'" };
   }
 
+  // 1b. Temporal roles (v0.12) — применяются до existing name-based chain,
+  // чтобы `createdAt`/`dueDate`/`scheduledAt` получали правильные семантические
+  // роли до того, как упадут в fallback chain.
+  // Priority внутри temporal: timestamp > deadline > scheduled > occurred.
+
+  // timestamp — audit/meta: createdAt, updatedAt, deletedAt, modifiedAt, lastSeenAt, archivedAt
+  if (/^(created|updated|deleted|modified|lastSeen|archived)At$/i.test(name)) {
+    return {
+      role: "timestamp",
+      reliability: "heuristic",
+      basis: `audit-name: '${name}'`,
+      pattern: "temporal:timestamp-audit",
+    };
+  }
+
+  // deadline — целевая дата: due*, deadline*
+  if (/^due([A-Z]|$)/.test(name) || /^deadline/i.test(name)) {
+    return {
+      role: "deadline",
+      reliability: "heuristic",
+      basis: `deadline-prefix: '${name}'`,
+      pattern: "temporal:deadline-due-prefix",
+    };
+  }
+
+  // scheduled — планируемое будущее: scheduled*, appointment*, meeting*, visitDate, eventDate, sessionAt
+  if (/^scheduled[A-Z]/.test(name) ||
+      /^(appointment|meeting|session|visit|event)(At|Date|Time)$/i.test(name)) {
+    return {
+      role: "scheduled",
+      reliability: "heuristic",
+      basis: `scheduled-prefix/future-context: '${name}'`,
+      pattern: "temporal:scheduled-future",
+    };
+  }
+
+  // occurred — прошедшее событие: past-tense глаголы + *At/*Date, recordDate, birthDate
+  if (/^(started|completed|finished|closed|posted|administered|recorded|occurred|happened|ended|logged|received|shipped|opened)(At|Date)?$/i.test(name) ||
+      /^record([A-Z]|$)/i.test(name) ||
+      name === "birthDate") {
+    return {
+      role: "occurred",
+      reliability: "heuristic",
+      basis: `past-event-verb: '${name}'`,
+      pattern: "temporal:occurred-past-verb",
+    };
+  }
+
   // 2. Name-based heuristics (applied top-down, first match wins)
   // title
   if (name === "title" || name === "name" || name === "label") {
@@ -129,9 +177,13 @@ export function inferFieldRole(fieldName, fieldDef) {
     return { role: "price", reliability: "heuristic", basis: `number + name substring: '${name}'`, pattern: "name:price-substring" };
   }
 
-  // timer — datetime + имя содержит end/deadline/expir
-  if ((type === "datetime" || type === "date") && /end|deadline|expir/i.test(name)) {
-    return { role: "timer", reliability: "heuristic", basis: `datetime + name suffix: '${name}'`, pattern: "name:timer-suffix" };
+  // timer — countdown-specific: expir*, *Until, countdown*. Narrow'ed в v0.12:
+  // `deadline`/`end` переехали в temporal-роли (deadline/occurred).
+  if ((type === "datetime" || type === "date") && /^(expir|countdown)/i.test(name)) {
+    return { role: "timer", reliability: "heuristic", basis: `countdown-prefix: '${name}'`, pattern: "name:timer-countdown" };
+  }
+  if ((type === "datetime" || type === "date") && /Until$/.test(name)) {
+    return { role: "timer", reliability: "heuristic", basis: `until-suffix: '${name}'`, pattern: "name:timer-until" };
   }
 
   // coordinate по имени
