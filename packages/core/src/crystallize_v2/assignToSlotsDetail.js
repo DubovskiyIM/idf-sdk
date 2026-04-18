@@ -18,6 +18,7 @@ import {
 } from "./assignToSlotsShared.js";
 import { getEntityFields, canRead, inferFieldRole } from "./ontologyHelpers.js";
 import { getIntentIcon } from "./getIntentIcon.js";
+import { computeSalience, bySalienceDesc } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
@@ -143,10 +144,12 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
       continue;
     }
 
+    const salience = computeSalience(intent, mainEntity).value;
+
     if (hasOverlay) {
       const trigger = ownershipCond
-        ? { ...wrapped.trigger, condition: ownershipCond }
-        : wrapped.trigger;
+        ? { ...wrapped.trigger, condition: ownershipCond, salience }
+        : { ...wrapped.trigger, salience };
       slots.toolbar.push(trigger);
       slots.overlay.push(wrapped.overlay);
       continue;
@@ -154,8 +157,8 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
 
     if (wrapped.type === "intentButton") {
       const btn = ownershipCond
-        ? { ...wrapped, condition: ownershipCond }
-        : wrapped;
+        ? { ...wrapped, condition: ownershipCond, salience }
+        : { ...wrapped, salience };
       slots.toolbar.push(btn);
     }
   }
@@ -205,11 +208,15 @@ function collapseToolbar(toolbar) {
     }
   }
 
-  // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3)
+  // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3).
+  // Сортировка по salience desc, tie-break алфавитно по intentId — делает
+  // выбор primary/secondary семантическим (не просто алфавитным как fallback
+  // функториального фикса).
+  const sortedStandalone = [...standalone].sort(bySalienceDesc);
   const visible = [];
   const toOverflow = [];
   const seenIcons = new Set();
-  for (const btn of standalone) {
+  for (const btn of sortedStandalone) {
     const icon = btn.icon || btn.intentId;
     if (visible.length < 3 && !seenIcons.has(icon)) {
       seenIcons.add(icon);
