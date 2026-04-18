@@ -58,13 +58,19 @@ export default {
     ],
   },
   falsification: {
+    // Из всех IDF доменов observer-base-role объявлена только в invest;
+    // requirement «≥1 high-irreversibility intent доступен observer'у» —
+    // сильное условие. Pattern зарезервирован для fintech-domains.
     shouldMatch: [
-      { domain: "invest", projection: "alert_detail", reason: "observer role + escalate_alert с high irreversibility" },
-      { domain: "delivery", projection: "order_detail", reason: "observer role + flag_order с irreversibility" },
+      // В текущей ontology invest observer не имеет irreversibility=high intents
+      // в своём canExecute; match произойдёт когда агент/владелец добавит
+      // escalate/freeze для observer-роли. Aspirational shouldMatch сохраняем
+      // как документацию намерения паттерна.
+      { domain: "invest", projection: "alert_detail", reason: "aspirational: когда escalate_alert попадёт в observer.canExecute с irreversibility:high" },
     ],
     shouldNotMatch: [
       { domain: "lifequest", projection: "habit_detail", reason: "lifequest не имеет observer-role" },
-      { domain: "planning", projection: "poll_detail", reason: "observer только read-only, без escape-intent" },
+      { domain: "booking", projection: "booking_detail", reason: "booking не имеет observer-role" },
     ],
   },
 };

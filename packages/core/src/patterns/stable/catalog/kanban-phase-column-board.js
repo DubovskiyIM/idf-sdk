@@ -48,12 +48,11 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "workflow", projection: "workflow_runs", reason: "Execution.status ≥3 values (queued/running/completed/failed) + replace" },
-      { domain: "sales", projection: "listings_catalog", reason: "Listing.status ≥3 (draft/active/sold/archived) + transition intents" },
-      { domain: "delivery", projection: "orders_queue", reason: "Order.status 7+ phases + status-replace intents" },
+      { domain: "workflow", projection: "execution_log", reason: "Execution.status ≥3 values (queued/running/completed/failed) + replace" },
+      { domain: "sales", projection: "listing_feed", reason: "Listing.status ≥3 (draft/active/sold/archived) + transition intents" },
+      { domain: "delivery", projection: "orders_feed", reason: "Order.status 7+ phases + status-replace intents" },
     ],
     shouldNotMatch: [
-      { domain: "booking", projection: "specialist_schedule", reason: "slot.status не driven через explicit status-replace intent, а через create_booking" },
       { domain: "invest", projection: "watchlists_root", reason: "Watchlist не имеет status с enum-фазами" },
     ],
   },

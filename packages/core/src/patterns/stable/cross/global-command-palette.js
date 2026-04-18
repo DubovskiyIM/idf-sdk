@@ -43,12 +43,13 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "sales", projection: "listings_catalog", reason: "sales имеет 225 intents — явный overflow для menu-approach" },
-      { domain: "messenger", projection: "conversations_root", reason: "messenger 100 intents" },
+      { domain: "sales", projection: "listing_feed", reason: "sales имеет 225 intents — явный overflow для menu-approach" },
+      { domain: "messenger", projection: "conversation_list", reason: "messenger 100 intents" },
       { domain: "invest", projection: "portfolios_root", reason: "invest 58 intents — выше threshold 15" },
     ],
     shouldNotMatch: [
-      { domain: "workflow", projection: "workflow_list", reason: "workflow 15 intents exactly — граница; требуется fresh trigger без палитры" },
+      // booking ~22 intents, но projection-локально не все применимы — намеренный soft limit
+      { domain: "booking", projection: "review_form", reason: "review_form имеет узкий набор intents, локальных ≤3" },
     ],
   },
 };

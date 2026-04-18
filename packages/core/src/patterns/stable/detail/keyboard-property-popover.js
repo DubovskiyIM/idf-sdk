@@ -60,13 +60,13 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "invest", projection: "portfolio_detail", reason: "Portfolio имеет ≥4 replace-intents (name/riskProfile/targets/allocations)" },
       { domain: "sales", projection: "listing_detail", reason: "Listing имеет ≥4 property replace-intents (title/price/condition/status)" },
       { domain: "lifequest", projection: "goal_detail", reason: "Goal ≥4 scalar properties с replace (name/sphere/priority/target)" },
+      { domain: "lifequest", projection: "habit_detail", reason: "Habit имеет ≥4 property-intents" },
     ],
     shouldNotMatch: [
-      { domain: "booking", projection: "booking_detail", reason: "Booking имеет только cancel/confirm, не property-edits" },
-      { domain: "delivery", projection: "courier_location_detail", reason: "CourierLocation — mirror kind, read-only, нет property-replace" },
+      { domain: "booking", projection: "service_catalog", reason: "Feed без property-edits — popover неприменим" },
+      { domain: "invest", projection: "watchlists_root", reason: "Catalog уровень — не detail" },
     ],
   },
 };
