@@ -44,9 +44,27 @@ function pluralize(word) {
   return word + "s";
 }
 
+function camelPluralize(entityName) {
+  if (!entityName) return entityName;
+  const head = entityName[0].toLowerCase() + entityName.slice(1);
+  return pluralize(head);
+}
+
+// Пробует camelCase (AgentPreapproval → agentPreapprovals), затем legacy lowercase
+// (agentpreapprovals) — домены используют разные конвенции для ключей world.
+function findCollectionRows(world, entityName) {
+  const candidates = [
+    camelPluralize(entityName),
+    pluralize(entityName.toLowerCase()),
+  ];
+  for (const key of candidates) {
+    if (Array.isArray(world[key])) return world[key];
+  }
+  return [];
+}
+
 function getPreapprovalRow(world, config, viewer) {
-  const collection = pluralize(config.entity.toLowerCase());
-  const rows = world[collection] || [];
+  const rows = findCollectionRows(world, config.entity);
   return rows.find(r => r[config.ownerField] === viewer.id);
 }
 
@@ -69,8 +87,12 @@ function checkPredicate(check, preapproval, params, world, viewer) {
     case "notExpired": {
       const exp = preapproval[check.field];
       if (exp == null) return { ok: true }; // бессрочно
+      const expMs = typeof exp === "number" ? exp : Date.parse(exp);
+      if (!Number.isFinite(expMs)) {
+        return { ok: false, reason: "invalid_expiresAt", field: check.field, value: exp };
+      }
       const now = Date.now();
-      if (Number(exp) > now) return { ok: true };
+      if (expMs > now) return { ok: true };
       return { ok: false, reason: "expired", field: check.field, expiresAt: exp, now };
     }
 
