@@ -21,6 +21,7 @@ export { controls };
 
 // Примитивы
 export { Chart, Sparkline } from "./primitives/chart.jsx";
+export { ViewSwitcher } from "./primitives/viewSwitcher.jsx";
 import * as primitives from "./primitives/index.js";
 export { primitives };
 
