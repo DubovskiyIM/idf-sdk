@@ -34,30 +34,36 @@ function pluralize(word) {
 
 /**
  * Найти коллекцию в rawWorld для entity, пробуя несколько plural-форм:
- *   1. Стандартный plural lowercase (TimeSlot → timeslots)
- *   2. Last-CamelCase сегмент + s (TimeSlot → slots) — покрывает
- *      booking-домен, где коллекция исторически называется `slots`
+ *   1. camelCase plural (AgentPreapproval → agentPreapprovals, RiskProfile → riskProfiles)
+ *   2. lowercase plural (TimeSlot → timeslots) — legacy-convention некоторых доменов
+ *   3. Last-CamelCase сегмент + s (TimeSlot → slots) — booking legacy
  *
- * Возвращает { outputName, rows }:
- *   - outputName — всегда стандартный plural (первый candidate), чтобы
- *     агент видел predictable namespace по entity-name. Агент не должен
- *     знать про исторические alias'ы коллекций.
- *   - rows — данные из первой matching коллекции (или []).
+ * outputName — всегда canonical camelCase plural: это public namespace для агента,
+ * он не должен знать про внутренние legacy-формы домена. rows — данные из matching
+ * коллекции (или []).
  */
+function camelPluralize(entityName) {
+  if (!entityName) return entityName;
+  const head = entityName[0].toLowerCase() + entityName.slice(1);
+  return pluralize(head);
+}
+
 function findCollection(rawWorld, entityName) {
-  const standardPlural = pluralize(entityName.toLowerCase());
-  const candidates = [standardPlural];
-  // TimeSlot → последний segment "Slot" → "slots"
+  const camelPlural = camelPluralize(entityName);
+  const lowerPlural = pluralize(entityName.toLowerCase());
+  const candidates = [camelPlural];
+  if (lowerPlural !== camelPlural) candidates.push(lowerPlural);
   const segments = entityName.match(/[A-Z][a-z]*/g) || [];
   if (segments.length > 1) {
-    candidates.push(pluralize(segments[segments.length - 1].toLowerCase()));
+    const lastPlural = pluralize(segments[segments.length - 1].toLowerCase());
+    if (!candidates.includes(lastPlural)) candidates.push(lastPlural);
   }
   for (const cand of candidates) {
     if (Array.isArray(rawWorld[cand])) {
-      return { outputName: standardPlural, rows: rawWorld[cand] };
+      return { outputName: camelPlural, rows: rawWorld[cand] };
     }
   }
-  return { outputName: standardPlural, rows: [] };
+  return { outputName: camelPlural, rows: [] };
 }
 
 /**
