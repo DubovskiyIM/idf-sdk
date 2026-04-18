@@ -12,30 +12,18 @@
  *  - location  ← location / address / zone
  *  - metrics   ← metric (number fallback) — массив, собирает всё
  *
- * Используется (1) в assignToSlotsCatalog для projections с
- * layout: "grid" в authored shape, и (2) в grid-card-layout
- * pattern.structure.apply для декларативного обогащения.
+ * Polymorphic entities (v0.15): если entity.discriminator && entity.variants —
+ * emit `{variants: {[key]: spec}, discriminator}`. Каждый variant получает
+ * свой cardSpec из merged shared + variant.fields.
  */
 import { inferFieldRole } from "./ontologyHelpers.js";
+import { getVariantFields } from "./getVariantFields.js";
 
-/**
- * Построить cardSpec из witnesses списка проекции.
- * Чистая функция: без мутации входов, возвращает {} если нечего собрать.
- *
- * @param {Array<string|{field:string,compute:string}>} witnesses
- * @param {string} mainEntity
- * @param {object} ontology
- * @returns {object} cardSpec — частичный, только найденные роли
- */
-export function buildCardSpec(witnesses, mainEntity, ontology) {
-  if (!Array.isArray(witnesses) || witnesses.length === 0) return {};
-  const entityDef = ontology?.entities?.[mainEntity];
-  const ontologyFields = entityDef?.fields || {};
+function buildCardSpecOverFields(witnesses, fieldMap) {
   const cardSpec = {};
   const metrics = [];
 
   for (const witness of witnesses) {
-    // Computed witness — объект {field, compute}: используем field как имя
     if (typeof witness === "object" && witness !== null && witness.compute) {
       const role = inferFieldRole(witness.field, {})?.role ?? null;
       if (role === "metric" || role === "info") {
@@ -47,9 +35,10 @@ export function buildCardSpec(witnesses, mainEntity, ontology) {
     if (typeof witness !== "string") continue;
 
     const fieldName = witness.includes(".") ? witness.split(".")[0] : witness;
-    const fieldDef = typeof ontologyFields === "object" && !Array.isArray(ontologyFields)
-      ? ontologyFields[fieldName] : null;
-    const role = inferFieldRole(fieldName, fieldDef || {})?.role ?? null;
+    const fieldDef = fieldMap[fieldName];
+    // Polymorphic: witness ссылается на поле чужого variant'а — skip
+    if (!fieldDef) continue;
+    const role = inferFieldRole(fieldName, fieldDef)?.role ?? null;
 
     switch (role) {
       case "heroImage":
@@ -78,4 +67,36 @@ export function buildCardSpec(witnesses, mainEntity, ontology) {
 
   if (metrics.length > 0) cardSpec.metrics = metrics;
   return cardSpec;
+}
+
+/**
+ * Построить cardSpec из witnesses списка проекции.
+ *
+ * @param {Array<string|{field:string,compute:string}>} witnesses
+ * @param {string} mainEntity
+ * @param {object} ontology
+ * @returns {object} cardSpec — либо legacy single-spec, либо polymorphic { variants, discriminator }
+ */
+export function buildCardSpec(witnesses, mainEntity, ontology) {
+  if (!Array.isArray(witnesses) || witnesses.length === 0) return {};
+  const entityDef = ontology?.entities?.[mainEntity];
+  if (!entityDef) return {};
+
+  const isPoly = entityDef.discriminator && entityDef.variants;
+  if (isPoly && !Array.isArray(entityDef.fields)) {
+    const variantKeys = Object.keys(entityDef.variants);
+    const variants = {};
+    for (const key of variantKeys) {
+      const { fields: merged } = getVariantFields(entityDef, key);
+      variants[key] = buildCardSpecOverFields(witnesses, merged);
+    }
+    return { variants, discriminator: entityDef.discriminator };
+  }
+
+  // Legacy single-cardSpec path (backward-compat)
+  const ontologyFields = entityDef.fields || {};
+  const fieldMap = Array.isArray(ontologyFields)
+    ? Object.fromEntries(ontologyFields.map(n => [n, {}]))
+    : ontologyFields;
+  return buildCardSpecOverFields(witnesses, fieldMap);
 }
