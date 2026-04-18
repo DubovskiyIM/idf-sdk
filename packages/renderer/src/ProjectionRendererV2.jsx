@@ -43,6 +43,7 @@ export default function ProjectionRendererV2({
   artifact,
   artifactOverride,
   previewPatternId,
+  activeView,
   projection,
   world,
   exec,
@@ -57,10 +58,26 @@ export default function ProjectionRendererV2({
   allProjections,
 }) {
   // §27 authoring-env: override имеет приоритет над artifact (dev-only).
-  const effectiveArtifact = artifactOverride || artifact;
+  const baseArtifact = artifactOverride || artifact;
 
-  if (!effectiveArtifact) {
+  if (!baseArtifact) {
     return <div style={{ padding: 20, color: "#9ca3af", textAlign: "center" }}>Нет артефакта</div>;
+  }
+
+  // Multi-archetype views (v0.13): подменяем archetype/slots на active view's.
+  // Backward-compat: activeView == null или view не найдена → baseArtifact unchanged.
+  let effectiveArtifact = baseArtifact;
+  if (activeView && Array.isArray(baseArtifact.views)) {
+    const view = baseArtifact.views.find(v => v.id === activeView);
+    if (view && view.id !== baseArtifact.defaultView) {
+      effectiveArtifact = {
+        ...baseArtifact,
+        archetype: view.archetype,
+        slots: view.slots,
+        matchedPatterns: view.matchedPatterns,
+        witnesses: view.witnesses,
+      };
+    }
   }
 
   const validation = validateArtifact(effectiveArtifact);
