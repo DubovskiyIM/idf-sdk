@@ -4,6 +4,7 @@ import SubCollectionAdd from "../controls/SubCollectionAdd.jsx";
 import { evalIntentCondition } from "../eval.js";
 import Icon from "../adapters/Icon.jsx";
 import { getAdaptedComponent } from "../adapters/registry.js";
+import { EventTimeline } from "../primitives/eventTimeline.jsx";
 
 /**
  * SubCollectionSection — секция связанной коллекции в detail-проекции.
@@ -28,6 +29,32 @@ export default function SubCollectionSection({ section, target, ctx }) {
     if (!foreignKey || !target?.id) return all;
     return all.filter(it => it[foreignKey] === target.id);
   }, [ctx.world, source, foreignKey, target]);
+
+  // Temporal sub-entity (v0.14): если section.renderAs.type === "eventTimeline",
+  // рендерим через EventTimeline primitive, пропуская default path.
+  if (section.renderAs?.type === "eventTimeline") {
+    if (items.length === 0) return null;
+    const { kind, atField, kindField, actorField, descriptionField, stateFields } = section.renderAs;
+    return (
+      <div style={{ padding: 16 }}>
+        <div style={{
+          fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+          letterSpacing: "0.06em", color: "var(--idf-text-muted)", marginBottom: 12,
+        }}>
+          {title} ({items.length})
+        </div>
+        <EventTimeline
+          events={items}
+          kind={kind}
+          atField={atField}
+          kindField={kindField}
+          actorField={actorField}
+          descriptionField={descriptionField}
+          stateFields={stateFields}
+        />
+      </div>
+    );
+  }
 
   // AddControl виден только когда его conditions истинны против target
   const canAdd = useMemo(() => {
