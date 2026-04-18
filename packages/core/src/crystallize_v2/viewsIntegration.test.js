@@ -133,3 +133,40 @@ describe("crystallize_v2 multi-archetype views", () => {
     expect(art.views).toBeNull();
   });
 });
+
+describe("crystallize_v2 temporal witness (v0.14)", () => {
+  it("detail с temporal subCollection → artifact.witnesses содержит basis=temporal-section", () => {
+    const ontology = {
+      entities: {
+        Payment: { fields: { id: {}, amount: { type: "number" }, userId: { type: "entityRef" } }, ownerField: "userId" },
+        PaymentEvent: {
+          temporality: "causal-chain",
+          ownerField: "paymentId",
+          fields: {
+            id: {},
+            paymentId: { type: "entityRef" },
+            kind: { type: "enum" },
+            at: { type: "datetime" },
+          },
+        },
+      },
+    };
+    const intents = {};
+    const projections = {
+      payment_detail: {
+        kind: "detail",
+        mainEntity: "Payment",
+        subCollections: [
+          { collection: "events", entity: "PaymentEvent", foreignKey: "paymentId" },
+        ],
+      },
+    };
+    const artifacts = crystallizeV2(intents, projections, ontology, "test");
+    const w = artifacts.payment_detail.witnesses.find(x => x.basis === "temporal-section");
+    expect(w).toBeDefined();
+    expect(w.reliability).toBe("rule-based");
+    expect(w.pattern).toBe("temporal:event-timeline");
+    expect(w.requirements[0].spec.entity).toBe("PaymentEvent");
+    expect(w.requirements[0].spec.temporality).toBe("causal-chain");
+  });
+});

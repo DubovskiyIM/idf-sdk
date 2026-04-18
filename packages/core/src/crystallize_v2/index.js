@@ -153,6 +153,26 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       slots = applyStructuralPatterns(slots, matchedAugmented, applyContext, preferences, patternRegistry);
     }
 
+    // Temporal sections (v0.14): rule-based witness для каждой detail-секции
+    // с renderAs.type === "eventTimeline". Declarative temporality в онтологии
+    // → rule-based reliability (не heuristic).
+    if (archetype === "detail" && Array.isArray(slots.sections)) {
+      for (const sec of slots.sections) {
+        if (sec.renderAs?.type === "eventTimeline") {
+          witnesses.push({
+            basis: "temporal-section",
+            pattern: "temporal:event-timeline",
+            reliability: "rule-based",
+            requirements: [{
+              kind: "sub-entity-temporality",
+              ok: true,
+              spec: { entity: sec.itemEntity, temporality: sec.renderAs.kind },
+            }],
+          });
+        }
+      }
+    }
+
     // onItemClick: (1) явно объявленный автором в проекции, (2) выведенный из navGraph.
     if (slots.body?.type === "list") {
       if (proj.onItemClick) {
