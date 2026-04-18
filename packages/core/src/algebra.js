@@ -32,8 +32,13 @@ const COMPOSITION_TABLE = {
  * @returns { compatible: boolean, resolution: string, detail: string }
  */
 export function checkComposition(effect1, effect2) {
-  // Только эффекты на одну и ту же ячейку (один target + один entity id)
-  if (effect1.target !== effect2.target) return { compatible: true, resolution: "different_target" };
+  const t1 = effect1.target || "";
+  const t2 = effect2.target || "";
+  const base1 = t1.split(".")[0];
+  const base2 = t2.split(".")[0];
+
+  // Different base collections/entities → compatible (никак не пересекаются).
+  if (base1 !== base2) return { compatible: true, resolution: "different_target" };
 
   const ctx1 = effect1.context || {};
   const ctx2 = effect2.context || {};
@@ -41,6 +46,27 @@ export function checkComposition(effect1, effect2) {
 
   const α1 = effect1.alpha;
   const α2 = effect2.alpha;
+
+  // Dominance rule: если один из эффектов — remove на базовой коллекции, а
+  // другой — field-level effect (replace X.field) на той же сущности, remove
+  // доминирует. Нельзя replace поле сущности, которую removing. Это conflict,
+  // даже если target strings отличаются (`items` vs `items.status`).
+  const isFieldPath1 = t1 !== base1;
+  const isFieldPath2 = t2 !== base2;
+  const isRemoveBase1 = α1 === "remove" && !isFieldPath1;
+  const isRemoveBase2 = α2 === "remove" && !isFieldPath2;
+  if ((isRemoveBase1 && isFieldPath2) || (isRemoveBase2 && isFieldPath1)) {
+    return {
+      compatible: false,
+      resolution: "⊥",
+      detail: `remove на "${isRemoveBase1 ? t1 : t2}" доминирует над field-level effect на "${isFieldPath1 ? t1 : t2}" (нельзя редактировать поле удаляемой сущности)`,
+      α1, α2, target: `${t1} / ${t2}`,
+    };
+  }
+
+  // Иначе: разные target strings (field vs other field, или базовая коллекция
+  // vs конкретное поле с compatible α) → not on same cell, compatible.
+  if (t1 !== t2) return { compatible: true, resolution: "different_subpath" };
 
   const result = COMPOSITION_TABLE[α1]?.[α2];
 
