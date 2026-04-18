@@ -66,4 +66,51 @@ describe("deriveShape", () => {
     const proj = { kind: "catalog", mainEntity: "Pet" };
     expect(deriveShape(proj, ontology).shape).toBe("default");
   });
+
+  describe("v0.12: date-detection через inferFieldRole", () => {
+    it("completedAt (role=occurred) — timeline при descending sort", () => {
+      const ont = {
+        entities: {
+          Task: { fields: { id: {}, completedAt: { type: "datetime" }, title: {} } },
+        },
+      };
+      const proj = {
+        kind: "catalog",
+        mainEntity: "Task",
+        witnesses: ["completedAt", "title"],
+        sort: "-completedAt",
+      };
+      expect(deriveShape(proj, ont).shape).toBe("timeline");
+    });
+
+    it("deadline (role=deadline) — timeline при descending sort", () => {
+      const ont = {
+        entities: {
+          Goal: { fields: { id: {}, deadline: { type: "date" }, title: {} } },
+        },
+      };
+      const proj = {
+        kind: "catalog",
+        mainEntity: "Goal",
+        witnesses: ["title", "deadline"],
+        sort: "-deadline",
+      };
+      expect(deriveShape(proj, ont).shape).toBe("timeline");
+    });
+
+    it("createdAt (role=timestamp) — тоже считается date для shape-детекции", () => {
+      const ont = {
+        entities: {
+          Log: { fields: { id: {}, createdAt: { type: "datetime" }, message: {} } },
+        },
+      };
+      const proj = {
+        kind: "catalog",
+        mainEntity: "Log",
+        witnesses: ["createdAt", "message"],
+        sort: "-createdAt",
+      };
+      expect(deriveShape(proj, ont).shape).toBe("timeline");
+    });
+  });
 });

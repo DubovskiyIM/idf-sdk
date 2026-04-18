@@ -152,9 +152,13 @@ describe("inferFieldRole", () => {
     expect(inferFieldRole("startPrice", { type: "number" })).toMatchObject({ role: "price" });
   });
 
-  it("timer for datetime fields with end/deadline/expir in name", () => {
-    expect(inferFieldRole("auctionEnd", { type: "datetime" })).toMatchObject({ role: "timer" });
-    expect(inferFieldRole("deadline", { type: "datetime" })).toMatchObject({ role: "timer" });
+  it("timer narrowed (v0.12) — только countdown-specific (expir*/countdown*/Until)", () => {
+    // После v0.12 `deadline` → deadline, `auctionEnd` → info (fallback).
+    // Timer остаётся для истинных countdown.
+    expect(inferFieldRole("expiresAt", { type: "datetime" })).toMatchObject({ role: "timer" });
+    expect(inferFieldRole("validUntil", { type: "datetime" })).toMatchObject({ role: "timer" });
+    expect(inferFieldRole("deadline", { type: "datetime" })).toMatchObject({ role: "deadline" });
+    expect(inferFieldRole("auctionEnd", { type: "datetime" })).toMatchObject({ role: "info" });
   });
 
   it("location for fields with location/from/city in name", () => {
@@ -289,11 +293,11 @@ describe("inferFieldRole — witness.pattern (§15 v1.10 zazor #3)", () => {
       .toMatchObject({ pattern: "name:price-substring" });
   });
 
-  it("name:timer-suffix pattern", () => {
-    expect(inferFieldRole("auctionEnd", { type: "datetime" }))
-      .toMatchObject({ pattern: "name:timer-suffix" });
-    expect(inferFieldRole("deadline", { type: "datetime" }))
-      .toMatchObject({ pattern: "name:timer-suffix" });
+  it("name:timer-countdown / name:timer-until patterns (v0.12 narrowed)", () => {
+    expect(inferFieldRole("expiresAt", { type: "datetime" }))
+      .toMatchObject({ pattern: "name:timer-countdown" });
+    expect(inferFieldRole("validUntil", { type: "datetime" }))
+      .toMatchObject({ pattern: "name:timer-until" });
   });
 
   it("name:coordinate-set pattern (name-based, не type)", () => {
@@ -353,5 +357,116 @@ describe("inferFieldRole — witness.pattern (§15 v1.10 zazor #3)", () => {
   it("rule-based (type-based) — pattern не обязателен", () => {
     const result = inferFieldRole("position", { type: "coordinate" });
     expect(result.reliability).toBe("rule-based");
+  });
+});
+
+describe("inferFieldRole — temporal roles (v0.12)", () => {
+  describe("timestamp (audit)", () => {
+    it.each([
+      ["createdAt", { type: "datetime" }],
+      ["updatedAt", { type: "datetime" }],
+      ["modifiedAt", { type: "datetime" }],
+      ["deletedAt", { type: "datetime" }],
+      ["lastSeenAt", { type: "datetime" }],
+      ["archivedAt", { type: "datetime" }],
+    ])("%s → timestamp", (name, def) => {
+      expect(inferFieldRole(name, def).role).toBe("timestamp");
+    });
+
+    it("witness: reliability heuristic + pattern", () => {
+      const w = inferFieldRole("createdAt", { type: "datetime" });
+      expect(w.reliability).toBe("heuristic");
+      expect(w.pattern).toBe("temporal:timestamp-audit");
+    });
+  });
+
+  describe("deadline (target date)", () => {
+    it.each([
+      ["dueDate", { type: "date" }],
+      ["dueBy", { type: "datetime" }],
+      ["dueAt", { type: "datetime" }],
+      ["deadline", { type: "date" }],
+      ["deadlineAt", { type: "datetime" }],
+    ])("%s → deadline", (name, def) => {
+      expect(inferFieldRole(name, def).role).toBe("deadline");
+    });
+
+    it("witness: pattern temporal:deadline", () => {
+      const w = inferFieldRole("dueDate", { type: "date" });
+      expect(w.pattern).toBe("temporal:deadline-due-prefix");
+    });
+  });
+
+  describe("scheduled (planned future)", () => {
+    it.each([
+      ["scheduledAt", { type: "datetime" }],
+      ["scheduledDate", { type: "date" }],
+      ["appointmentAt", { type: "datetime" }],
+      ["meetingAt", { type: "datetime" }],
+      ["visitDate", { type: "date" }],
+      ["eventDate", { type: "date" }],
+      ["sessionAt", { type: "datetime" }],
+    ])("%s → scheduled", (name, def) => {
+      expect(inferFieldRole(name, def).role).toBe("scheduled");
+    });
+  });
+
+  describe("occurred (past event)", () => {
+    it.each([
+      ["recordDate", { type: "date" }],
+      ["administeredAt", { type: "datetime" }],
+      ["startedAt", { type: "datetime" }],
+      ["completedAt", { type: "datetime" }],
+      ["finishedAt", { type: "datetime" }],
+      ["closedAt", { type: "datetime" }],
+      ["birthDate", { type: "date" }],
+      ["endedAt", { type: "datetime" }],
+      ["postedAt", { type: "datetime" }],
+      ["shippedAt", { type: "datetime" }],
+    ])("%s → occurred", (name, def) => {
+      expect(inferFieldRole(name, def).role).toBe("occurred");
+    });
+  });
+
+  describe("timer (narrowed — только countdown)", () => {
+    it.each([
+      ["expiresAt", { type: "datetime" }],
+      ["expiryDate", { type: "date" }],
+      ["validUntil", { type: "datetime" }],
+      ["countdownAt", { type: "datetime" }],
+    ])("%s → timer (unchanged)", (name, def) => {
+      expect(inferFieldRole(name, def).role).toBe("timer");
+    });
+
+    it("deadline больше НЕ timer — переехал в deadline", () => {
+      expect(inferFieldRole("deadline", { type: "date" }).role).toBe("deadline");
+    });
+
+    it("endAt без past-tense 'ed' → info fallback (не timer, не occurred)", () => {
+      expect(inferFieldRole("endAt", { type: "datetime" }).role).toBe("info");
+    });
+  });
+
+  describe("explicit fieldRole всегда побеждает", () => {
+    it("createdAt с explicit 'info' → info, а не timestamp", () => {
+      const w = inferFieldRole("createdAt", { type: "datetime", fieldRole: "info" });
+      expect(w.role).toBe("info");
+      expect(w.reliability).toBe("structural");
+    });
+
+    it("endAt с explicit 'timer' → timer", () => {
+      const w = inferFieldRole("endAt", { type: "datetime", fieldRole: "timer" });
+      expect(w.role).toBe("timer");
+    });
+  });
+
+  describe("priority: timestamp > deadline > scheduled > occurred > existing", () => {
+    it("createdAt имеет приоритет над general occurred", () => {
+      expect(inferFieldRole("createdAt", { type: "datetime" }).role).toBe("timestamp");
+    });
+
+    it("scheduledEndAt — scheduled побеждает end→occurred", () => {
+      expect(inferFieldRole("scheduledEndAt", { type: "datetime" }).role).toBe("scheduled");
+    });
   });
 });

@@ -84,3 +84,32 @@ describe("buildStrategy", () => {
     expect(strategy).toBe(DEFAULT_STRATEGY);
   });
 });
+
+describe("temporal roles в emphasisFields (v0.12)", () => {
+  it("monitoring: deadline → badge, scheduled/timestamp → secondary, money → primary", () => {
+    const strategy = buildStrategy({ pattern: "monitoring" });
+    const fieldRoles = {
+      totalValue: "money",
+      dueDate: "deadline",
+      scheduledAt: "scheduled",
+      createdAt: "timestamp",
+      status: "badge",
+    };
+    const { primary, secondary, badge } = strategy.emphasisFields(
+      ["totalValue", "dueDate", "scheduledAt", "createdAt", "status"],
+      fieldRoles
+    );
+    expect(primary).toContain("totalValue");
+    expect(badge).toContain("dueDate");
+    expect(badge).toContain("status");
+    expect(secondary).toContain("scheduledAt");
+    expect(secondary).toContain("createdAt");
+  });
+
+  it("triage: deadline → badge", () => {
+    const strategy = buildStrategy({ pattern: "triage" });
+    const fieldRoles = { title: "title", dueBy: "deadline" };
+    const { badge } = strategy.emphasisFields(["title", "dueBy"], fieldRoles);
+    expect(badge).toContain("dueBy");
+  });
+});

@@ -32,8 +32,8 @@ const PATTERN_STRATEGIES = {
       for (const f of fields) {
         const role = fieldRoles?.[f] || inferFieldRole(f, {})?.role;
         if (role === "money" || role === "percentage") primary.push(f);
-        else if (role === "trend") secondary.push(f);
-        else if (role === "badge") badge.push(f);
+        else if (role === "deadline" || role === "badge") badge.push(f);
+        else if (role === "trend" || role === "scheduled" || role === "timestamp") secondary.push(f);
       }
       if (primary.length === 0) primary.push(...fields.slice(0, 2));
       return { primary, secondary, badge };
@@ -53,7 +53,7 @@ const PATTERN_STRATEGIES = {
         const role = fieldRoles?.[f] || inferFieldRole(f, {})?.role;
         if (role === "title") primary.push(f);
         else if (role === "description") secondary.push(f);
-        else if (role === "badge" || role === "metric") badge.push(f);
+        else if (role === "deadline" || role === "badge" || role === "metric") badge.push(f);
       }
       if (primary.length === 0) primary.push(fields[0] || "name");
       return { primary, secondary, badge };
