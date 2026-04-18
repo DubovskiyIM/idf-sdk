@@ -26,6 +26,7 @@ import { evaluateTriggerExplained } from "../patterns/schema.js";
 import { applyStructuralPatterns } from "./applyStructuralPatterns.js";
 import { absorbHubChildren } from "./absorbHubChildren.js";
 import { deriveShape } from "./deriveShape.js";
+import { mergeViewWithParent } from "./mergeViews.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -211,9 +212,87 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // Shape-layer (v1.13) — timeline/directory/default
       shape: shapeResult.shape,
       shapeSignals: shapeResult.signals,
+      // Multi-archetype views (v0.13) — null если views не объявлены
+      views: null,
+      defaultView: null,
+      viewSwitcher: null,
       // witness-of-crystallization (§15 v1.9+): pattern-bank findings
       witnesses,
     };
+
+    // Views expansion (v0.13) — per-view crystallize pass
+    const projViews = proj.views;
+    if (Array.isArray(projViews) && projViews.length >= 2) {
+      const defaultViewId = proj.defaultView || projViews[0].id;
+      const viewsOutput = [];
+      const viewWarnings = [];
+      for (const view of projViews) {
+        const { merged, warnings: vw } = mergeViewWithParent(proj, view);
+        viewWarnings.push(...vw);
+        const viewArchetype = merged.kind || inferArchetype(merged);
+        if (!SUPPORTED_ARCHETYPES.has(viewArchetype)) continue;
+
+        const viewPatternResult = resolvePattern(projIntents, ONTOLOGY, merged);
+        const viewStructuralPatterns = patternRegistry.matchPatterns(projIntents, ONTOLOGY, merged);
+
+        let viewSlots;
+        if (viewArchetype === "dashboard") {
+          viewSlots = {
+            header: [], toolbar: [],
+            body: { type: "dashboard", widgets: merged.widgets || [] },
+            context: [], fab: [], overlay: [],
+          };
+        } else {
+          viewSlots = assignToSlots(INTENTS, { ...merged, id: projId + ":" + view.id }, ONTOLOGY, viewPatternResult.strategy);
+        }
+
+        let viewWitnesses = [];
+        if (applyEnabled && viewArchetype !== "form" && viewArchetype !== "canvas" && viewArchetype !== "dashboard" && viewArchetype !== "wizard") {
+          const matchedAugmented = viewStructuralPatterns.map(p => ({
+            pattern: p,
+            explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, merged),
+          }));
+          viewWitnesses = matchedAugmented.map(({ pattern, explain }) => ({
+            basis: "pattern-bank",
+            pattern: pattern.id,
+            reliability: "rule-based",
+            requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
+            matchFn: explain.matchFn,
+            matchOk: explain.matchOk,
+          }));
+          const preferences = merged.patterns || {};
+          const applyContext = { ontology: ONTOLOGY, mainEntity: merged.mainEntity, intents: projIntents, projection: merged };
+          viewSlots = applyStructuralPatterns(viewSlots, matchedAugmented, applyContext, preferences, patternRegistry);
+        }
+
+        viewsOutput.push({
+          id: view.id,
+          name: merged.name,
+          archetype: viewArchetype,
+          layout: merged.layout || null,
+          slots: viewSlots,
+          matchedPatterns: viewStructuralPatterns.map(p => p.id),
+          witnesses: viewWitnesses,
+        });
+      }
+
+      if (viewsOutput.length >= 2) {
+        artifact.views = viewsOutput;
+        artifact.defaultView = defaultViewId;
+        artifact.viewSwitcher = {
+          views: viewsOutput.map(v => ({ id: v.id, name: v.name, archetype: v.archetype })),
+          activeId: defaultViewId,
+        };
+        const defaultV = viewsOutput.find(v => v.id === defaultViewId);
+        if (defaultV) {
+          artifact.archetype = defaultV.archetype;
+          artifact.slots = defaultV.slots;
+        }
+        if (viewWarnings.length > 0) {
+          console.warn(`[crystallize_v2] ${projId}: view warnings`, viewWarnings);
+        }
+      }
+    }
 
     const validation = validateArtifact(artifact);
     if (!validation.ok) {
