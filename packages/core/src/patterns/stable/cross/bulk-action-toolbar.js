@@ -44,15 +44,15 @@ export default {
     ],
   },
   falsification: {
+    // В текущих IDF доменах bulk_*-intents декларированы только в messenger
+    // (mark_conversations_as_read, archive_selected). Это реальные match-cases.
+    // Для sales/delivery — aspirational (нужны bulk_* intents для hit).
     shouldMatch: [
-      // В существующих IDF доменах bulk_*-intents пока нет — это aspirational pattern
-      // для доменов с selection-based workflow (future triage/moderation UIs).
-      { domain: "sales", projection: "listings_catalog", reason: "aspirational: bulk_archive_listings / bulk_mark_spam для moderation" },
-      { domain: "delivery", projection: "orders_queue", reason: "aspirational: bulk_assign_courier / bulk_cancel для dispatcher" },
+      { domain: "messenger", projection: "conversation_list", reason: "messenger имеет bulk_mark_read / bulk_archive — реальные bulk-intents" },
     ],
     shouldNotMatch: [
-      { domain: "booking", projection: "services_catalog", reason: "booking не имеет bulk_*-intents — single-booking flow" },
-      { domain: "lifequest", projection: "habits_root", reason: "habits индивидуальны, bulk-op неприменим" },
+      { domain: "booking", projection: "service_catalog", reason: "booking не имеет bulk_*-intents — single-booking flow" },
+      { domain: "lifequest", projection: "habit_list", reason: "habits индивидуальны, bulk-op неприменим" },
     ],
   },
 };

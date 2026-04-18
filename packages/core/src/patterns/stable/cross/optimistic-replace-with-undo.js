@@ -50,13 +50,12 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "lifequest", projection: "habits_root", reason: "≥3 replace intents (complete_habit, skip_habit, ...) + click-confirmation" },
-      { domain: "reflect", projection: "mood_log", reason: "rapid replace на mood entries, reversible" },
-      { domain: "planning", projection: "poll_detail", reason: "vote_yes/no/maybe — frequent reversible replace" },
+      { domain: "lifequest", projection: "habit_list", reason: "≥3 replace intents (complete_habit, skip_habit, ...) + click-confirmation" },
+      { domain: "lifequest", projection: "dashboard", reason: "множество replace на attributes с click-confirmation" },
+      { domain: "planning", projection: "poll_overview", reason: "vote_yes/no/maybe — frequent reversible replace" },
     ],
     shouldNotMatch: [
       { domain: "delivery", projection: "order_detail", reason: "capture_payment — irreversibility=high, требует confirm, не undo" },
-      { domain: "sales", projection: "listing_detail", reason: "close_auction — irreversible side-effects" },
     ],
   },
 };

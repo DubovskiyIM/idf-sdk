@@ -67,13 +67,13 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "invest", projection: "agent_preapproval_detail", reason: "AgentPreapproval с active-status + ≥2 setter-intents" },
-      { domain: "delivery", projection: "agent_preapproval_detail", reason: "Аналогично — preapproval lifecycle" },
       { domain: "booking", projection: "booking_detail", reason: "Booking после confirm — slot/service locked, только cancel" },
+      { domain: "delivery", projection: "order_detail", reason: "Order после placed — items locked, изменения через refund" },
+      { domain: "sales", projection: "listing_detail", reason: "Listing после published — изменение через отдельный update_listing" },
     ],
     shouldNotMatch: [
-      { domain: "lifequest", projection: "habit_detail", reason: "Habit без activation-gate — параметры всегда editable" },
-      { domain: "reflect", projection: "mood_entry_detail", reason: "Mood entry — immutable immediately, не lifecycle-based" },
+      { domain: "invest", projection: "watchlists_root", reason: "Watchlist — catalog без lifecycle-gate" },
+      { domain: "planning", projection: "my_polls", reason: "Polls всегда editable до close_poll" },
     ],
   },
 };
