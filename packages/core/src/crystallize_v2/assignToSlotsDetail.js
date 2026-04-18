@@ -18,6 +18,7 @@ import {
 } from "./assignToSlotsShared.js";
 import { getEntityFields, canRead, inferFieldRole } from "./ontologyHelpers.js";
 import { getIntentIcon } from "./getIntentIcon.js";
+import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt", "deletedFor",
@@ -400,6 +401,14 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
       .map(([name]) => name);
   }
 
+  // 6. Temporal sub-entity (v0.14): если child имеет `entity.temporality`,
+  // section получает renderAs-спеку для EventTimeline primitive.
+  const temporality = entityDef?.temporality;
+  let renderAs;
+  if (temporality === "causal-chain" || temporality === "snapshot") {
+    renderAs = buildTemporalRenderSpec(temporality, subEntity, ONTOLOGY);
+  }
+
   return {
     id: collection,
     title,
@@ -410,6 +419,7 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     itemIntents: groupedIntents,
     addControl,
     emptyLabel: `Пока пусто`,
+    renderAs,
     editableFields: editableFields.length > 0 ? editableFields : undefined,
   };
 }

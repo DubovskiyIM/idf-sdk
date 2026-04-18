@@ -108,6 +108,102 @@ describe("assignToSlotsDetail", () => {
     const slots = assignToSlotsDetail(INTENTS, userProfile, ONTOLOGY);
     expect(slots.hubSections).toBeNull();
   });
+
+  describe("temporal sub-entity renderAs (v0.14)", () => {
+    it("child с temporality:causal-chain → section.renderAs.type === eventTimeline", () => {
+      const ontology = {
+        entities: {
+          Payment: { fields: { id: {}, amount: { type: "number" }, userId: { type: "entityRef" } }, ownerField: "userId" },
+          PaymentEvent: {
+            temporality: "causal-chain",
+            ownerField: "paymentId",
+            fields: {
+              id: {},
+              paymentId: { type: "entityRef" },
+              kind: { type: "enum", values: ["created", "authorized"] },
+              at: { type: "datetime" },
+              actor: { type: "entityRef" },
+              description: { type: "text" },
+            },
+          },
+        },
+      };
+      const projection = {
+        kind: "detail",
+        mainEntity: "Payment",
+        subCollections: [
+          { collection: "events", entity: "PaymentEvent", foreignKey: "paymentId" },
+        ],
+      };
+      const slots = assignToSlotsDetail({}, projection, ontology);
+      const eventsSection = slots.sections.find(s => s.id === "events");
+      expect(eventsSection).toBeDefined();
+      expect(eventsSection.renderAs).toEqual({
+        type: "eventTimeline",
+        kind: "causal-chain",
+        atField: "at",
+        kindField: "kind",
+        actorField: "actor",
+        descriptionField: "description",
+      });
+    });
+
+    it("child с temporality:snapshot → section.renderAs.kind=snapshot + stateFields", () => {
+      const ontology = {
+        entities: {
+          Position: { fields: { id: {}, ticker: { type: "text" }, userId: { type: "entityRef" } }, ownerField: "userId" },
+          PositionSnapshot: {
+            temporality: "snapshot",
+            ownerField: "positionId",
+            fields: {
+              id: {},
+              positionId: { type: "entityRef" },
+              at: { type: "datetime" },
+              quantity: { type: "number" },
+              price: { type: "number", fieldRole: "money" },
+            },
+          },
+        },
+      };
+      const projection = {
+        kind: "detail",
+        mainEntity: "Position",
+        subCollections: [
+          { collection: "snapshots", entity: "PositionSnapshot", foreignKey: "positionId" },
+        ],
+      };
+      const slots = assignToSlotsDetail({}, projection, ontology);
+      const s = slots.sections.find(x => x.id === "snapshots");
+      expect(s.renderAs.kind).toBe("snapshot");
+      expect(s.renderAs.stateFields).toEqual(["quantity", "price"]);
+    });
+
+    it("child без temporality — section.renderAs отсутствует (backward-compat)", () => {
+      const ontology = {
+        entities: {
+          Poll: { fields: { id: {}, title: { type: "text" }, userId: { type: "entityRef" } }, ownerField: "userId" },
+          TimeOption: {
+            fields: {
+              id: {},
+              pollId: { type: "entityRef" },
+              date: { type: "date" },
+              startTime: { type: "text" },
+            },
+          },
+        },
+      };
+      const projection = {
+        kind: "detail",
+        mainEntity: "Poll",
+        subCollections: [
+          { collection: "timeOptions", entity: "TimeOption", foreignKey: "pollId" },
+        ],
+      };
+      const slots = assignToSlotsDetail({}, projection, ontology);
+      const s = slots.sections.find(x => x.id === "timeOptions");
+      expect(s.renderAs).toBeUndefined();
+    });
+  });
 });
 
 function extractBinds(node) {
