@@ -30,6 +30,14 @@ import { mergeViewWithParent } from "./mergeViews.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
+/** Стабильная иммутабельная пересборка объекта с алфавитной сортировкой ключей. */
+function sortKeys(obj) {
+  if (!obj || typeof obj !== "object") return obj;
+  const out = {};
+  for (const k of Object.keys(obj).sort()) out[k] = obj[k];
+  return out;
+}
+
 // Phase 1: soft default (не breaking для существующих потребителей).
 // В Phase 3 переключится на "strict" через major bump.
 const DEFAULT_ANCHORING_MODE = "soft";
@@ -44,6 +52,12 @@ const DEFAULT_ANCHORING_MODE = "soft";
  * @returns {Record<string, Artifact>} — артефакты по projection id
  */
 export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknown", opts = {}) {
+  // Функториальность (§16): результат не должен зависеть от порядка
+  // авторства ключей INTENTS/PROJECTIONS. Нормализуем на входе — downstream
+  // iteration (Object.entries, for..of) наследует стабильный порядок.
+  INTENTS = sortKeys(INTENTS);
+  PROJECTIONS = sortKeys(PROJECTIONS);
+
   // Anchoring gate (§15 zazor #1)
   const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;
   const anchoring = checkAnchoring(INTENTS, ONTOLOGY);
@@ -65,7 +79,9 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   // Автогенерация edit-проекций (М3.4b)
   const editProjections = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
   // R8: Hub-absorption — child-каталоги с FK абсорбируются в hub-detail.
-  const allProjections = absorbHubChildren({ ...PROJECTIONS, ...editProjections }, ONTOLOGY);
+  const allProjections = sortKeys(
+    absorbHubChildren({ ...PROJECTIONS, ...editProjections }, ONTOLOGY)
+  );
 
   const inputsHash = hashInputs(INTENTS, allProjections, ONTOLOGY);
   const generatedAt = Date.now();

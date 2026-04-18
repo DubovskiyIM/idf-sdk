@@ -18,6 +18,7 @@ import {
 } from "./assignToSlotsShared.js";
 import { getEntityFields, canRead, inferFieldRole } from "./ontologyHelpers.js";
 import { getIntentIcon } from "./getIntentIcon.js";
+import { computeSalience, bySalienceDesc } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
@@ -143,10 +144,12 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
       continue;
     }
 
+    const salience = computeSalience(intent, mainEntity).value;
+
     if (hasOverlay) {
       const trigger = ownershipCond
-        ? { ...wrapped.trigger, condition: ownershipCond }
-        : wrapped.trigger;
+        ? { ...wrapped.trigger, condition: ownershipCond, salience }
+        : { ...wrapped.trigger, salience };
       slots.toolbar.push(trigger);
       slots.overlay.push(wrapped.overlay);
       continue;
@@ -154,8 +157,8 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
 
     if (wrapped.type === "intentButton") {
       const btn = ownershipCond
-        ? { ...wrapped, condition: ownershipCond }
-        : wrapped;
+        ? { ...wrapped, condition: ownershipCond, salience }
+        : { ...wrapped, salience };
       slots.toolbar.push(btn);
     }
   }
@@ -182,17 +185,21 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
  *    одиночные — группируются по иконке.
  */
 function collapseToolbar(toolbar) {
-  if (toolbar.length <= 3) return toolbar;
+  // Salience sort применяется всегда, не только при overflow — иначе
+  // пара-тройка кнопок в detail toolbar наследует alphabetical порядок
+  // от INTENTS iteration, а не семантический приоритет spec'и.
+  const sortedToolbar = [...toolbar].sort(bySalienceDesc);
+  if (sortedToolbar.length <= 3) return sortedToolbar;
 
   // 1. Собрать антагонистические пары
   const paired = new Set();
   const sections = []; // [{items: [...]}] для overflow
   const standalone = []; // кнопки без антагониста
 
-  for (const btn of toolbar) {
+  for (const btn of sortedToolbar) {
     if (paired.has(btn.intentId)) continue;
     if (btn.antagonist) {
-      const partner = toolbar.find(b => b.intentId === btn.antagonist && !paired.has(b.intentId));
+      const partner = sortedToolbar.find(b => b.intentId === btn.antagonist && !paired.has(b.intentId));
       if (partner) {
         paired.add(btn.intentId);
         paired.add(partner.intentId);
@@ -205,7 +212,8 @@ function collapseToolbar(toolbar) {
     }
   }
 
-  // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3)
+  // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3).
+  // standalone уже в salience desc order (sortedToolbar отсортирован выше).
   const visible = [];
   const toOverflow = [];
   const seenIcons = new Set();
