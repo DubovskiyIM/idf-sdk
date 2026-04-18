@@ -128,4 +128,59 @@ describe("assignToSlotsCatalog", () => {
     expect(slots).toHaveProperty("fab");
     expect(slots).toHaveProperty("overlay");
   });
+
+  describe("heroCreate guard по shape", () => {
+    const healthOntology = {
+      entities: {
+        HealthRecord: { fields: { id: {}, recordDate: { type: "date" }, weight: {} } },
+      },
+    };
+    const healthProjection = {
+      kind: "catalog",
+      mainEntity: "HealthRecord",
+      witnesses: ["recordDate", "weight"],
+      sort: "-recordDate",
+    };
+    const healthIntents = {
+      log_health: {
+        name: "Записать состояние",
+        creates: "HealthRecord",
+        particles: {
+          entities: ["HealthRecord"],
+          witnesses: ["weight"],
+          confirmation: "form",
+          conditions: [],
+          effects: [{ α: "add", target: "healthRecords" }],
+        },
+        parameters: [{ name: "weight", type: "number", required: true }],
+      },
+    };
+
+    it("shape=timeline — hero не создаётся, creator переходит в toolbar", () => {
+      const slots = assignToSlotsCatalog(healthIntents, healthProjection, healthOntology, null, "timeline");
+      expect(slots.hero).toHaveLength(0);
+      const toolbarIds = slots.toolbar.map(b => b?.intentId || b?.trigger?.intentId);
+      expect(toolbarIds).toContain("log_health");
+    });
+
+    it("shape=directory — hero заблокирован", () => {
+      const slots = assignToSlotsCatalog(healthIntents, healthProjection, healthOntology, null, "directory");
+      expect(slots.hero).toHaveLength(0);
+    });
+
+    it("shape=default — hero заполнен как раньше", () => {
+      const slots = assignToSlotsCatalog(healthIntents, healthProjection, healthOntology, null, "default");
+      expect(slots.hero.length).toBeGreaterThan(0);
+    });
+
+    it("shape пишется в body.shape для не-default", () => {
+      const slots = assignToSlotsCatalog(healthIntents, healthProjection, healthOntology, null, "timeline");
+      expect(slots.body.shape).toBe("timeline");
+    });
+
+    it("shape=default — body.shape отсутствует", () => {
+      const slots = assignToSlotsCatalog(healthIntents, healthProjection, healthOntology, null, "default");
+      expect(slots.body.shape).toBeUndefined();
+    });
+  });
 });

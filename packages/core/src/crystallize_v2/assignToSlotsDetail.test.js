@@ -89,6 +89,25 @@ describe("assignToSlotsDetail", () => {
     expect(slots.composer).toBeUndefined();
     expect(slots.fab).toEqual([]);
   });
+
+  it("hubSections из R8-абсорбции прокидываются в slots.hubSections", () => {
+    const projection = {
+      kind: "detail",
+      mainEntity: "Pet",
+      hubSections: [
+        { projectionId: "health_list", foreignKey: "petId", entity: "HealthRecord" },
+        { projectionId: "vaccination_list", foreignKey: "petId", entity: "Vaccination" },
+      ],
+    };
+    const ontology = { entities: { Pet: { fields: { id: {}, name: {} } } } };
+    const slots = assignToSlotsDetail({}, projection, ontology);
+    expect(slots.hubSections).toEqual(projection.hubSections);
+  });
+
+  it("без hubSections — slots.hubSections === null (не undefined)", () => {
+    const slots = assignToSlotsDetail(INTENTS, userProfile, ONTOLOGY);
+    expect(slots.hubSections).toBeNull();
+  });
 });
 
 function extractBinds(node) {
