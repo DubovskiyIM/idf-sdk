@@ -479,8 +479,26 @@ export function List({ node, ctx }) {
 }
 
 function GridCard({ item, node, ctx }) {
-  const spec = node.cardSpec;
-  if (!spec) return <GridCardLegacy item={item} node={node} />;
+  const rawSpec = node.cardSpec;
+  if (!rawSpec) return <GridCardLegacy item={item} node={node} />;
+
+  // Polymorphic dispatch (v0.15): если spec содержит variants + discriminator,
+  // выбираем per-variant spec по item[discriminator]. Fallback на первый variant
+  // при unknown key + console.warn.
+  let spec = rawSpec;
+  if (rawSpec.variants && rawSpec.discriminator) {
+    const variantKey = item[rawSpec.discriminator];
+    const variantSpec = rawSpec.variants[variantKey];
+    if (variantSpec) {
+      spec = variantSpec;
+    } else {
+      const firstKey = Object.keys(rawSpec.variants)[0];
+      spec = rawSpec.variants[firstKey] || {};
+      if (variantKey) {
+        console.warn(`[GridCard] unknown variant '${variantKey}' for discriminator '${rawSpec.discriminator}'; fallback to '${firstKey}'`);
+      }
+    }
+  }
 
   const resolveField = (f) => f?.bind ? resolve(item, f.bind) : null;
 
