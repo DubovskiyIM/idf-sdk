@@ -129,3 +129,58 @@ describe("inferParameters", () => {
     expect(params).toHaveLength(0);
   });
 });
+
+describe("inferParameters — polymorphic (v0.15)", () => {
+  const polyOntology = {
+    entities: {
+      Task: {
+        discriminator: "kind",
+        variants: {
+          story: { fields: { storyPoints: { type: "number", label: "Points" } } },
+          bug:   { fields: { severity: { type: "enum", values: ["low", "high"] } } },
+        },
+        fields: {
+          id: {},
+          title: { type: "text", label: "Title" },
+          kind: { type: "enum", values: ["story", "bug"] },
+        },
+      },
+    },
+  };
+
+  it("creates:'Task(bug)' → params include severity, не storyPoints", () => {
+    const intent = {
+      creates: "Task(bug)",
+      particles: { entities: ["Task"], effects: [{ α: "add", target: "tasks" }], witnesses: [] },
+    };
+    const params = inferParameters(intent, polyOntology);
+    const names = params.map(p => p.name);
+    expect(names).toContain("title");
+    expect(names).toContain("severity");
+    expect(names).not.toContain("storyPoints");
+  });
+
+  it("creates:'Task(story)' → hidden discriminator param с default", () => {
+    const intent = {
+      creates: "Task(story)",
+      particles: { entities: ["Task"], effects: [{ α: "add", target: "tasks" }], witnesses: [] },
+    };
+    const params = inferParameters(intent, polyOntology);
+    const kindParam = params.find(p => p.name === "kind");
+    expect(kindParam).toBeDefined();
+    expect(kindParam.hidden).toBe(true);
+    expect(kindParam.default).toBe("story");
+  });
+
+  it("creates:'Task' (нет variant) → только shared fields, без variant-fields", () => {
+    const intent = {
+      creates: "Task",
+      particles: { entities: ["Task"], effects: [{ α: "add", target: "tasks" }], witnesses: [] },
+    };
+    const params = inferParameters(intent, polyOntology);
+    const names = params.map(p => p.name);
+    expect(names).toContain("title");
+    expect(names).not.toContain("severity");
+    expect(names).not.toContain("storyPoints");
+  });
+});

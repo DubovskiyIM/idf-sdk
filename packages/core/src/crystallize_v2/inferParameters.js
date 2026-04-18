@@ -1,7 +1,14 @@
 /**
  * §1.1 дизайна: извлечение параметров намерения из witnesses/parameters/creates.
  * Возвращает Parameter[] — список того, что нужно собрать у пользователя.
+ *
+ * Polymorphic (v0.15): intent.creates "Entity(variant)" → используем
+ * merged shared + variant fields, добавляем hidden discriminator param
+ * с default=variant.
  */
+
+import { parseCreatesVariant } from "./parseCreatesVariant.js";
+import { getVariantFields } from "./getVariantFields.js";
 
 // Системные поля, которые не должны собираться у пользователя при creates:X
 const SYSTEM_FIELDS = new Set([
@@ -91,27 +98,48 @@ export function inferParameters(intent, ONTOLOGY) {
   }
 
   // 3. creates:X — поля сущности (если не уже собраны из witnesses).
-  // Normalize creates чтобы сработало для booking "Booking(draft)".
-  const createsNorm = typeof creates === "string" ? creates.replace(/\s*\(.*\)\s*$/, "").trim() : creates;
+  // Polymorphic (v0.15): "Task(bug)" резолвится через parseCreatesVariant.
+  const { entity: createsNorm, variant: createsVariant } = parseCreatesVariant(creates);
   if (createsNorm && ONTOLOGY?.entities?.[createsNorm]) {
     const entity = ONTOLOGY.entities[createsNorm];
-    // Поддержка обоих форматов: массив строк (legacy) или объект {name: {...}}
-    const fieldsRaw = Array.isArray(entity.fields)
-      ? entity.fields.map(f => ({ name: f }))
-      : Object.entries(entity.fields || {}).map(([n, def]) => ({ name: n, ...def }));
+    const isPoly = entity.discriminator && entity.variants;
+
+    // Для polymorphic + variant — merged shared + variant fields
+    let fieldsRaw;
+    if (isPoly && createsVariant) {
+      const { fields: merged } = getVariantFields(entity, createsVariant);
+      fieldsRaw = Object.entries(merged).map(([n, def]) => ({ name: n, ...def }));
+    } else {
+      fieldsRaw = Array.isArray(entity.fields)
+        ? entity.fields.map(f => ({ name: f }))
+        : Object.entries(entity.fields || {}).map(([n, def]) => ({ name: n, ...def }));
+    }
+
     const existingNames = new Set(params.map(p => p.name));
     const ownerField = entity.ownerField;
     for (const field of fieldsRaw) {
       if (SYSTEM_FIELDS.has(field.name)) continue;
+      // Polymorphic: discriminator поле при creates с variant — hidden с default
+      if (isPoly && createsVariant && field.name === entity.discriminator) {
+        if (!existingNames.has(field.name)) {
+          params.push({
+            name: field.name,
+            default: createsVariant,
+            hidden: true,
+            inferredFrom: "polymorphic-discriminator",
+          });
+          existingNames.add(field.name);
+        }
+        continue;
+      }
       // FK'и пропускаем, кроме entityRef-полей с write-доступом (sphereId, goalId).
       // ownerField (userId) всегда пропускаем — устанавливается из viewer.
       if (field.name === ownerField) continue;
       if (isForeignKey(field.name) && field.type !== "entityRef") continue;
       if (existingNames.has(field.name)) continue;
-      // Поля без write-доступа — computed/read-only (bidCount, viewCount),
-      // не собираются при создании.
+      // Поля без write-доступа — computed/read-only, не собираются при создании.
       if (field.write && !field.write.includes("*") && !field.write.includes("self")) continue;
-      if (field.read && !field.write) continue; // read-only поле
+      if (field.read && !field.write) continue;
       const param = { name: field.name, label: field.label || field.name, inferredFrom: "creates-entity", entity: createsNorm };
       if (field.visibleWhen) param.visibleWhen = field.visibleWhen;
       if (field.control) param.type = field.control;
