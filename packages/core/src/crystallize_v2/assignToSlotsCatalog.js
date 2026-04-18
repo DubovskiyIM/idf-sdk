@@ -14,6 +14,7 @@ import {
 import { getIntentIcon } from "./getIntentIcon.js";
 import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
+import { computeSalience, bySalienceDesc } from "./salience.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
   const slots = {
@@ -75,9 +76,11 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     let hasOverlay = wrapped.trigger && wrapped.overlay;
     const isCreator = normalizeCreates(intent.creates) === projection.mainEntity;
 
-    // inlineSearch — всегда в toolbar как projection-level utility
+    // inlineSearch — всегда в toolbar как projection-level utility.
+    // Salience 90 — выше edit (60), ниже explicit "primary" (100) — чтобы
+    // не зарываться ниже creator-кнопок, но уступать явно помеченным primary.
     if (wrapped.type === "inlineSearch") {
-      slots.toolbar.push(wrapped);
+      slots.toolbar.push({ ...wrapped, salience: 90 });
       continue;
     }
 
@@ -115,11 +118,12 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
 
     // Creator главной сущности → toolbar (iOS "+"-паттерн, не FAB)
     if (isCreator && !isPerItem) {
+      const salience = computeSalience(intent, projection.mainEntity).value;
       if (hasOverlay) {
         slots.overlay.push(wrapped.overlay);
-        slots.toolbar.push(wrapped.trigger);
+        slots.toolbar.push({ ...wrapped.trigger, salience });
       } else {
-        slots.toolbar.push(wrapped);
+        slots.toolbar.push({ ...wrapped, salience });
       }
       continue;
     }
@@ -151,20 +155,27 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
 
     // projection-level с overlay
     if (hasOverlay) {
-      slots.toolbar.push(wrapped.trigger);
+      const salience = computeSalience(intent, projection.mainEntity).value;
+      slots.toolbar.push({ ...wrapped.trigger, salience });
       slots.overlay.push(wrapped.overlay);
       continue;
     }
 
     // projection-level простой click
     if (wrapped.type === "intentButton") {
-      slots.toolbar.push(wrapped);
+      const salience = computeSalience(intent, projection.mainEntity).value;
+      slots.toolbar.push({ ...wrapped, salience });
     }
   }
 
   if (slots.body.item) {
     slots.body.item.intents = itemIntents;
   }
+
+  // Сортировка toolbar по salience desc перед overflow cutoff — семантически
+  // primary intent'ы попадают в visible, остальные — в overflow. Tied salience
+  // → alphabetical (наследуется из функториальной нормализации INTENTS).
+  slots.toolbar.sort(bySalienceDesc);
 
   if (slots.toolbar.length > 5) {
     const overflow = slots.toolbar.splice(5);

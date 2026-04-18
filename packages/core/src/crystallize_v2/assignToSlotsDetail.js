@@ -185,17 +185,21 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
  *    одиночные — группируются по иконке.
  */
 function collapseToolbar(toolbar) {
-  if (toolbar.length <= 3) return toolbar;
+  // Salience sort применяется всегда, не только при overflow — иначе
+  // пара-тройка кнопок в detail toolbar наследует alphabetical порядок
+  // от INTENTS iteration, а не семантический приоритет spec'и.
+  const sortedToolbar = [...toolbar].sort(bySalienceDesc);
+  if (sortedToolbar.length <= 3) return sortedToolbar;
 
   // 1. Собрать антагонистические пары
   const paired = new Set();
   const sections = []; // [{items: [...]}] для overflow
   const standalone = []; // кнопки без антагониста
 
-  for (const btn of toolbar) {
+  for (const btn of sortedToolbar) {
     if (paired.has(btn.intentId)) continue;
     if (btn.antagonist) {
-      const partner = toolbar.find(b => b.intentId === btn.antagonist && !paired.has(b.intentId));
+      const partner = sortedToolbar.find(b => b.intentId === btn.antagonist && !paired.has(b.intentId));
       if (partner) {
         paired.add(btn.intentId);
         paired.add(partner.intentId);
@@ -209,14 +213,11 @@ function collapseToolbar(toolbar) {
   }
 
   // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3).
-  // Сортировка по salience desc, tie-break алфавитно по intentId — делает
-  // выбор primary/secondary семантическим (не просто алфавитным как fallback
-  // функториального фикса).
-  const sortedStandalone = [...standalone].sort(bySalienceDesc);
+  // standalone уже в salience desc order (sortedToolbar отсортирован выше).
   const visible = [];
   const toOverflow = [];
   const seenIcons = new Set();
-  for (const btn of sortedStandalone) {
+  for (const btn of standalone) {
     const icon = btn.icon || btn.intentId;
     if (visible.length < 3 && !seenIcons.has(icon)) {
       seenIcons.add(icon);
