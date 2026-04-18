@@ -15,7 +15,7 @@ import { getIntentIcon } from "./getIntentIcon.js";
 import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
 
-export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy) {
+export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
   const slots = {
     header: [],
     toolbar: [],
@@ -86,13 +86,16 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy) {
     // UX-паттерн: только ОДИН hero на каталог. Первый побеждает (обычно
     // основной create-интент), остальные re-wrap'ятся как обычные кнопки
     // и проходят через стандартную логику (per-item → fab → toolbar).
+    //
+    // Shape guard: для timeline/directory hero неуместен —
+    // приоритет у контента (хронология/контакты), а не у создания.
     if (wrapped.type === "heroCreate") {
-      if (slots.hero.length === 0) {
+      const heroAllowed = shape !== "timeline" && shape !== "directory";
+      if (heroAllowed && slots.hero.length === 0) {
         slots.hero.push(wrapped);
         continue;
       }
-      // Дополнительные creator'ы → re-wrap как intentButton, пусть пройдут
-      // стандартную логику (isPerItem / fab / toolbar).
+      // Re-wrap как обычный intentButton — пройдёт стандартную логику.
       wrapped = {
         type: "intentButton",
         intentId: id,
@@ -166,6 +169,10 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy) {
   if (slots.toolbar.length > 5) {
     const overflow = slots.toolbar.splice(5);
     slots.toolbar.push({ type: "overflow", children: overflow });
+  }
+
+  if (shape && shape !== "default" && slots.body) {
+    slots.body.shape = shape;
   }
 
   // Strategy metadata для renderer

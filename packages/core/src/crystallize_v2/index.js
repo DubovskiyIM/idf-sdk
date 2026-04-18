@@ -25,6 +25,7 @@ import { getDefaultRegistry, loadStablePatterns } from "../patterns/registry.js"
 import { evaluateTriggerExplained } from "../patterns/schema.js";
 import { applyStructuralPatterns } from "./applyStructuralPatterns.js";
 import { absorbHubChildren } from "./absorbHubChildren.js";
+import { deriveShape } from "./deriveShape.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -86,6 +87,8 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     const patternResult = resolvePattern(projIntents, ONTOLOGY, proj);
     const structuralPatterns = patternRegistry.matchPatterns(projIntents, ONTOLOGY, proj);
 
+    const shapeResult = deriveShape(proj, ONTOLOGY);
+
     let slots;
     if (archetype === "form") {
       // Form-архетип: не проходит через обычный assignToSlots.
@@ -123,7 +126,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // Wizard-архетип: steps пробрасываются as-is, рендер управляется ArchetypeWizard.
       slots = { kind: "wizard", steps: proj.steps || [], projection: proj };
     } else {
-      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy);
+      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape);
     }
 
     // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.
@@ -205,6 +208,9 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // R8 Hub-absorption (v1.13)
       absorbedBy: proj.absorbedBy || null,
       hubSections: proj.hubSections || null,
+      // Shape-layer (v1.13) — timeline/directory/default
+      shape: shapeResult.shape,
+      shapeSignals: shapeResult.signals,
       // witness-of-crystallization (§15 v1.9+): pattern-bank findings
       witnesses,
     };

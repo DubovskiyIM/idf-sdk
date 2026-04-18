@@ -17,9 +17,9 @@ import {
 } from "./assignToSlotsShared.js";
 import { getIntentIcon } from "./getIntentIcon.js";
 
-export function assignToSlots(INTENTS, projection, ONTOLOGY, strategy) {
+export function assignToSlots(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
   const kind = projection.kind;
-  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy);
+  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape);
   if (kind === "detail") return assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy);
   if (kind === "wizard") return { kind: "wizard", steps: projection.steps || [], projection };
   return assignToSlotsFeed(INTENTS, projection, ONTOLOGY);
