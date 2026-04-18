@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("13 stable patterns loaded", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(13);
+  it("20 stable patterns loaded", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(20);
   });
 
   // ─── hero-create ───

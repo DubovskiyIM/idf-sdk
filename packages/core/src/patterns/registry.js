@@ -93,12 +93,24 @@ import footerInlineSetter from "./stable/detail/footer-inline-setter.js";
 import hierarchyTreeNav from "./stable/cross/hierarchy-tree-nav.js";
 import discriminatorWizard from "./stable/catalog/discriminator-wizard.js";
 import m2mAttachDialog from "./stable/detail/m2m-attach-dialog.js";
+// v0.10: golden-standard batch (Linear / Stripe / Notion / Height / Superhuman)
+import globalCommandPalette from "./stable/cross/global-command-palette.js";
+import optimisticReplaceWithUndo from "./stable/cross/optimistic-replace-with-undo.js";
+import bulkActionToolbar from "./stable/cross/bulk-action-toolbar.js";
+import kanbanPhaseColumnBoard from "./stable/catalog/kanban-phase-column-board.js";
+import keyboardPropertyPopover from "./stable/detail/keyboard-property-popover.js";
+import observerReadonlyEscape from "./stable/detail/observer-readonly-escape.js";
+import lifecycleLockedParameters from "./stable/detail/lifecycle-locked-parameters.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
   gridCardLayout, inlineSearch, composerEntry, voteGroup,
   antagonistToggle, footerInlineSetter,
   hierarchyTreeNav, discriminatorWizard, m2mAttachDialog,
+  // Golden-standard batch (v0.10)
+  globalCommandPalette, optimisticReplaceWithUndo, bulkActionToolbar,
+  kanbanPhaseColumnBoard, keyboardPropertyPopover, observerReadonlyEscape,
+  lifecycleLockedParameters,
 ];
 
 export function loadStablePatterns(registry) {
