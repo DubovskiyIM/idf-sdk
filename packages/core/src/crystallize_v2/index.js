@@ -24,6 +24,7 @@ import { resolvePattern } from "../patterns/index.js";
 import { getDefaultRegistry, loadStablePatterns } from "../patterns/registry.js";
 import { evaluateTriggerExplained } from "../patterns/schema.js";
 import { applyStructuralPatterns } from "./applyStructuralPatterns.js";
+import { absorbHubChildren } from "./absorbHubChildren.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -61,7 +62,8 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
 
   // Автогенерация edit-проекций (М3.4b)
   const editProjections = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
-  const allProjections = { ...PROJECTIONS, ...editProjections };
+  // R8: Hub-absorption — child-каталоги с FK абсорбируются в hub-detail.
+  const allProjections = absorbHubChildren({ ...PROJECTIONS, ...editProjections }, ONTOLOGY);
 
   const inputsHash = hashInputs(INTENTS, allProjections, ONTOLOGY);
   const generatedAt = Date.now();
@@ -200,6 +202,9 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       editProjection: editProjections[projId + "_edit"] ? (projId + "_edit") : null,
       // Для form: ссылка на исходную detail
       sourceProjection: proj.sourceProjection || null,
+      // R8 Hub-absorption (v1.13)
+      absorbedBy: proj.absorbedBy || null,
+      hubSections: proj.hubSections || null,
       // witness-of-crystallization (§15 v1.9+): pattern-bank findings
       witnesses,
     };
