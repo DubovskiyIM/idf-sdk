@@ -553,6 +553,18 @@ function ApplePaper({ children, ...props }) {
 
 // ─── Adapter Export ───
 
+// Affinity для matching-score (см. renderer/adapters/matching.js).
+AppleNumber.affinity = {
+  roles: ["money", "price", "percentage", "trend"],
+  types: ["number"],
+  fields: ["amount", "total", "price", "fee", "balance"],
+};
+AppleDateTime.affinity = {
+  roles: ["timestamp", "datetime"],
+  types: ["datetime"],
+  features: ["withTime"],
+};
+
 export const appleAdapter = {
   name: "apple",
   parameter: {

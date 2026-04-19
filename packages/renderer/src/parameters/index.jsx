@@ -4,7 +4,7 @@ import DateTimeControl from "./DateTimeControl.jsx";
 import FileControl from "./FileControl.jsx";
 import ImageControl from "./ImageControl.jsx";
 import MultiImageControl from "./MultiImageControl.jsx";
-import { getAdaptedComponent } from "../adapters/registry.js";
+import { getAdaptedComponent, pickAdaptedComponent } from "../adapters/registry.js";
 
 // Built-in fallback: используется если адаптер не зарегистрирован или
 // конкретного control type в нём нет. В последнем случае падаем на
@@ -23,10 +23,13 @@ const CONTROLS_BY_TYPE = {
 };
 
 export default function ParameterControl({ spec, value, onChange, error }) {
-  // Сначала пробуем UI-адаптер (Mantine и т.п.) — §17 адаптивный слой.
-  // Адаптер категории parameter возвращает React-компонент для данного
-  // control type; если null — используем built-in.
-  const Adapted = getAdaptedComponent("parameter", spec.control);
+  // Сначала пробуем UI-адаптер через matching-score (§17 адаптивный слой).
+  // pickAdaptedComponent учитывает spec.fieldRole, spec.name, spec.features
+  // через affinity декларации адаптеров — например text+fieldRole:"price"
+  // автоматически выбирает number-компонент с ₽-префиксом.
+  // Fallback: exact lookup по spec.control (back-compat), потом built-in.
+  const Picked = pickAdaptedComponent("parameter", spec);
+  const Adapted = Picked || getAdaptedComponent("parameter", spec.control);
   if (Adapted) {
     return <Adapted spec={spec} value={value} onChange={onChange} error={error} />;
   }
