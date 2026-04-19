@@ -20,12 +20,29 @@
 
 import {
   witnessR1Catalog,
+  witnessR1bReadOnlyCatalog,
   witnessR2FeedOverride,
   witnessR3Detail,
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
+  witnessR10RoleScope,
 } from "./derivationWitnesses.js";
+
+/**
+ * Обратный индекс foreignKeys: для E возвращает ["E'.fk", ...] — кто на неё ссылается.
+ */
+function buildReferencedByIndex(foreignKeys) {
+  const index = {};
+  for (const [entityName, fks] of Object.entries(foreignKeys)) {
+    for (const fk of fks) {
+      const target = fk.references;
+      if (!index[target]) index[target] = [];
+      index[target].push(`${entityName}.${fk.field}`);
+    }
+  }
+  return index;
+}
 
 /**
  * Нормализация creates: "Listing(draft)" → "Listing"
@@ -205,10 +222,12 @@ export function deriveProjections(intents, ontology) {
   const entityNames = Object.keys(ontology.entities || {});
   const analysis = analyzeIntents(intents, entityNames);
   const foreignKeys = detectForeignKeys(ontology);
+  const referencedBy = buildReferencedByIndex(foreignKeys);
   const projections = {};
 
   for (const entityName of entityNames) {
     const lower = entityName.toLowerCase();
+    const entityDef = ontology.entities[entityName] || {};
     const hasCreators = (analysis.creators[entityName] || []).length > 0;
     const mutatorCount = (analysis.mutators[entityName] || []).length;
     const hasFeedSignals = (analysis.feedSignals[entityName] || []).length > 0;
@@ -245,6 +264,29 @@ export function deriveProjections(intents, ontology) {
 
       if (r6Witness) derivedBy.push(r6Witness);
       projections[`${lower}_list`] = proj;
+    } else {
+      // R1b: Read-only catalog — creators = ∅, но entity объявлена в онтологии
+      // и либо kind:"reference", либо на неё ссылается foreignKey из другой entity.
+      // Исключения: entity.kind === "assignment" (m2m-связка, не имеет своего catalog'а).
+      // Спецификация: idf-manifest-v2.1/docs/design/rule-R1b-read-only-catalog-spec.md
+      if (entityDef.kind !== "assignment") {
+        const isReferenceKind = entityDef.kind === "reference";
+        const refList = referencedBy[entityName] || [];
+        const isReferenced = refList.length > 0;
+        if (isReferenceKind || isReferenced) {
+          const source = isReferenceKind ? "kind:reference" : "referenced-by";
+          const derivedBy = [witnessR1bReadOnlyCatalog(entityName, source, refList)];
+          if (r6Witness) derivedBy.push(r6Witness);
+          projections[`${lower}_list`] = {
+            kind: "catalog",
+            mainEntity: entityName,
+            entities: [entityName],
+            readonly: true,
+            witnesses,
+            derivedBy,
+          };
+        }
+      }
     }
 
     // R3: Detail
@@ -301,6 +343,42 @@ export function deriveProjections(intents, ontology) {
         witnesses: projections[catalogId].witnesses,
         filter: { field: ownerField, op: "=", value: "me.id" },
         derivedBy: [witnessR7OwnerFilter(entityName, ownerField, catalogId)],
+      };
+    }
+  }
+
+  // R10: Role-scope filtered catalog — для каждой роли с scope-объявлением,
+  // каждой сущности в scope — генерируется scoped_<role>_<entity>_list.
+  // Формат scope (реальный, из invest): { via, viewerField, joinField, localField, statusField?, statusAllowed? }
+  // Спецификация: idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md
+  const roles = ontology.roles || {};
+  for (const [roleName, roleDef] of Object.entries(roles)) {
+    const scope = roleDef?.scope;
+    if (!scope || typeof scope !== "object") continue;
+    for (const [scopedEntityName, scopeSpec] of Object.entries(scope)) {
+      if (!scopeSpec || typeof scopeSpec !== "object") continue;
+      if (!scopeSpec.via || !scopeSpec.viewerField || !scopeSpec.joinField || !scopeSpec.localField) {
+        continue;  // неполный scope-spec — игнорируем
+      }
+      const scopedEntityLower = scopedEntityName.toLowerCase();
+      const scopedProjId = `${roleName}_${scopedEntityLower}_list`;
+      const witnessSrc = collectWitnessesDetailed(scopedEntityName, intents);
+      projections[scopedProjId] = {
+        kind: "catalog",
+        mainEntity: scopedEntityName,
+        entities: [scopedEntityName],
+        readonly: true,
+        witnesses: witnessSrc.fields,
+        filter: {
+          kind: "m2m-via",
+          via: scopeSpec.via,
+          viewerField: scopeSpec.viewerField,
+          joinField: scopeSpec.joinField,
+          localField: scopeSpec.localField,
+          statusField: scopeSpec.statusField || null,
+          statusAllowed: scopeSpec.statusAllowed || null,
+        },
+        derivedBy: [witnessR10RoleScope(roleName, scopedEntityName, scopeSpec)],
       };
     }
   }

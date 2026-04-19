@@ -31,6 +31,72 @@ export function witnessR1Catalog(entityName, creators) {
 }
 
 /**
+ * R10: scoped catalog выведен из role.scope (m2m-via через assignment).
+ * Спецификация: idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md
+ *
+ * @param {string} roleName
+ * @param {string} entityName — сущность, на которую есть scope
+ * @param {object} scope — { via, viewerField, joinField, localField, statusField?, statusAllowed? }
+ */
+export function witnessR10RoleScope(roleName, entityName, scope) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R10",
+    input: {
+      role: roleName,
+      entity: entityName,
+      scope: { ...scope },
+    },
+    output: {
+      kind: "catalog",
+      mainEntity: entityName,
+      readonly: true,
+      filter: {
+        kind: "m2m-via",
+        via: scope.via,
+        viewerField: scope.viewerField,
+        joinField: scope.joinField,
+        localField: scope.localField,
+        statusField: scope.statusField || null,
+        statusAllowed: scope.statusAllowed || null,
+      },
+    },
+    rationale: `role "${roleName}".scope.${entityName} через ${scope.via}.${scope.joinField} → ${entityName}.${scope.localField} → scoped catalog`,
+  };
+}
+
+/**
+ * R1b: read-only catalog выведен для entity без creators, но referenced.
+ * Спецификация: idf-manifest-v2.1/docs/design/rule-R1b-read-only-catalog-spec.md
+ *
+ * @param {string} entityName
+ * @param {string} source — "kind:reference" | "referenced-by"
+ * @param {string[]} referencedBy — список "Entity.field" откуда приходят FK
+ */
+export function witnessR1bReadOnlyCatalog(entityName, source, referencedBy) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R1b",
+    input: {
+      entity: entityName,
+      creators: [],
+      source,
+      referencedBy: [...referencedBy],
+    },
+    output: {
+      kind: "catalog",
+      mainEntity: entityName,
+      readonly: true,
+    },
+    rationale: source === "kind:reference"
+      ? `${entityName}.kind === "reference" + creators = ∅ → read-only catalog`
+      : `${entityName} referenced в ${referencedBy.join(", ")} + creators = ∅ → read-only catalog`,
+  };
+}
+
+/**
  * R2: catalog → feed override (confirmation:"enter" + foreignKey к parent).
  * Дополняет R1-witness, не заменяет: автор видит, что сначала catalog был выведен,
  * потом R2 переопределил kind.
