@@ -205,6 +205,68 @@ describe("assignToSlotsDetail", () => {
     });
   });
 
+  describe("IrreversibleBadge auto-placed (backlog 3.3)", () => {
+    const ontology = {
+      entities: {
+        Order: {
+          fields: {
+            id: {},
+            title: { type: "text" },
+            status: { type: "text" },
+            customerId: { type: "entityRef" },
+          },
+          ownerField: "customerId",
+        },
+      },
+    };
+
+    it("detail проекция с intent irreversibility=high → body содержит irreversibleBadge", () => {
+      const INTENTS = {
+        capture_payment: {
+          name: "Capture payment",
+          irreversibility: "high",
+          particles: {
+            entities: ["order: Order"],
+            witnesses: [],
+            confirmation: "click",
+            conditions: [],
+            effects: [{ α: "replace", target: "order.status", value: "paid" }],
+          },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        INTENTS,
+        { kind: "detail", mainEntity: "Order", entities: ["Order"] },
+        ontology,
+      );
+      const binds = extractBinds(slots.body);
+      expect(binds).toContain("__irr");
+    });
+
+    it("нет irreversibility:high intent'ов → бейдж не инжектится (back-compat)", () => {
+      const INTENTS = {
+        edit_title: {
+          name: "Edit title",
+          particles: {
+            entities: ["order: Order"],
+            witnesses: [],
+            confirmation: "form",
+            conditions: [],
+            effects: [{ α: "replace", target: "order.title" }],
+          },
+          parameters: [{ name: "title", type: "text" }],
+        },
+      };
+      const slots = assignToSlotsDetail(
+        INTENTS,
+        { kind: "detail", mainEntity: "Order", entities: ["Order"] },
+        ontology,
+      );
+      const binds = extractBinds(slots.body);
+      expect(binds).not.toContain("__irr");
+    });
+  });
+
   describe("subCollection overrides (backlog 4.6 / 4.7)", () => {
     const ontology = {
       entities: {
@@ -273,6 +335,51 @@ describe("assignToSlotsDetail", () => {
       const s = slots.sections.find(x => x.id === "responses");
       expect(s.sort).toBe("-createdAt");
       expect(s.where).toEqual({ status: "active" });
+    });
+
+    it("backlog 4.5: addControl матчится при FK даже без явного parentEntity в entities", () => {
+      const ontologyWithFk = {
+        entities: {
+          Task: { fields: { id: {}, title: { type: "text" } }, ownerField: "userId" },
+          Response: {
+            ownerField: "executorId",
+            fields: {
+              id: {},
+              taskId: { type: "entityRef" },
+              executorId: { type: "entityRef" },
+              price: { type: "number" },
+            },
+          },
+        },
+      };
+      const INTENTS = {
+        submit_response: {
+          name: "Откликнуться",
+          creates: "Response",
+          particles: {
+            // Только response-сущность, без Task (FK сам декларирует связь)
+            entities: ["response: Response"],
+            witnesses: [],
+            confirmation: "form",
+            conditions: [],
+            effects: [{ α: "add", target: "responses" }],
+          },
+          parameters: [{ name: "price", type: "number" }],
+        },
+      };
+      const slots = assignToSlotsDetail(
+        INTENTS,
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+          }],
+        },
+        ontologyWithFk,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.addControl).toBeDefined();
+      expect(s.addControl.intentId).toBe("submit_response");
     });
 
     it("без override itemView выводится SDK-инференцией (back-compat)", () => {

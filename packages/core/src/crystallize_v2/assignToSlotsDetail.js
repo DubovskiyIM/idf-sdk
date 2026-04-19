@@ -33,7 +33,7 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
   const slots = {
     header: [],
     toolbar: [],
-    body: buildDetailBody(projection, ONTOLOGY),
+    body: buildDetailBody(projection, ONTOLOGY, "self", INTENTS),
     context: [],
     fab: [],
     overlay: [],
@@ -378,16 +378,27 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
 
   const parentEntity = parentProjection.mainEntity;
 
+  // Backlog 4.5: связь child→parent может быть неявной через FK. Если в
+  // ontology у subEntity есть поле с именем foreignKey — считаем, что
+  // отношение к parentEntity задекларировано, даже если
+  // intent.particles.entities не включает parentEntity.
+  const subDefFields = ONTOLOGY?.entities?.[subEntity]?.fields;
+  const hasForeignKeyField =
+    subDefFields && typeof subDefFields === "object" && !Array.isArray(subDefFields) &&
+    Object.prototype.hasOwnProperty.call(subDefFields, foreignKey);
+
   // 1. Подходящий creator-intent для sub-entity (add_time_option / invite_participant)
   let addControl = null;
   if (addable) {
     for (const [id, intent] of Object.entries(INTENTS)) {
       if (isUnsupportedInM2(id)) continue;
       if (normalizeCreates(intent.creates) !== subEntity) continue;
-      // Должна быть связь через parentEntity в decларации entities
+      // Должна быть связь через parentEntity в decларации entities —
+      // ИЛИ неявная через FK (см. 4.5).
       const entities = (intent.particles?.entities || [])
         .map(e => e.split(":").pop().trim().replace(/\[\]$/, ""));
-      if (!entities.includes(parentEntity)) continue;
+      const linkedExplicitly = entities.includes(parentEntity);
+      if (!linkedExplicitly && !hasForeignKeyField) continue;
 
       const rawParams = inferParameters(intent, ONTOLOGY).map(p => ({
         ...p,
@@ -679,13 +690,28 @@ function fieldToAtom(field) {
   };
 }
 
-function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
+function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}) {
   const mainEntity = projection.mainEntity;
   const entity = ONTOLOGY?.entities?.[mainEntity];
   const allFields = getEntityFields(entity || {});
   const fields = allFields.filter(f =>
     !SYSTEM_DETAIL_FIELDS.has(f.name) && canRead(f, viewerRole)
   );
+
+  // Backlog 3.3: если у mainEntity есть intent с irreversibility:"high",
+  // детальная проекция получает irreversibleBadge-node в header — бейдж
+  // читает `target.__irr.at / __irr.reason` из world. Если на entity
+  // irreversible-эффект ещё не применён, primitive рендерит null.
+  const hasIrreversibleAction = mainEntity
+    ? Object.values(INTENTS || {}).some(i =>
+        i?.irreversibility === "high" &&
+        (i?.particles?.effects || []).some(e =>
+          typeof e?.target === "string" &&
+          (e.target === mainEntity.toLowerCase() ||
+           e.target.startsWith(mainEntity.toLowerCase() + "."))
+        )
+      )
+    : false;
 
   // Группируем поля по семантическим ролям
   const byRole = {};
@@ -712,6 +738,7 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
     // User-like: avatar рядом с именем
     const textParts = [{ type: "heading", bind: titleField.name, level: 2 }];
     if (descField) textParts.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });
+    if (hasIrreversibleAction) textParts.push({ type: "irreversibleBadge", bind: "__irr" });
     children.push({
       type: "row", gap: 16, align: "flex-start",
       children: [
@@ -719,6 +746,16 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
         { type: "column", gap: 4, sx: { flex: 1 }, children: textParts },
       ],
     });
+  } else if (titleField && hasIrreversibleAction) {
+    // Title + badge в одной row
+    children.push({
+      type: "row", gap: 12, align: "center",
+      children: [
+        { type: "heading", bind: titleField.name, level: 1 },
+        { type: "irreversibleBadge", bind: "__irr" },
+      ],
+    });
+    if (descField) children.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });
   } else {
     if (titleField) children.push({ type: "heading", bind: titleField.name, level: 1 });
     if (descField) children.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });
