@@ -26,6 +26,7 @@ import {
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
+  witnessR9Composite,
   witnessR10RoleScope,
 } from "./derivationWitnesses.js";
 
@@ -381,6 +382,31 @@ export function deriveProjections(intents, ontology) {
         derivedBy: [witnessR10RoleScope(roleName, scopedEntityName, scopeSpec)],
       };
     }
+  }
+
+  // R9: Cross-entity composite — обогащение существующих проекций
+  // ontology.compositions[mainEntity] = [{ entity, as, via, mode? }] →
+  // добавляем compositions + расширяем entities для всех проекций с этим mainEntity.
+  // Спецификация: idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md
+  const compositions = ontology.compositions || {};
+  for (const [projId, proj] of Object.entries(projections)) {
+    const compSpec = compositions[proj.mainEntity];
+    if (!Array.isArray(compSpec) || compSpec.length === 0) continue;
+    // validate entries
+    const joins = compSpec.filter(c => c && c.entity && c.as && c.via);
+    if (joins.length === 0) continue;
+    proj.compositions = joins.map(j => ({
+      entity: j.entity,
+      as: j.as,
+      via: j.via,
+      mode: j.mode || "one",
+    }));
+    // расширяем entities set'ом целевых сущностей
+    const entitySet = new Set(proj.entities || [proj.mainEntity]);
+    for (const j of joins) entitySet.add(j.entity);
+    proj.entities = [...entitySet];
+    if (!proj.derivedBy) proj.derivedBy = [];
+    proj.derivedBy.push(witnessR9Composite(proj.mainEntity, joins, projId));
   }
 
   return projections;
