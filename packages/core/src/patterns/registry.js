@@ -105,6 +105,9 @@ import lifecycleLockedParameters from "./stable/detail/lifecycle-locked-paramete
 import catalogCreatorToolbar   from "./stable/catalog/catalog-creator-toolbar.js";
 import catalogExcludeSelfOwned from "./stable/catalog/catalog-exclude-self-owned.js";
 import timerCountdownVisible   from "./stable/detail/timer-countdown-visible.js";
+// Merge-промоции из candidate bank
+import facetedFilterPanel      from "./stable/catalog/faceted-filter-panel.js";
+import reputationTierBadge     from "./stable/cross/reputation-tier-badge.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -119,6 +122,9 @@ const STABLE_PATTERNS = [
   catalogCreatorToolbar,
   catalogExcludeSelfOwned,
   timerCountdownVisible,
+  // Merge-промоции (3 источника → 1 stable)
+  facetedFilterPanel,
+  reputationTierBadge,
 ];
 
 export function loadStablePatterns(registry) {
