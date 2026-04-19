@@ -596,6 +596,35 @@ function AntdTabs({ items, active, onSelect, extra }) {
 }
 
 // ============================================================
+// Affinity декларации — для scoring-based выбора компонента
+// через renderer.pickAdaptedComponent (matching.js). Используются
+// как opt-in: renderer может продолжать звать getAdaptedComponent
+// и получит прежний lookup.
+// ============================================================
+
+AntdNumber.affinity = {
+  roles: ["money", "price", "percentage"],
+  types: ["number"],
+  fields: ["amount", "total", "price", "fee", "balance"],
+};
+
+AntdDateTime.affinity = {
+  roles: ["timestamp", "datetime"],
+  types: ["datetime"],
+  features: ["withTime"],
+};
+
+AntdTel.affinity = {
+  types: ["tel"],
+  fields: ["phone", "phoneNumber", "mobile"],
+};
+
+AntdEmail.affinity = {
+  types: ["email"],
+  fields: ["email", "contactEmail"],
+};
+
+// ============================================================
 // Adapter export
 // ============================================================
 

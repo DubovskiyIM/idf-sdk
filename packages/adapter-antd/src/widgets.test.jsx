@@ -5,6 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { antdAdapter } from "./adapter.jsx";
+import { pickBest, rankCandidates } from "@intent-driven/renderer";
 
 function get(kind, type) {
   return antdAdapter[kind][type];
@@ -95,6 +96,44 @@ describe("AntdNumber fieldRole (2.3)", () => {
       <Num spec={{ name: "rate", fieldRole: "percentage" }} value={5} onChange={() => {}} />
     );
     expect(container.innerHTML).toContain("%");
+  });
+});
+
+describe("adapter affinity scoring (task #14)", () => {
+  it("price fieldRole: pickBest выбирает AntdNumber, не AntdTextInput", () => {
+    const best = pickBest(
+      "parameter",
+      { type: "text", fieldRole: "price", name: "fee" },
+      antdAdapter
+    );
+    expect(best).toBe(antdAdapter.parameter.number);
+  });
+
+  it("withTime=true: pickBest выбирает AntdDateTime", () => {
+    const best = pickBest(
+      "parameter",
+      { type: "datetime", withTime: true, name: "deadline" },
+      antdAdapter
+    );
+    expect(best).toBe(antdAdapter.parameter.datetime);
+  });
+
+  it("spec.name=\"phoneNumber\": AntdTel получает field-бонус", () => {
+    const ranked = rankCandidates(
+      "parameter",
+      { type: "text", name: "phoneNumber" },
+      antdAdapter
+    );
+    expect(ranked[0].type).toBe("tel");
+  });
+
+  it("spec.name=\"email\": AntdEmail ранжируется выше AntdText", () => {
+    const ranked = rankCandidates(
+      "parameter",
+      { type: "text", name: "email" },
+      antdAdapter
+    );
+    expect(ranked[0].type).toBe("email");
   });
 });
 
