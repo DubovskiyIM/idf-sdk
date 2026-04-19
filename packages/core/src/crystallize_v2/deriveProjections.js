@@ -26,6 +26,7 @@ import {
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
+  witnessR10RoleScope,
 } from "./derivationWitnesses.js";
 
 /**
@@ -342,6 +343,42 @@ export function deriveProjections(intents, ontology) {
         witnesses: projections[catalogId].witnesses,
         filter: { field: ownerField, op: "=", value: "me.id" },
         derivedBy: [witnessR7OwnerFilter(entityName, ownerField, catalogId)],
+      };
+    }
+  }
+
+  // R10: Role-scope filtered catalog — для каждой роли с scope-объявлением,
+  // каждой сущности в scope — генерируется scoped_<role>_<entity>_list.
+  // Формат scope (реальный, из invest): { via, viewerField, joinField, localField, statusField?, statusAllowed? }
+  // Спецификация: idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md
+  const roles = ontology.roles || {};
+  for (const [roleName, roleDef] of Object.entries(roles)) {
+    const scope = roleDef?.scope;
+    if (!scope || typeof scope !== "object") continue;
+    for (const [scopedEntityName, scopeSpec] of Object.entries(scope)) {
+      if (!scopeSpec || typeof scopeSpec !== "object") continue;
+      if (!scopeSpec.via || !scopeSpec.viewerField || !scopeSpec.joinField || !scopeSpec.localField) {
+        continue;  // неполный scope-spec — игнорируем
+      }
+      const scopedEntityLower = scopedEntityName.toLowerCase();
+      const scopedProjId = `${roleName}_${scopedEntityLower}_list`;
+      const witnessSrc = collectWitnessesDetailed(scopedEntityName, intents);
+      projections[scopedProjId] = {
+        kind: "catalog",
+        mainEntity: scopedEntityName,
+        entities: [scopedEntityName],
+        readonly: true,
+        witnesses: witnessSrc.fields,
+        filter: {
+          kind: "m2m-via",
+          via: scopeSpec.via,
+          viewerField: scopeSpec.viewerField,
+          joinField: scopeSpec.joinField,
+          localField: scopeSpec.localField,
+          statusField: scopeSpec.statusField || null,
+          statusAllowed: scopeSpec.statusAllowed || null,
+        },
+        derivedBy: [witnessR10RoleScope(roleName, scopedEntityName, scopeSpec)],
       };
     }
   }
