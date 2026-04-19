@@ -109,9 +109,18 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
       overflowX: "hidden", maxWidth: "100%",
     }}>
       {(slots.header?.length > 0 || canEdit || slots.toolbar?.length > 0) && (() => {
-        // Toolbar → overflow menu items
+        // Toolbar → overflow menu items.
+        // Backlog 2.6: фильтруем spec'и по evalIntentCondition(condition | conditions)
+        // — adapter-based overflow не умеет сам проверять видимость.
         const AdaptedOverflow = getAdaptedComponent("button", "overflow");
-        const toolbarItems = (slots.toolbar || []).map(spec => ({
+        const passesCondition = (spec) => {
+          if (spec.condition && !evalIntentCondition(spec.condition, target, ctx.viewer)) return false;
+          const conds = spec.conditions || [];
+          if (conds.length && !conds.every(c => evalIntentCondition(c, target, ctx.viewer))) return false;
+          return true;
+        };
+        const visibleToolbar = (slots.toolbar || []).filter(passesCondition);
+        const toolbarItems = visibleToolbar.map(spec => ({
           key: spec.intentId || spec.type,
           label: spec.label || spec.intentId || "",
           icon: spec.icon,

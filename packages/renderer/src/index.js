@@ -42,6 +42,15 @@ export {
   getAffinity,
   AFFINITY_WEIGHTS,
 } from "./adapters/matching.js";
+export {
+  AdapterProvider,
+  AdapterContext,
+  useAdapter,
+  useAdapterComponent,
+  useAdapterPick,
+  resolveAdapterComponent,
+} from "./adapters/AdapterProvider.jsx";
+export { AuthForm } from "./primitives/AuthForm.jsx";
 export { default as Icon } from "./adapters/Icon.jsx";
 import * as labels from "./adapters/labels.js";
 export { labels };

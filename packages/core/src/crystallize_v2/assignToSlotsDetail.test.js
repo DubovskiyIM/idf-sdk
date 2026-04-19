@@ -337,6 +337,66 @@ describe("assignToSlotsDetail", () => {
       expect(s.where).toEqual({ status: "active" });
     });
 
+    it("backlog 4.8: enum-status с withdrawn/cancelled → section.terminalStatus", () => {
+      const ontologyWithTerminal = {
+        entities: {
+          Task: { fields: { id: {}, title: { type: "text" } } },
+          Response: {
+            fields: {
+              id: {},
+              taskId: { type: "entityRef" },
+              status: {
+                type: "text",
+                options: ["pending", "accepted", "withdrawn", "rejected"],
+              },
+            },
+          },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+          }],
+        },
+        ontologyWithTerminal,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.terminalStatus).toEqual({
+        field: "status",
+        values: ["withdrawn", "rejected"],
+      });
+    });
+
+    it("4.8 без terminal values → section.terminalStatus undefined", () => {
+      const ontologyClean = {
+        entities: {
+          Task: { fields: { id: {}, title: { type: "text" } } },
+          Response: {
+            fields: {
+              id: {},
+              taskId: { type: "entityRef" },
+              status: { type: "text", options: ["pending", "accepted"] },
+            },
+          },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+          }],
+        },
+        ontologyClean,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.terminalStatus).toBeUndefined();
+    });
+
     it("backlog 4.5: addControl матчится при FK даже без явного parentEntity в entities", () => {
       const ontologyWithFk = {
         entities: {
