@@ -41,6 +41,8 @@ export { parseCondition, parseConditions } from "./conditionParser.js";
 
 // Crystallize v2
 export { crystallizeV2 } from "./crystallize_v2/index.js";
+export { deriveProjections } from "./crystallize_v2/deriveProjections.js";
+export { composeProjections } from "./crystallize_v2/composeProjections.js";
 export { validateArtifact } from "./crystallize_v2/validateArtifact.js";
 export { inferFieldRole } from "./crystallize_v2/ontologyHelpers.js";
 export {

@@ -11,7 +11,21 @@
  * R4: foreignKey E'→E → subCollection в detail(E)
  * R6: witnesses из пересекающихся intents
  * R7: ownerField → my_* catalog с фильтром
+ *
+ * Witness trail (basis:"crystallize-rule") — каждое срабатывание R1/R2/R3/R7
+ * пишется в proj.derivedBy[] и пробрасывается в artifact.witnesses[]
+ * через crystallize_v2/index.js. Спецификация:
+ * idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md
  */
+
+import {
+  witnessR1Catalog,
+  witnessR2FeedOverride,
+  witnessR3Detail,
+  witnessR4SubCollection,
+  witnessR6FieldUnion,
+  witnessR7OwnerFilter,
+} from "./derivationWitnesses.js";
 
 /**
  * Нормализация creates: "Listing(draft)" → "Listing"
@@ -158,11 +172,13 @@ export function detectForeignKeys(ontology) {
  */
 /**
  * R6: собрать union witnesses из всех интентов, ссылающихся на данную сущность.
+ * Возвращает { fields, contributingIntents } — второе нужно для witness trail.
  */
-function collectWitnesses(entityName, intents) {
+function collectWitnessesDetailed(entityName, intents) {
   const fields = new Set();
+  const contributing = [];
 
-  for (const intent of Object.values(intents)) {
+  for (const [intentId, intent] of Object.entries(intents)) {
     const refs = intent.particles?.entities || [];
     const refsEntity = refs.some(e => {
       const parts = e.split(":");
@@ -172,13 +188,17 @@ function collectWitnesses(entityName, intents) {
     const createsEntity = normalizeCreates(intent.creates) === entityName;
 
     if (refsEntity || createsEntity) {
-      for (const w of intent.particles?.witnesses || []) {
-        fields.add(w);
-      }
+      const ws = intent.particles?.witnesses || [];
+      if (ws.length > 0) contributing.push(intentId);
+      for (const w of ws) fields.add(w);
     }
   }
 
-  return [...fields].sort();
+  return { fields: [...fields].sort(), contributingIntents: contributing };
+}
+
+function collectWitnesses(entityName, intents) {
+  return collectWitnessesDetailed(entityName, intents).fields;
 }
 
 export function deriveProjections(intents, ontology) {
@@ -193,15 +213,23 @@ export function deriveProjections(intents, ontology) {
     const mutatorCount = (analysis.mutators[entityName] || []).length;
     const hasFeedSignals = (analysis.feedSignals[entityName] || []).length > 0;
 
-    const witnesses = collectWitnesses(entityName, intents);
+    const { fields: witnesses, contributingIntents } = collectWitnessesDetailed(entityName, intents);
+    // R6 witness — union всех field-witness'ов из intent.particles.witnesses.
+    // Пишется только если fields.length > 0 (иначе R6 «не сработал»).
+    const r6Witness = witnesses.length > 0
+      ? witnessR6FieldUnion(entityName, witnesses, contributingIntents)
+      : null;
 
     // R1: Catalog
     if (hasCreators) {
+      const creatorIds = analysis.creators[entityName] || [];
+      const derivedBy = [witnessR1Catalog(entityName, creatorIds)];
       const proj = {
         kind: "catalog",
         mainEntity: entityName,
         entities: [entityName],
         witnesses,
+        derivedBy,
       };
 
       // R2: Feed override — confirmation:"enter" + foreignKey к parent
@@ -211,19 +239,25 @@ export function deriveProjections(intents, ontology) {
         if (parentFk) {
           proj.kind = "feed";
           proj.idParam = parentFk.field;
+          derivedBy.push(witnessR2FeedOverride(entityName, analysis.feedSignals[entityName] || [], parentFk));
         }
       }
 
+      if (r6Witness) derivedBy.push(r6Witness);
       projections[`${lower}_list`] = proj;
     }
 
     // R3: Detail
     if (mutatorCount > 1) {
+      const mutatorIds = analysis.mutators[entityName] || [];
+      const detailDerivedBy = [witnessR3Detail(entityName, mutatorIds)];
+      if (r6Witness) detailDerivedBy.push(r6Witness);
       projections[`${lower}_detail`] = {
         kind: "detail",
         mainEntity: entityName,
         entities: [entityName],
         witnesses,
+        derivedBy: detailDerivedBy,
       };
     }
   }
@@ -232,17 +266,23 @@ export function deriveProjections(intents, ontology) {
   for (const [entityName, fks] of Object.entries(foreignKeys)) {
     for (const fk of fks) {
       const parentLower = fk.references.toLowerCase();
-      const parentDetail = projections[`${parentLower}_detail`];
+      const parentDetailId = `${parentLower}_detail`;
+      const parentDetail = projections[parentDetailId];
       if (!parentDetail) continue;
 
       if (!parentDetail.subCollections) parentDetail.subCollections = [];
       const hasCreatorsForSub = (analysis.creators[entityName] || []).length > 0;
+      const collectionName = pluralize(entityName);
       parentDetail.subCollections.push({
-        collection: pluralize(entityName),
+        collection: collectionName,
         entity: entityName,
         foreignKey: fk.field,
         addable: hasCreatorsForSub,
       });
+      if (!parentDetail.derivedBy) parentDetail.derivedBy = [];
+      parentDetail.derivedBy.push(
+        witnessR4SubCollection(fk.references, entityName, fk.field, parentDetailId, collectionName, hasCreatorsForSub)
+      );
     }
   }
 
@@ -260,6 +300,7 @@ export function deriveProjections(intents, ontology) {
         entities: [entityName],
         witnesses: projections[catalogId].witnesses,
         filter: { field: ownerField, op: "=", value: "me.id" },
+        derivedBy: [witnessR7OwnerFilter(entityName, ownerField, catalogId)],
       };
     }
   }
