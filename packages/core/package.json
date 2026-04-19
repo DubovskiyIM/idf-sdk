@@ -23,7 +23,8 @@
     "build": "tsup",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "tsup --watch"
+    "dev": "tsup --watch",
+    "generate:candidates": "node scripts/generate-candidates-manifest.mjs"
   },
   "peerDependencies": {
     "react": ">=18"

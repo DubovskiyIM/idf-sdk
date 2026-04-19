@@ -125,3 +125,13 @@ export {
   evaluateTriggerExplained,
 } from "./patterns/schema.js";
 export { explainMatch } from "./patterns/index.js";
+
+// Candidate bank («свалка» — 127 unvalidated extractions из реальных продуктов)
+export {
+  CANDIDATE_PATTERNS,
+  getCandidatePatterns,
+  getCandidatesByArchetype,
+  getCandidate,
+  groupCandidatesByTheme,
+  loadCandidatePatterns,
+} from "./patterns/candidate/index.js";
