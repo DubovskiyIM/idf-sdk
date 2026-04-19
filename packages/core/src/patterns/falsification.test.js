@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("23 stable patterns loaded (+§6.1, §6.5, §6.6)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(23);
+  it("25 stable patterns loaded (+merge-промоции faceted-filter, reputation-tier)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(25);
   });
 
   // ─── hero-create ───
