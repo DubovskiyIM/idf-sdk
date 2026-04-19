@@ -16,6 +16,14 @@ import { normalizeCreates } from "./assignToSlotsShared.js";
 const ARCHETYPES = [];
 
 /**
+ * Нормализация confirmation. Авторы ставят либо на top-level, либо внутри
+ * particles. Оба варианта должны матчить архетипы (backlog 4.2).
+ */
+function getConfirmation(intent) {
+  return intent?.confirmation ?? intent?.particles?.confirmation;
+}
+
+/**
  * Зарегистрировать новый control-архетип.
  * archetype = { id, match(intent, intentId), build(intent, intentId, parameters) }
  * Возвращает архетип для удобства цепочек.
@@ -81,7 +89,7 @@ function registerBuiltins() {
   // "auto" confirmation — нет UI
   registerArchetype({
     id: "auto",
-    match: (intent) => intent.particles?.confirmation === "auto",
+    match: (intent) => getConfirmation(intent) === "auto",
     build: () => null,
   });
 
@@ -114,7 +122,7 @@ function registerBuiltins() {
   // "enter" + creates — composer entry (для feed-архетипа)
   registerArchetype({
     id: "composerEntry",
-    match: (intent) => intent.particles?.confirmation === "enter",
+    match: (intent) => getConfirmation(intent) === "enter",
     build: (intent, intentId, parameters) => ({
       type: "composerEntry",
       intentId,
@@ -158,7 +166,7 @@ function registerBuiltins() {
   // "form" c параметрами — formModal
   registerArchetype({
     id: "formModal",
-    match: (intent) => intent.particles?.confirmation === "form",
+    match: (intent) => getConfirmation(intent) === "form",
     build: (intent, intentId, parameters) => {
       const key = `overlay_${intentId}`;
       const baseButton = {
@@ -189,7 +197,7 @@ function registerBuiltins() {
   // "click" — plain button ИЛИ formModal если есть параметры (phase:investigation)
   registerArchetype({
     id: "clickForm",
-    match: (intent) => intent.particles?.confirmation === "click",
+    match: (intent) => getConfirmation(intent) === "click",
     build: (intent, intentId, parameters) => {
       const baseButton = {
         type: "intentButton",
@@ -226,7 +234,7 @@ function registerBuiltins() {
   // "file" — file picker с автоматическим вызовом exec при выборе файла
   registerArchetype({
     id: "filePicker",
-    match: (intent) => intent.particles?.confirmation === "file",
+    match: (intent) => getConfirmation(intent) === "file",
     build: (intent, intentId, parameters) => ({
       type: "intentButton",
       intentId,
@@ -280,7 +288,8 @@ function registerHeroCreate() {
       if (context?.projection?.kind !== "catalog") return false;
       // confirmation:"form" с несколькими witnesses → formModal, не heroCreate.
       // heroCreate подходит только для простых creator'ов (1 текстовое поле).
-      const c = intent.particles?.confirmation;
+      // Backlog 4.2: нормализуем top-level и particles.confirmation.
+      const c = getConfirmation(intent);
       const witnesses = intent.particles?.witnesses || [];
       if (c === "form" && witnesses.length > 1) return false;
       return true;

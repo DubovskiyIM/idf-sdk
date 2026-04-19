@@ -131,4 +131,25 @@ describe("selectArchetype", () => {
     expect(a.id).not.toBe("inlineSearch");
     expect(a.id).toBe("composerEntry");
   });
+
+  it("backlog 4.2: confirmation на top-level работает так же, как в particles", () => {
+    const topLevel = {
+      name: "Create",
+      confirmation: "form",
+      particles: { witnesses: [], conditions: [], effects: [] },
+    };
+    const a = selectArchetype(topLevel, "create");
+    expect(a.id).toBe("formModal");
+  });
+
+  it("backlog 4.2: top-level confirmation имеет приоритет над particles", () => {
+    const mixed = {
+      name: "Create",
+      confirmation: "click",
+      particles: { confirmation: "form", witnesses: [], conditions: [], effects: [] },
+    };
+    const a = selectArchetype(mixed, "create");
+    // top-level "click" → clickForm, не formModal
+    expect(a.id).toBe("clickForm");
+  });
 });

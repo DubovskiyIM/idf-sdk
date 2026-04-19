@@ -237,4 +237,52 @@ describe("footer-inline-setter.structure.apply", () => {
     });
     expect(result).toBe(slots);
   });
+
+  it("backlog 4.3: intent с textarea-параметром остаётся в toolbar", () => {
+    const textareaIntent = {
+      id: "request_revision",
+      name: "request_revision",
+      parameters: [{ name: "comment", control: "textarea" }],
+      particles: {
+        effects: [{ α: "replace", target: "deal.status", value: "revision" }],
+        conditions: [],
+      },
+    };
+    const slots = {
+      toolbar: [{ type: "intentButton", intentId: "request_revision",
+                  parameters: [{ name: "comment", control: "textarea" }] }],
+      footer: [],
+    };
+    const result = footerInlineSetter.structure.apply(slots, {
+      projection: { mainEntity: "Deal" },
+      intents: [textareaIntent],
+      ontology: { entities: { Deal: { fields: { status: { type: "text" } } } } },
+    });
+    expect(result.toolbar).toHaveLength(1);
+    expect(result.footer).toHaveLength(0);
+  });
+
+  it("backlog 4.3: intent с file-параметром остаётся в toolbar", () => {
+    const fileIntent = {
+      id: "attach_receipt",
+      name: "attach_receipt",
+      parameters: [{ name: "file", control: "file" }],
+      particles: {
+        effects: [{ α: "replace", target: "deal.receiptUrl", value: { $param: "file" } }],
+        conditions: [],
+      },
+    };
+    const slots = {
+      toolbar: [{ type: "intentButton", intentId: "attach_receipt",
+                  parameters: [{ name: "file", control: "file" }] }],
+      footer: [],
+    };
+    const result = footerInlineSetter.structure.apply(slots, {
+      projection: { mainEntity: "Deal" },
+      intents: [fileIntent],
+      ontology: { entities: { Deal: { fields: { receiptUrl: { type: "text" } } } } },
+    });
+    expect(result.toolbar).toHaveLength(1);
+    expect(result.footer).toHaveLength(0);
+  });
 });

@@ -1,3 +1,24 @@
+// Backlog 4.3: controls, которые визуально укладываются в inline-setter
+// (подпись + input + кнопка). textarea / file / multiImage / color — нет:
+// они требуют модалки/overlay.
+const INLINE_CAPABLE_CONTROLS = new Set([
+  "text", "number", "select", "date", "datetime",
+  "email", "tel", "url",
+]);
+
+function isInlineCapableParameter(p) {
+  if (!p) return true;
+  // Если control не указан, не отсекаем: inferControlType подставит позже,
+  // и для большинства скалярных полей получится inline-capable.
+  if (!p.control) return true;
+  return INLINE_CAPABLE_CONTROLS.has(p.control);
+}
+
+function parametersAreInlineCapable(parameters) {
+  if (!parameters || parameters.length === 0) return true;
+  return parameters.every(isInlineCapableParameter);
+}
+
 // Квалификация footer-inline-setter: intent с ровно одним replace-эффектом
 // на поле mainEntity (`entityLower.field`). Семантически — «один value-param»:
 // сам field в target является единственным вводимым значением. Авторские
@@ -63,6 +84,9 @@ export default {
         // authored parameters (if any). Рендереру нужны хоть какие-то данные
         // для input'а, иначе inline-setter не разместит контрол.
         const parameters = toolbarItem?.parameters || intent.parameters || [];
+        // Backlog 4.3: intent с textarea/file-параметром оставляем в toolbar —
+        // inline-setter UX для multi-line/file/image не работает.
+        if (!parametersAreInlineCapable(parameters)) continue;
         newFooterItems.push({
           intentId,
           label: intent.name,

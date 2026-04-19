@@ -19,6 +19,32 @@ describe("inferParameters", () => {
     expect(params).toEqual([{ name: "text", type: "text", required: true }]);
   });
 
+  it("particles.parameters принимается как fallback при отсутствии top-level (backlog 4.1)", () => {
+    const intent = {
+      particles: {
+        parameters: [
+          { name: "title", type: "text", required: true },
+          { name: "price", type: "number" },
+        ],
+        witnesses: [],
+      },
+    };
+    const params = inferParameters(intent, ONTOLOGY);
+    expect(params).toEqual([
+      { name: "title", type: "text", required: true },
+      { name: "price", type: "number" },
+    ]);
+  });
+
+  it("top-level parameters имеет приоритет над particles.parameters", () => {
+    const intent = {
+      parameters: [{ name: "override" }],
+      particles: { parameters: [{ name: "ignored" }] },
+    };
+    const params = inferParameters(intent, ONTOLOGY);
+    expect(params).toEqual([{ name: "override" }]);
+  });
+
   it("инференция из witness без точки → параметр", () => {
     const intent = {
       particles: {
