@@ -137,6 +137,103 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(r7.input.sourceCatalog).toBe("listing_list");
     expect(r7.output.filter).toEqual({ field: "sellerId", op: "=", value: "me.id" });
   });
+
+  it("R1b: read-only catalog для entity.kind === 'reference' без creators", () => {
+    const INTENTS = {
+      add_position: {
+        creates: "Position",
+        particles: {
+          effects: [{ α: "create", target: "position" }],
+          entities: ["mainEntity:Position", "referenced:Asset"],
+        },
+      },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Asset: { kind: "reference", fields: { ticker: { type: "text" } } },
+        Position: { fields: { assetId: { type: "entityRef" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.asset_list).toBeDefined();
+    expect(projections.asset_list.kind).toBe("catalog");
+    expect(projections.asset_list.readonly).toBe(true);
+    const r1b = projections.asset_list.derivedBy.find(w => w.ruleId === "R1b");
+    expect(r1b).toBeDefined();
+    expect(r1b.input.source).toBe("kind:reference");
+    expect(r1b.input.creators).toEqual([]);
+    expect(r1b.output.readonly).toBe(true);
+    expect(r1b.rationale).toContain("reference");
+  });
+
+  it("R1b: read-only catalog для entity referenced через foreignKey без kind:reference", () => {
+    const INTENTS = {
+      add_address: { creates: "Address", particles: { effects: [{ α: "create", target: "address" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Zone: { fields: { name: { type: "text" } } },
+        Address: { fields: { zoneId: { type: "entityRef" }, street: { type: "text" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.zone_list).toBeDefined();
+    expect(projections.zone_list.readonly).toBe(true);
+    const r1b = projections.zone_list.derivedBy.find(w => w.ruleId === "R1b");
+    expect(r1b.input.source).toBe("referenced-by");
+    expect(r1b.input.referencedBy).toEqual(["Address.zoneId"]);
+  });
+
+  it("R1b: не срабатывает для assignment-entities (m2m)", () => {
+    const INTENTS = {
+      add_position: { creates: "Position", particles: { effects: [{ α: "create", target: "position" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Position: { fields: { assignmentId: { type: "entityRef" } } },
+        Assignment: { kind: "assignment", fields: { userId: { type: "entityRef" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.assignment_list).toBeUndefined();
+  });
+
+  it("R1b: не срабатывает для isolated entity (нет ни references, ни kind:reference)", () => {
+    const INTENTS = {
+      add_task: { creates: "Task", particles: { effects: [{ α: "create", target: "task" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Task: { fields: { title: { type: "text" } } },
+        Isolated: { fields: { name: { type: "text" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.isolated_list).toBeUndefined();
+  });
+
+  it("R1: имеет приоритет над R1b — если есть creators, R1 обычный catalog без readonly", () => {
+    const INTENTS = {
+      add_asset: { creates: "Asset", particles: { effects: [{ α: "create", target: "asset" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Asset: { kind: "reference", fields: { ticker: { type: "text" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.asset_list).toBeDefined();
+    expect(projections.asset_list.readonly).toBeUndefined();
+    const r1 = projections.asset_list.derivedBy.find(w => w.ruleId === "R1");
+    expect(r1).toBeDefined();
+    const r1b = projections.asset_list.derivedBy.find(w => w.ruleId === "R1b");
+    expect(r1b).toBeUndefined();
+  });
 });
 
 describe("artifact.witnesses — crystallize-rule проброшен через crystallizeV2", () => {

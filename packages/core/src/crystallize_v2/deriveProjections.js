@@ -20,12 +20,28 @@
 
 import {
   witnessR1Catalog,
+  witnessR1bReadOnlyCatalog,
   witnessR2FeedOverride,
   witnessR3Detail,
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
 } from "./derivationWitnesses.js";
+
+/**
+ * Обратный индекс foreignKeys: для E возвращает ["E'.fk", ...] — кто на неё ссылается.
+ */
+function buildReferencedByIndex(foreignKeys) {
+  const index = {};
+  for (const [entityName, fks] of Object.entries(foreignKeys)) {
+    for (const fk of fks) {
+      const target = fk.references;
+      if (!index[target]) index[target] = [];
+      index[target].push(`${entityName}.${fk.field}`);
+    }
+  }
+  return index;
+}
 
 /**
  * Нормализация creates: "Listing(draft)" → "Listing"
@@ -205,10 +221,12 @@ export function deriveProjections(intents, ontology) {
   const entityNames = Object.keys(ontology.entities || {});
   const analysis = analyzeIntents(intents, entityNames);
   const foreignKeys = detectForeignKeys(ontology);
+  const referencedBy = buildReferencedByIndex(foreignKeys);
   const projections = {};
 
   for (const entityName of entityNames) {
     const lower = entityName.toLowerCase();
+    const entityDef = ontology.entities[entityName] || {};
     const hasCreators = (analysis.creators[entityName] || []).length > 0;
     const mutatorCount = (analysis.mutators[entityName] || []).length;
     const hasFeedSignals = (analysis.feedSignals[entityName] || []).length > 0;
@@ -245,6 +263,29 @@ export function deriveProjections(intents, ontology) {
 
       if (r6Witness) derivedBy.push(r6Witness);
       projections[`${lower}_list`] = proj;
+    } else {
+      // R1b: Read-only catalog — creators = ∅, но entity объявлена в онтологии
+      // и либо kind:"reference", либо на неё ссылается foreignKey из другой entity.
+      // Исключения: entity.kind === "assignment" (m2m-связка, не имеет своего catalog'а).
+      // Спецификация: idf-manifest-v2.1/docs/design/rule-R1b-read-only-catalog-spec.md
+      if (entityDef.kind !== "assignment") {
+        const isReferenceKind = entityDef.kind === "reference";
+        const refList = referencedBy[entityName] || [];
+        const isReferenced = refList.length > 0;
+        if (isReferenceKind || isReferenced) {
+          const source = isReferenceKind ? "kind:reference" : "referenced-by";
+          const derivedBy = [witnessR1bReadOnlyCatalog(entityName, source, refList)];
+          if (r6Witness) derivedBy.push(r6Witness);
+          projections[`${lower}_list`] = {
+            kind: "catalog",
+            mainEntity: entityName,
+            entities: [entityName],
+            readonly: true,
+            witnesses,
+            derivedBy,
+          };
+        }
+      }
     }
 
     // R3: Detail
