@@ -511,6 +511,15 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
   // у которых item[statusField] ∈ terminal set.
   const terminalStatus = detectTerminalStatus(entityDef);
 
+  // Backlog §6.7: по умолчанию terminal items скрыты, toggle-контрол
+  // «Показать все» переключает. Автор может отключить через subDef.hideTerminal:false.
+  const hideTerminal = terminalStatus
+    ? subDef.hideTerminal !== false
+    : undefined;
+  const toggleTerminalLabel = hideTerminal
+    ? (subDef.toggleTerminalLabel || "Показать все")
+    : undefined;
+
   return {
     id: collection,
     title,
@@ -526,6 +535,8 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     sort,
     where,
     terminalStatus,
+    hideTerminal,
+    toggleTerminalLabel,
   };
 }
 

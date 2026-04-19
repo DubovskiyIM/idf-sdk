@@ -101,8 +101,10 @@ import kanbanPhaseColumnBoard from "./stable/catalog/kanban-phase-column-board.j
 import keyboardPropertyPopover from "./stable/detail/keyboard-property-popover.js";
 import observerReadonlyEscape from "./stable/detail/observer-readonly-escape.js";
 import lifecycleLockedParameters from "./stable/detail/lifecycle-locked-parameters.js";
-// Backlog §6.1
-import catalogCreatorToolbar from "./stable/catalog/catalog-creator-toolbar.js";
+// Backlog §6.1 / §6.5 / §6.6
+import catalogCreatorToolbar   from "./stable/catalog/catalog-creator-toolbar.js";
+import catalogExcludeSelfOwned from "./stable/catalog/catalog-exclude-self-owned.js";
+import timerCountdownVisible   from "./stable/detail/timer-countdown-visible.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -113,8 +115,10 @@ const STABLE_PATTERNS = [
   globalCommandPalette, optimisticReplaceWithUndo, bulkActionToolbar,
   kanbanPhaseColumnBoard, keyboardPropertyPopover, observerReadonlyEscape,
   lifecycleLockedParameters,
-  // Backlog §6.1 (multi-param creator → toolbar, не hero)
+  // Backlog §6.1 / §6.5 / §6.6
   catalogCreatorToolbar,
+  catalogExcludeSelfOwned,
+  timerCountdownVisible,
 ];
 
 export function loadStablePatterns(registry) {
