@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-antd",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Ant Design enterprise-fintech adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
