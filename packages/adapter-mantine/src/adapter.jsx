@@ -657,6 +657,28 @@ function MantineTabs({ items, active, onSelect, extra }) {
 // Adapter export
 // ============================================================
 
+// Affinity декларации для matching-score (renderer/pickAdaptedComponent).
+// Позволяют выбирать number-компонент при spec.fieldRole="price" даже
+// если spec.control объявлен как "text". См. renderer/adapters/matching.js.
+MantineNumber.affinity = {
+  roles: ["money", "price", "percentage", "trend"],
+  types: ["number"],
+  fields: ["amount", "total", "price", "fee", "balance"],
+};
+MantineDateTime.affinity = {
+  roles: ["timestamp", "datetime"],
+  types: ["datetime"],
+  features: ["withTime"],
+};
+MantineTel.affinity = {
+  types: ["tel"],
+  fields: ["phone", "phoneNumber", "mobile"],
+};
+MantineEmail.affinity = {
+  types: ["email"],
+  fields: ["email", "contactEmail"],
+};
+
 export const mantineAdapter = {
   name: "mantine",
   // §26.4 + §26.6: capability surface. Mantine-адаптер не реализует

@@ -511,6 +511,18 @@ function ShadcnPaper({ children, ...props }) {
 
 // ─── Adapter Export ───
 
+// Affinity для matching-score (см. renderer/adapters/matching.js).
+ShadcnNumber.affinity = {
+  roles: ["money", "price", "percentage", "trend"],
+  types: ["number"],
+  fields: ["amount", "total", "price", "fee", "balance"],
+};
+ShadcnDateTime.affinity = {
+  roles: ["timestamp", "datetime"],
+  types: ["datetime"],
+  features: ["withTime"],
+};
+
 export const shadcnAdapter = {
   name: "shadcn",
   parameter: {

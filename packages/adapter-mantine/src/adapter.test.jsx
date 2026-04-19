@@ -4,6 +4,7 @@ import {
   registerUIAdapter,
   getAdaptedComponent,
   getCapability,
+  pickBest,
 } from "@intent-driven/renderer";
 
 describe("@intent-driven/adapter-mantine", () => {
@@ -26,5 +27,15 @@ describe("@intent-driven/adapter-mantine", () => {
     const cap = getCapability("primitive", "chart");
     expect(cap).toBeDefined();
     expect(cap.chartTypes).toContain("line");
+  });
+
+  it("affinity: fieldRole=\"price\" → Number компонент", () => {
+    const best = pickBest("parameter", { type: "text", fieldRole: "price", name: "fee" }, mantineAdapter);
+    expect(best).toBe(mantineAdapter.parameter.number);
+  });
+
+  it("affinity: withTime=true → DateTime компонент", () => {
+    const best = pickBest("parameter", { type: "datetime", withTime: true, name: "deadline" }, mantineAdapter);
+    expect(best).toBe(mantineAdapter.parameter.datetime);
   });
 });
