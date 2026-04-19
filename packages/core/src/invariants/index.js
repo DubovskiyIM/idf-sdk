@@ -22,6 +22,7 @@ import { handler as referential }    from "./referential.js";
 import { handler as transition }     from "./transition.js";
 import { handler as cardinality }    from "./cardinality.js";
 import { handler as aggregate }      from "./aggregate.js";
+import { handler as expression }     from "./expression.js";
 import { normalizeInvariant }        from "./normalize.js";
 
 const KIND_HANDLERS = {
@@ -30,6 +31,7 @@ const KIND_HANDLERS = {
   "transition":      transition,
   "cardinality":     cardinality,
   "aggregate":       aggregate,
+  "expression":      expression,
 };
 
 function registerKind(name, handler) {

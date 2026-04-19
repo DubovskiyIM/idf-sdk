@@ -150,6 +150,43 @@ describe("multi-owner ownership (backlog 3.2)", () => {
     expect(slots.primaryCTA[0].intentId).toBe("accept");
   });
 
+  it("backlog 4.4: 4 toolbar-кнопки с salience=primary и fallback-иконкой все попадают в visible", () => {
+    // Non-status replace → попадают в toolbar, не в primaryCTA.
+    // salience: "primary" → важные, не дедупятся по icon.
+    const mkPrimary = (name) => ({
+      name,
+      salience: "primary",
+      confirmation: "click",
+      particles: {
+        entities: ["deal: Deal"],
+        witnesses: [],
+        confirmation: "click",
+        conditions: [],
+        effects: [{ α: "replace", target: "deal.title" }],
+      },
+    });
+    const slots = assignToSlotsDetail(
+      {
+        a: mkPrimary("a"),
+        b: mkPrimary("b"),
+        c: mkPrimary("c"),
+      },
+      PROJECTION,
+      ontologyWith({
+        owners: ["customerId"],
+        fields: {
+          title: { type: "text" },
+          customerId: { type: "entityRef" },
+        },
+      }),
+    );
+    // Все 3 в visible (не в overflow), несмотря на одинаковую fallback-иконку.
+    const toolbarIntentIds = slots.toolbar
+      .filter(t => t.type !== "overflow")
+      .map(t => t.intentId);
+    expect(toolbarIntentIds).toEqual(expect.arrayContaining(["a", "b", "c"]));
+  });
+
   it("permittedFor, не пересекающийся с owners → fallback на все owners", () => {
     const wild = baseIntent({ name: "wild" });
     wild.permittedFor = "stranger";

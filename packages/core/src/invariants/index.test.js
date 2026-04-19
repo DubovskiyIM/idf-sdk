@@ -136,6 +136,121 @@ describe("aggregate — альтернативная форма {entity, field, 
   });
 });
 
+describe("expression kind (backlog 1.2)", () => {
+  it("predicate-функция: true → нет violations", () => {
+    const res = checkInvariants(
+      { deals: [{ id: "d1", customerId: "u1", executorId: "u2" }] },
+      {
+        invariants: [{
+          name: "no-self-deal", kind: "expression",
+          entity: "Deal",
+          predicate: (r) => r.customerId !== r.executorId,
+        }],
+      }
+    );
+    expect(res.ok).toBe(true);
+  });
+
+  it("predicate-функция: false → violation", () => {
+    const res = checkInvariants(
+      { deals: [{ id: "d1", customerId: "u1", executorId: "u1" }] },
+      {
+        invariants: [{
+          name: "no-self-deal", kind: "expression",
+          entity: "Deal",
+          predicate: (r) => r.customerId !== r.executorId,
+          message: "customerId !== executorId",
+        }],
+      }
+    );
+    expect(res.ok).toBe(false);
+    expect(res.violations[0].message).toContain("customerId !== executorId");
+  });
+
+  it("expression-строка: парсится и применяется", () => {
+    const res = checkInvariants(
+      { tasks: [{ id: "t1", minPrice: 100, maxPrice: 50 }] },
+      {
+        invariants: [{
+          name: "price-order", kind: "expression",
+          entity: "Task",
+          expression: "minPrice <= maxPrice",
+        }],
+      }
+    );
+    expect(res.ok).toBe(false);
+    expect(res.violations[0].details.reason).toBe("predicate_false");
+  });
+
+  it("where: предикат применяется к отфильтрованным", () => {
+    const res = checkInvariants(
+      {
+        deals: [
+          { id: "d1", customerId: "u1", executorId: "u1", domain: "lifequest" },
+          { id: "d2", customerId: "u1", executorId: "u2", domain: "freelance" },
+        ],
+      },
+      {
+        invariants: [{
+          name: "freelance-only", kind: "expression",
+          entity: "Deal",
+          where: { domain: "freelance" },
+          predicate: (r) => r.customerId !== r.executorId,
+        }],
+      }
+    );
+    expect(res.ok).toBe(true);
+  });
+});
+
+describe("cardinality composite groupBy (backlog 1.3)", () => {
+  it("один активный Response на пару (executorId, taskId)", () => {
+    const res = checkInvariants(
+      {
+        responses: [
+          { id: "r1", executorId: "u1", taskId: "t1", status: "active" },
+          { id: "r2", executorId: "u1", taskId: "t1", status: "active" },
+          { id: "r3", executorId: "u2", taskId: "t1", status: "active" },
+        ],
+      },
+      {
+        invariants: [{
+          name: "one-response-per-pair", kind: "cardinality",
+          entity: "Response",
+          where: { status: "active" },
+          groupBy: ["executorId", "taskId"],
+          max: 1,
+        }],
+      }
+    );
+    expect(res.ok).toBe(false);
+    const violation = res.violations[0];
+    expect(violation.details.count).toBe(2);
+    expect(violation.details.max).toBe(1);
+  });
+
+  it("single groupBy продолжает работать (back-compat)", () => {
+    const res = checkInvariants(
+      {
+        items: [
+          { id: "i1", userId: "u1" },
+          { id: "i2", userId: "u1" },
+        ],
+      },
+      {
+        invariants: [{
+          name: "one-per-user", kind: "cardinality",
+          entity: "Item",
+          groupBy: "userId",
+          max: 1,
+        }],
+      }
+    );
+    expect(res.ok).toBe(false);
+    expect(res.violations[0].details.count).toBe(2);
+  });
+});
+
 describe("invariant.where — scope по row (1.4)", () => {
   it("transition: where фильтрует rows по полю (namespace-like scoping)", () => {
     const world = {

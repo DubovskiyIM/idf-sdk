@@ -223,17 +223,28 @@ function collapseToolbar(toolbar) {
 
   // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3).
   // standalone уже в salience desc order (sortedToolbar отсортирован выше).
+  //
+  // Backlog 4.4: icon-dedup применяется только для «обычных» кнопок; intent'ы с
+  // высокой salience (≥70: primary, creator, phase-transition, explicit primary)
+  // пропускают dedup — иначе 4 phase-transition с fallback ⚡ схлопнутся в 1,
+  // остальные уйдут в overflow.
+  const SALIENCE_DEDUP_EXEMPT = 70;
   const visible = [];
   const toOverflow = [];
   const seenIcons = new Set();
   for (const btn of standalone) {
-    const icon = btn.icon || btn.intentId;
-    if (visible.length < 3 && !seenIcons.has(icon)) {
-      seenIcons.add(icon);
-      visible.push(btn);
-    } else {
+    if (visible.length >= 3) {
       toOverflow.push(btn);
+      continue;
     }
+    const icon = btn.icon || btn.intentId;
+    const isImportant = (btn.salience ?? 0) >= SALIENCE_DEDUP_EXEMPT;
+    if (seenIcons.has(icon) && !isImportant) {
+      toOverflow.push(btn);
+      continue;
+    }
+    seenIcons.add(icon);
+    visible.push(btn);
   }
 
   // 3. Overflow: одиночные + антагонист-секции, без дубликатов с visible
@@ -429,8 +440,23 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     }
   }
 
-  // 3. Item view — простая строка: главное поле + метаданные
-  const itemView = buildSubItemView(subEntity, ONTOLOGY);
+  // 3. Item view — простая строка: главное поле + метаданные.
+  // Backlog 4.6: projection.subCollections[].itemView — authored override.
+  //   Форма: string ("fieldName") ИЛИ object { bind, label, ...extras }.
+  //   Если указан, SDK-inference пропускается.
+  const authoredItemView = subDef.itemView;
+  let itemView;
+  if (authoredItemView) {
+    if (typeof authoredItemView === "string") {
+      itemView = { bind: authoredItemView };
+    } else if (typeof authoredItemView === "object") {
+      itemView = { ...authoredItemView };
+    } else {
+      itemView = buildSubItemView(subEntity, ONTOLOGY);
+    }
+  } else {
+    itemView = buildSubItemView(subEntity, ONTOLOGY);
+  }
 
   // 4. Группировка voteGroup (Step D): взаимоисключающие creator-intents
   // на общей sub-entity с discriminator в creates схлопываются в одну
@@ -456,6 +482,13 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     renderAs = buildTemporalRenderSpec(temporality, subEntity, ONTOLOGY);
   }
 
+  // Backlog 4.7: projection.subCollections[].sort — строка "-createdAt" /
+  // "+priority" / "fieldName". Рендерер применит sort до emit items.
+  // .where — простое выражение-object { field: value } или строка для
+  // продвинутых условий; рендерер фильтрует коллекцию до рендера.
+  const sort = typeof subDef.sort === "string" ? subDef.sort : undefined;
+  const where = subDef.where != null ? subDef.where : undefined;
+
   return {
     id: collection,
     title,
@@ -468,6 +501,8 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     emptyLabel: `Пока пусто`,
     renderAs,
     editableFields: editableFields.length > 0 ? editableFields : undefined,
+    sort,
+    where,
   };
 }
 

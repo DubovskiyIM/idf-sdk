@@ -204,6 +204,94 @@ describe("assignToSlotsDetail", () => {
       expect(s.renderAs).toBeUndefined();
     });
   });
+
+  describe("subCollection overrides (backlog 4.6 / 4.7)", () => {
+    const ontology = {
+      entities: {
+        Task: { fields: { id: {}, title: { type: "text" } }, ownerField: "userId" },
+        Response: {
+          ownerField: "executorId",
+          fields: {
+            id: {},
+            taskId: { type: "entityRef" },
+            executorId: { type: "entityRef" },
+            priceOffer: { type: "number", fieldRole: "money" },
+            status: { type: "text" },
+            createdAt: { type: "datetime" },
+          },
+        },
+      },
+    };
+
+    it("itemView как строка → section.itemView.bind = строка", () => {
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+            itemView: "priceOffer",
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.itemView).toEqual({ bind: "priceOffer" });
+    });
+
+    it("itemView как объект — прокидывается целиком", () => {
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+            itemView: { bind: "priceOffer", label: "executorId", secondary: "status" },
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.itemView.bind).toBe("priceOffer");
+      expect(s.itemView.label).toBe("executorId");
+      expect(s.itemView.secondary).toBe("status");
+    });
+
+    it("sort и where передаются на section", () => {
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+            sort: "-createdAt",
+            where: { status: "active" },
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.sort).toBe("-createdAt");
+      expect(s.where).toEqual({ status: "active" });
+    });
+
+    it("без override itemView выводится SDK-инференцией (back-compat)", () => {
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.itemView).toBeDefined();
+      expect(s.sort).toBeUndefined();
+      expect(s.where).toBeUndefined();
+    });
+  });
 });
 
 function extractBinds(node) {
