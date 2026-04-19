@@ -132,7 +132,16 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     // Destructive (cancel_poll с irreversibility: high) остаётся в toolbar
     // через confirmDialog overlay — пользователю не нужно отдельное
     // «heroic» место для разрушительных действий.
-    if (isPhaseTransition(intent, mainEntity) && intent.irreversibility !== "high") {
+    //
+    // Backlog 3.1: intent'ы с parameters (submit_work_result, request_revision)
+    // также не подходят primaryCTA — он не умеет рендерить form. Пропускаем
+    // через обычный wrapByConfirmation flow: confirmation="form"/"formModal"
+    // положит overlay-форму в toolbar с тем же effect'ом, что и primaryCTA.
+    if (
+      isPhaseTransition(intent, mainEntity) &&
+      intent.irreversibility !== "high" &&
+      parameters.length === 0
+    ) {
       const conditions = intent.particles?.conditions || [];
       slots.primaryCTA.push({
         intentId: id,
@@ -253,21 +262,49 @@ function collapseToolbar(toolbar) {
 }
 
 /**
- * Ownership-condition для detail: если intent меняет mainEntity и сущность
- * имеет ownerField в онтологии, возвращает JS-выражение для item.condition.
- * SlotRenderer применит его к toolbar'ной кнопке.
+ * Разрешить список owner-полей для entity + intent'а.
  *
- * Читает ontology.entities[mainEntity].ownerField — declarative, не hardcode.
+ * Backlog 3.2: multi-owner поддержка.
+ *   - entity.owners: ["customerId", "executorId"] — массив полей.
+ *   - entity.ownerField: "clientId" — single-owner (legacy).
+ *   - intent.permittedFor: "executorId" | ["customerId"] — override per-intent,
+ *     сужает массив owners до подмножества. Если подмножество пусто — fallback
+ *     на все owners.
+ */
+function resolveOwnerFields(entityDef, intent) {
+  const owners = Array.isArray(entityDef?.owners)
+    ? entityDef.owners
+    : entityDef?.ownerField ? [entityDef.ownerField] : [];
+  const permittedFor = intent?.permittedFor;
+  if (!owners.length) return [];
+  if (!permittedFor || permittedFor === "owner") return owners;
+  const want = Array.isArray(permittedFor) ? permittedFor : [permittedFor];
+  const match = owners.filter(f => want.includes(f));
+  return match.length ? match : owners;
+}
+
+/**
+ * Ownership-condition для detail: если intent меняет mainEntity и сущность
+ * имеет ownerField/owners в онтологии, возвращает JS-выражение для
+ * item.condition. SlotRenderer применит его к toolbar'ной кнопке.
+ *
+ * Читает ontology.entities[mainEntity].ownerField (legacy) ИЛИ
+ * ontology.entities[mainEntity].owners (multi-owner, backlog 3.2).
+ * intent.permittedFor позволяет per-intent override (например
+ * submit_work_result — только executor).
+ *
  * Для User: ownerField отсутствует (id === viewer.id покрывается по default).
  * Для Booking: ownerField = "clientId" → "clientId === viewer.id".
- * Для Participant: ownerField = "userId" → "userId === viewer.id".
+ * Для Deal (multi-owner): owners = ["customerId", "executorId"] →
+ *   "(customerId === viewer.id || executorId === viewer.id)".
+ *   С permittedFor = "executorId" → "executorId === viewer.id".
  */
 function ownershipConditionFor(intent, mainEntity, ONTOLOGY) {
   const entityDef = ONTOLOGY?.entities?.[mainEntity];
-  const ownerField = entityDef?.ownerField;
+  const ownerFields = resolveOwnerFields(entityDef, intent);
 
   // Для User backward-compat: id === viewer.id (нет ownerField в ontology)
-  if (!ownerField && mainEntity !== "User") return null;
+  if (!ownerFields.length && mainEntity !== "User") return null;
 
   const lower = mainEntity.toLowerCase();
   const effects = intent.particles?.effects || [];
@@ -278,7 +315,9 @@ function ownershipConditionFor(intent, mainEntity, ONTOLOGY) {
   );
   if (!mutatesMain) return null;
 
-  return ownerField ? `${ownerField} === viewer.id` : "id === viewer.id";
+  if (!ownerFields.length) return "id === viewer.id";
+  if (ownerFields.length === 1) return `${ownerFields[0]} === viewer.id`;
+  return "(" + ownerFields.map(f => `${f} === viewer.id`).join(" || ") + ")";
 }
 
 function appliesToMainEntity(intent, mainEntity) {
