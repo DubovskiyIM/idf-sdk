@@ -368,6 +368,67 @@ describe("assignToSlotsDetail", () => {
         field: "status",
         values: ["withdrawn", "rejected"],
       });
+      // §6.7: по умолчанию terminal items скрыты, toggle-label выставлен.
+      expect(s.hideTerminal).toBe(true);
+      expect(s.toggleTerminalLabel).toBe("Показать все");
+    });
+
+    it("§6.7: subDef.hideTerminal:false отключает скрытие (author override)", () => {
+      const ontology = {
+        entities: {
+          Task: { fields: { id: {}, title: { type: "text" } } },
+          Response: {
+            fields: {
+              id: {},
+              taskId: { type: "entityRef" },
+              status: { type: "text", options: ["pending", "accepted", "withdrawn"] },
+            },
+          },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+            hideTerminal: false,
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.terminalStatus).toBeDefined();
+      expect(s.hideTerminal).toBe(false);
+      expect(s.toggleTerminalLabel).toBeUndefined();
+    });
+
+    it("§6.7: subDef.toggleTerminalLabel кастомизирует подпись", () => {
+      const ontology = {
+        entities: {
+          Task: { fields: { id: {}, title: { type: "text" } } },
+          Response: {
+            fields: {
+              id: {},
+              taskId: { type: "entityRef" },
+              status: { type: "text", options: ["pending", "cancelled"] },
+            },
+          },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "responses", entity: "Response", foreignKey: "taskId",
+            toggleTerminalLabel: "Показать отменённые",
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections.find(x => x.id === "responses");
+      expect(s.toggleTerminalLabel).toBe("Показать отменённые");
     });
 
     it("4.8 без terminal values → section.terminalStatus undefined", () => {

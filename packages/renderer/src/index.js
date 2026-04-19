@@ -51,6 +51,7 @@ export {
   resolveAdapterComponent,
 } from "./adapters/AdapterProvider.jsx";
 export { AuthForm } from "./primitives/AuthForm.jsx";
+export { Countdown } from "./primitives/Countdown.jsx";
 export { default as Icon } from "./adapters/Icon.jsx";
 import * as labels from "./adapters/labels.js";
 export { labels };
