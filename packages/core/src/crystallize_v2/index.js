@@ -149,21 +149,26 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.
     // Feature-flag ontology.features.structureApply !== false (default true).
     const applyEnabled = ONTOLOGY?.features?.structureApply !== false;
-    let witnesses = [];
+    // witness-of-crystallization: crystallize-rule witnesses из deriveProjections (R1/R2/R3/R7)
+    // идут первыми — они объясняют само происхождение проекции.
+    // Спецификация: idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md
+    let witnesses = Array.isArray(proj.derivedBy) ? [...proj.derivedBy] : [];
     if (applyEnabled && archetype !== "form" && archetype !== "canvas" && archetype !== "dashboard" && archetype !== "wizard") {
       const matchedAugmented = structuralPatterns.map(p => ({
         pattern: p,
         explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, proj),
       }));
       // witness-of-crystallization (§15): каждый matched pattern → запись в artifact.witnesses[]
-      witnesses = matchedAugmented.map(({ pattern, explain }) => ({
-        basis: "pattern-bank",
-        pattern: pattern.id,
-        reliability: "rule-based",
-        requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
-        matchFn: explain.matchFn,
-        matchOk: explain.matchOk,
-      }));
+      for (const { pattern, explain } of matchedAugmented) {
+        witnesses.push({
+          basis: "pattern-bank",
+          pattern: pattern.id,
+          reliability: "rule-based",
+          requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
+          matchFn: explain.matchFn,
+          matchOk: explain.matchOk,
+        });
+      }
       const preferences = proj.patterns || {};
       const applyContext = { ontology: ONTOLOGY, mainEntity: proj.mainEntity, intents: projIntents, projection: proj };
       slots = applyStructuralPatterns(slots, matchedAugmented, applyContext, preferences, patternRegistry);
@@ -304,20 +309,22 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
           viewSlots = assignToSlots(INTENTS, { ...merged, id: projId + ":" + view.id }, ONTOLOGY, viewPatternResult.strategy);
         }
 
-        let viewWitnesses = [];
+        let viewWitnesses = Array.isArray(proj.derivedBy) ? [...proj.derivedBy] : [];
         if (applyEnabled && viewArchetype !== "form" && viewArchetype !== "canvas" && viewArchetype !== "dashboard" && viewArchetype !== "wizard") {
           const matchedAugmented = viewStructuralPatterns.map(p => ({
             pattern: p,
             explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, merged),
           }));
-          viewWitnesses = matchedAugmented.map(({ pattern, explain }) => ({
-            basis: "pattern-bank",
-            pattern: pattern.id,
-            reliability: "rule-based",
-            requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
-            matchFn: explain.matchFn,
-            matchOk: explain.matchOk,
-          }));
+          for (const { pattern, explain } of matchedAugmented) {
+            viewWitnesses.push({
+              basis: "pattern-bank",
+              pattern: pattern.id,
+              reliability: "rule-based",
+              requirements: explain.requirements.map(r => ({ kind: r.kind, ok: r.ok, spec: r.spec })),
+              matchFn: explain.matchFn,
+              matchOk: explain.matchOk,
+            });
+          }
           const preferences = merged.patterns || {};
           const applyContext = { ontology: ONTOLOGY, mainEntity: merged.mainEntity, intents: projIntents, projection: merged };
           viewSlots = applyStructuralPatterns(viewSlots, matchedAugmented, applyContext, preferences, patternRegistry);

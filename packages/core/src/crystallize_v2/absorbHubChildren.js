@@ -6,6 +6,7 @@
  */
 
 import { detectForeignKeys } from "./deriveProjections.js";
+import { witnessR8HubAbsorption, witnessR8Absorbed } from "./derivationWitnesses.js";
 
 const HUB_MIN_CHILDREN = 2;
 
@@ -45,10 +46,26 @@ export function absorbHubChildren(projections, ontology) {
 
     const sections = [];
     for (const { childCatalogId, childEntity, foreignKey } of candidates) {
-      result[childCatalogId] = { ...result[childCatalogId], absorbedBy: detailId };
+      const childDerivedBy = [
+        ...(result[childCatalogId].derivedBy || []),
+        witnessR8Absorbed(childCatalogId, detailId, foreignKey),
+      ];
+      result[childCatalogId] = {
+        ...result[childCatalogId],
+        absorbedBy: detailId,
+        derivedBy: childDerivedBy,
+      };
       sections.push({ projectionId: childCatalogId, foreignKey, entity: childEntity });
     }
-    result[detailId] = { ...result[detailId], hubSections: sections };
+    const parentDerivedBy = [
+      ...(result[detailId].derivedBy || []),
+      witnessR8HubAbsorption(detailId, parentEntity, sections, HUB_MIN_CHILDREN),
+    ];
+    result[detailId] = {
+      ...result[detailId],
+      hubSections: sections,
+      derivedBy: parentDerivedBy,
+    };
   }
 
   return result;
