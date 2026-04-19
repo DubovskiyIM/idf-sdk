@@ -18,10 +18,21 @@ function parseRef(ref) {
   return { entity, field, collection: pluralize(entity) };
 }
 
+function matchesWhere(row, where) {
+  if (!where) return true;
+  for (const [k, v] of Object.entries(where)) {
+    if (row[k] !== v) return false;
+  }
+  return true;
+}
+
 function handler(inv, world) {
   const from = parseRef(inv.from);
   const to = parseRef(inv.to);
-  const fromRows = world[from.collection] || [];
+  const fromRowsAll = world[from.collection] || [];
+  const fromRows = inv.where
+    ? fromRowsAll.filter(r => matchesWhere(r, inv.where))
+    : fromRowsAll;
   const toRows = world[to.collection] || [];
   const allowNull = !!inv.allowNull;
 

@@ -35,6 +35,19 @@ function resolveWhere(where, targetRow) {
   return out;
 }
 
+/**
+ * Разделить `where` на static (константы — служат target-scope'ом) и
+ * dynamic ($target.field — применяются к from-rows после подстановки).
+ */
+function splitWhere(where) {
+  const stat = {}, dyn = {};
+  for (const [k, v] of Object.entries(where || {})) {
+    if (typeof v === "string" && v.startsWith("$target.")) dyn[k] = v;
+    else stat[k] = v;
+  }
+  return { stat, dyn };
+}
+
 function matchesWhere(row, where) {
   for (const [k, v] of Object.entries(where)) {
     if (row[k] !== v) return false;
@@ -53,11 +66,16 @@ function handler(inv, world) {
   const target = parseRef(inv.target);
   const tol = inv.tolerance != null ? inv.tolerance : 0;
   const fromRows = world[from.collection] || [];
-  const targetRows = world[target.collection] || [];
+  const targetRowsAll = world[target.collection] || [];
+  const { stat: targetScope } = splitWhere(inv.where);
+  const targetRows = Object.keys(targetScope).length
+    ? targetRowsAll.filter(r => matchesWhere(r, targetScope))
+    : targetRowsAll;
   const violations = [];
 
+  const { dyn: fromDyn } = splitWhere(inv.where);
   for (const tRow of targetRows) {
-    const where = resolveWhere(inv.where, tRow);
+    const where = resolveWhere(fromDyn, tRow);
     const filtered = fromRows.filter(r => matchesWhere(r, where));
     const computed = compute(inv.op, filtered, from.field);
     const expected = Number(tRow[target.field]) || 0;
