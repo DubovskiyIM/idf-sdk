@@ -10,3 +10,4 @@ verdaccio-config/htpasswd
 .vscode/
 coverage/
 *.tsbuildinfo
+.worktrees/

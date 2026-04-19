@@ -33,9 +33,15 @@ const RESULT_WITNESSES = new Set([
 export function inferParameters(intent, ONTOLOGY) {
   // 1. Явный parameters → победитель (даже пустой массив — автор
   // сознательно подавляет inference для click-action intents вроде
-  // create_direct_chat, где params auto-filled buildEffects'ом)
+  // create_direct_chat, где params auto-filled buildEffects'ом).
+  // Backlog 4.1: читаем оба варианта — top-level И particles.parameters,
+  // т.к. IDF-convention (planning/sales/freelance) часто декларативно
+  // группирует параметры в particles.
   if (Array.isArray(intent.parameters)) {
     return intent.parameters;
+  }
+  if (Array.isArray(intent.particles?.parameters)) {
+    return intent.particles.parameters;
   }
 
   const witnesses = intent.particles?.witnesses || [];

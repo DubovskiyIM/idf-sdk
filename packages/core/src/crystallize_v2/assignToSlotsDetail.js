@@ -33,7 +33,7 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
   const slots = {
     header: [],
     toolbar: [],
-    body: buildDetailBody(projection, ONTOLOGY),
+    body: buildDetailBody(projection, ONTOLOGY, "self", INTENTS),
     context: [],
     fab: [],
     overlay: [],
@@ -132,7 +132,16 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     // Destructive (cancel_poll с irreversibility: high) остаётся в toolbar
     // через confirmDialog overlay — пользователю не нужно отдельное
     // «heroic» место для разрушительных действий.
-    if (isPhaseTransition(intent, mainEntity) && intent.irreversibility !== "high") {
+    //
+    // Backlog 3.1: intent'ы с parameters (submit_work_result, request_revision)
+    // также не подходят primaryCTA — он не умеет рендерить form. Пропускаем
+    // через обычный wrapByConfirmation flow: confirmation="form"/"formModal"
+    // положит overlay-форму в toolbar с тем же effect'ом, что и primaryCTA.
+    if (
+      isPhaseTransition(intent, mainEntity) &&
+      intent.irreversibility !== "high" &&
+      parameters.length === 0
+    ) {
       const conditions = intent.particles?.conditions || [];
       slots.primaryCTA.push({
         intentId: id,
@@ -219,17 +228,28 @@ function collapseToolbar(toolbar, projectionId) {
 
   // 2. Из standalone — видимые кнопки (уникальные иконки, макс. 3).
   // standalone уже в salience desc order (sortedToolbar отсортирован выше).
+  //
+  // Backlog 4.4: icon-dedup применяется только для «обычных» кнопок; intent'ы с
+  // высокой salience (≥70: primary, creator, phase-transition, explicit primary)
+  // пропускают dedup — иначе 4 phase-transition с fallback ⚡ схлопнутся в 1,
+  // остальные уйдут в overflow.
+  const SALIENCE_DEDUP_EXEMPT = 70;
   const visible = [];
   const toOverflow = [];
   const seenIcons = new Set();
   for (const btn of standalone) {
-    const icon = btn.icon || btn.intentId;
-    if (visible.length < 3 && !seenIcons.has(icon)) {
-      seenIcons.add(icon);
-      visible.push(btn);
-    } else {
+    if (visible.length >= 3) {
       toOverflow.push(btn);
+      continue;
     }
+    const icon = btn.icon || btn.intentId;
+    const isImportant = (btn.salience ?? 0) >= SALIENCE_DEDUP_EXEMPT;
+    if (seenIcons.has(icon) && !isImportant) {
+      toOverflow.push(btn);
+      continue;
+    }
+    seenIcons.add(icon);
+    visible.push(btn);
   }
 
   // 3. Overflow: одиночные + антагонист-секции, без дубликатов с visible
@@ -258,21 +278,49 @@ function collapseToolbar(toolbar, projectionId) {
 }
 
 /**
- * Ownership-condition для detail: если intent меняет mainEntity и сущность
- * имеет ownerField в онтологии, возвращает JS-выражение для item.condition.
- * SlotRenderer применит его к toolbar'ной кнопке.
+ * Разрешить список owner-полей для entity + intent'а.
  *
- * Читает ontology.entities[mainEntity].ownerField — declarative, не hardcode.
+ * Backlog 3.2: multi-owner поддержка.
+ *   - entity.owners: ["customerId", "executorId"] — массив полей.
+ *   - entity.ownerField: "clientId" — single-owner (legacy).
+ *   - intent.permittedFor: "executorId" | ["customerId"] — override per-intent,
+ *     сужает массив owners до подмножества. Если подмножество пусто — fallback
+ *     на все owners.
+ */
+function resolveOwnerFields(entityDef, intent) {
+  const owners = Array.isArray(entityDef?.owners)
+    ? entityDef.owners
+    : entityDef?.ownerField ? [entityDef.ownerField] : [];
+  const permittedFor = intent?.permittedFor;
+  if (!owners.length) return [];
+  if (!permittedFor || permittedFor === "owner") return owners;
+  const want = Array.isArray(permittedFor) ? permittedFor : [permittedFor];
+  const match = owners.filter(f => want.includes(f));
+  return match.length ? match : owners;
+}
+
+/**
+ * Ownership-condition для detail: если intent меняет mainEntity и сущность
+ * имеет ownerField/owners в онтологии, возвращает JS-выражение для
+ * item.condition. SlotRenderer применит его к toolbar'ной кнопке.
+ *
+ * Читает ontology.entities[mainEntity].ownerField (legacy) ИЛИ
+ * ontology.entities[mainEntity].owners (multi-owner, backlog 3.2).
+ * intent.permittedFor позволяет per-intent override (например
+ * submit_work_result — только executor).
+ *
  * Для User: ownerField отсутствует (id === viewer.id покрывается по default).
  * Для Booking: ownerField = "clientId" → "clientId === viewer.id".
- * Для Participant: ownerField = "userId" → "userId === viewer.id".
+ * Для Deal (multi-owner): owners = ["customerId", "executorId"] →
+ *   "(customerId === viewer.id || executorId === viewer.id)".
+ *   С permittedFor = "executorId" → "executorId === viewer.id".
  */
 function ownershipConditionFor(intent, mainEntity, ONTOLOGY) {
   const entityDef = ONTOLOGY?.entities?.[mainEntity];
-  const ownerField = entityDef?.ownerField;
+  const ownerFields = resolveOwnerFields(entityDef, intent);
 
   // Для User backward-compat: id === viewer.id (нет ownerField в ontology)
-  if (!ownerField && mainEntity !== "User") return null;
+  if (!ownerFields.length && mainEntity !== "User") return null;
 
   const lower = mainEntity.toLowerCase();
   const effects = intent.particles?.effects || [];
@@ -283,7 +331,9 @@ function ownershipConditionFor(intent, mainEntity, ONTOLOGY) {
   );
   if (!mutatesMain) return null;
 
-  return ownerField ? `${ownerField} === viewer.id` : "id === viewer.id";
+  if (!ownerFields.length) return "id === viewer.id";
+  if (ownerFields.length === 1) return `${ownerFields[0]} === viewer.id`;
+  return "(" + ownerFields.map(f => `${f} === viewer.id`).join(" || ") + ")";
 }
 
 function appliesToMainEntity(intent, mainEntity) {
@@ -333,16 +383,27 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
 
   const parentEntity = parentProjection.mainEntity;
 
+  // Backlog 4.5: связь child→parent может быть неявной через FK. Если в
+  // ontology у subEntity есть поле с именем foreignKey — считаем, что
+  // отношение к parentEntity задекларировано, даже если
+  // intent.particles.entities не включает parentEntity.
+  const subDefFields = ONTOLOGY?.entities?.[subEntity]?.fields;
+  const hasForeignKeyField =
+    subDefFields && typeof subDefFields === "object" && !Array.isArray(subDefFields) &&
+    Object.prototype.hasOwnProperty.call(subDefFields, foreignKey);
+
   // 1. Подходящий creator-intent для sub-entity (add_time_option / invite_participant)
   let addControl = null;
   if (addable) {
     for (const [id, intent] of Object.entries(INTENTS)) {
       if (isUnsupportedInM2(id)) continue;
       if (normalizeCreates(intent.creates) !== subEntity) continue;
-      // Должна быть связь через parentEntity в decларации entities
+      // Должна быть связь через parentEntity в decларации entities —
+      // ИЛИ неявная через FK (см. 4.5).
       const entities = (intent.particles?.entities || [])
         .map(e => e.split(":").pop().trim().replace(/\[\]$/, ""));
-      if (!entities.includes(parentEntity)) continue;
+      const linkedExplicitly = entities.includes(parentEntity);
+      if (!linkedExplicitly && !hasForeignKeyField) continue;
 
       const rawParams = inferParameters(intent, ONTOLOGY).map(p => ({
         ...p,
@@ -395,8 +456,23 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     }
   }
 
-  // 3. Item view — простая строка: главное поле + метаданные
-  const itemView = buildSubItemView(subEntity, ONTOLOGY);
+  // 3. Item view — простая строка: главное поле + метаданные.
+  // Backlog 4.6: projection.subCollections[].itemView — authored override.
+  //   Форма: string ("fieldName") ИЛИ object { bind, label, ...extras }.
+  //   Если указан, SDK-inference пропускается.
+  const authoredItemView = subDef.itemView;
+  let itemView;
+  if (authoredItemView) {
+    if (typeof authoredItemView === "string") {
+      itemView = { bind: authoredItemView };
+    } else if (typeof authoredItemView === "object") {
+      itemView = { ...authoredItemView };
+    } else {
+      itemView = buildSubItemView(subEntity, ONTOLOGY);
+    }
+  } else {
+    itemView = buildSubItemView(subEntity, ONTOLOGY);
+  }
 
   // 4. Группировка voteGroup (Step D): взаимоисключающие creator-intents
   // на общей sub-entity с discriminator в creates схлопываются в одну
@@ -422,6 +498,13 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     renderAs = buildTemporalRenderSpec(temporality, subEntity, ONTOLOGY);
   }
 
+  // Backlog 4.7: projection.subCollections[].sort — строка "-createdAt" /
+  // "+priority" / "fieldName". Рендерер применит sort до emit items.
+  // .where — простое выражение-object { field: value } или строка для
+  // продвинутых условий; рендерер фильтрует коллекцию до рендера.
+  const sort = typeof subDef.sort === "string" ? subDef.sort : undefined;
+  const where = subDef.where != null ? subDef.where : undefined;
+
   return {
     id: collection,
     title,
@@ -434,6 +517,8 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     emptyLabel: `Пока пусто`,
     renderAs,
     editableFields: editableFields.length > 0 ? editableFields : undefined,
+    sort,
+    where,
   };
 }
 
@@ -610,13 +695,28 @@ function fieldToAtom(field) {
   };
 }
 
-function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
+function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}) {
   const mainEntity = projection.mainEntity;
   const entity = ONTOLOGY?.entities?.[mainEntity];
   const allFields = getEntityFields(entity || {});
   const fields = allFields.filter(f =>
     !SYSTEM_DETAIL_FIELDS.has(f.name) && canRead(f, viewerRole)
   );
+
+  // Backlog 3.3: если у mainEntity есть intent с irreversibility:"high",
+  // детальная проекция получает irreversibleBadge-node в header — бейдж
+  // читает `target.__irr.at / __irr.reason` из world. Если на entity
+  // irreversible-эффект ещё не применён, primitive рендерит null.
+  const hasIrreversibleAction = mainEntity
+    ? Object.values(INTENTS || {}).some(i =>
+        i?.irreversibility === "high" &&
+        (i?.particles?.effects || []).some(e =>
+          typeof e?.target === "string" &&
+          (e.target === mainEntity.toLowerCase() ||
+           e.target.startsWith(mainEntity.toLowerCase() + "."))
+        )
+      )
+    : false;
 
   // Группируем поля по семантическим ролям
   const byRole = {};
@@ -643,6 +743,7 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
     // User-like: avatar рядом с именем
     const textParts = [{ type: "heading", bind: titleField.name, level: 2 }];
     if (descField) textParts.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });
+    if (hasIrreversibleAction) textParts.push({ type: "irreversibleBadge", bind: "__irr" });
     children.push({
       type: "row", gap: 16, align: "flex-start",
       children: [
@@ -650,6 +751,16 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self") {
         { type: "column", gap: 4, sx: { flex: 1 }, children: textParts },
       ],
     });
+  } else if (titleField && hasIrreversibleAction) {
+    // Title + badge в одной row
+    children.push({
+      type: "row", gap: 12, align: "center",
+      children: [
+        { type: "heading", bind: titleField.name, level: 1 },
+        { type: "irreversibleBadge", bind: "__irr" },
+      ],
+    });
+    if (descField) children.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });
   } else {
     if (titleField) children.push({ type: "heading", bind: titleField.name, level: 1 });
     if (descField) children.push({ type: "text", bind: descField.name, style: "secondary", hideEmpty: true });

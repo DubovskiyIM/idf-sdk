@@ -21,6 +21,7 @@ function pluralize(entity) {
 
 function allowedSet(inv) {
   if (Array.isArray(inv.order)) return new Set(inv.order);
+  if (Array.isArray(inv.allowed)) return new Set(inv.allowed);
   if (Array.isArray(inv.transitions)) {
     const s = new Set();
     for (const [a, b] of inv.transitions) { s.add(a); s.add(b); }
@@ -43,9 +44,18 @@ function checkTransition(prev, curr, inv) {
   return true;
 }
 
+function matchesWhere(row, where) {
+  if (!where) return true;
+  for (const [k, v] of Object.entries(where)) {
+    if (row[k] !== v) return false;
+  }
+  return true;
+}
+
 function handler(inv, world, _ontology, opts = {}) {
   const collection = pluralize(inv.entity);
-  const rows = world[collection] || [];
+  const rowsAll = world[collection] || [];
+  const rows = inv.where ? rowsAll.filter(r => matchesWhere(r, inv.where)) : rowsAll;
   const history = opts.history || {};
   const allowed = allowedSet(inv);
   const violations = [];

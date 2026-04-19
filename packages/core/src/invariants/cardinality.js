@@ -25,6 +25,15 @@ function matchesWhere(row, where) {
   return true;
 }
 
+// Backlog 1.3: composite groupBy — массив полей.
+function groupKey(row, groupBy) {
+  if (!groupBy) return null;
+  if (Array.isArray(groupBy)) {
+    return groupBy.map(f => row[f]).join("\u0000");
+  }
+  return row[groupBy];
+}
+
 function handler(inv, world) {
   const rows = (world[pluralize(inv.entity)] || []).filter(r => matchesWhere(r, inv.where));
   const violations = [];
@@ -32,7 +41,7 @@ function handler(inv, world) {
   const groups = new Map();
   if (inv.groupBy) {
     for (const r of rows) {
-      const k = r[inv.groupBy];
+      const k = groupKey(r, inv.groupBy);
       if (!groups.has(k)) groups.set(k, []);
       groups.get(k).push(r);
     }

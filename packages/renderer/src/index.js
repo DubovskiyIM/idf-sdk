@@ -31,9 +31,17 @@ export {
   registerUIAdapter,
   getUIAdapter,
   getAdaptedComponent,
+  pickAdaptedComponent,
   getCapability,
   supportsVariant,
 } from "./adapters/registry.js";
+export {
+  scoreCandidate,
+  rankCandidates,
+  pickBest,
+  getAffinity,
+  AFFINITY_WEIGHTS,
+} from "./adapters/matching.js";
 export { default as Icon } from "./adapters/Icon.jsx";
 import * as labels from "./adapters/labels.js";
 export { labels };

@@ -14,6 +14,8 @@
  *     артефактов, но разные адаптеры рендера
  */
 
+import { pickBest } from "./matching.js";
+
 let currentAdapter = null;
 
 /**
@@ -36,12 +38,36 @@ export function getUIAdapter() {
  * Резолвить конкретный компонент по kind + control type.
  * kind — категория («parameter», «button», «card», «modal»).
  * Возвращает React-компонент или null, если адаптер не предоставляет реализацию.
+ *
+ * Работает с обоими вариантами регистрации:
+ *   - прямой функциональный компонент
+ *   - wrapper-объект `{component, affinity}` (новая форма с affinity, см. matching.js)
  */
 export function getAdaptedComponent(kind, type) {
   if (!currentAdapter) return null;
   const category = currentAdapter[kind];
   if (!category || typeof category !== "object") return null;
-  return category[type] || null;
+  const entry = category[type];
+  if (!entry) return null;
+  if (typeof entry === "function") return entry;
+  if (typeof entry === "object" && typeof entry.component === "function") {
+    return entry.component;
+  }
+  return null;
+}
+
+/**
+ * Резолвить компонент через matching-скор (см. adapters/matching.js).
+ * В отличие от `getAdaptedComponent`, учитывает `affinity.roles / fields /
+ * features` и даёт адаптеру способ выбрать более подходящую реализацию под
+ * `spec.fieldRole / spec.name / spec.withTime`.
+ *
+ * Fallback: если ни один кандидат не набрал score, поведение совпадает с
+ * `getAdaptedComponent(kind, spec.control ?? spec.type)`.
+ */
+export function pickAdaptedComponent(kind, spec) {
+  if (!currentAdapter) return null;
+  return pickBest(kind, spec, currentAdapter);
 }
 
 /**

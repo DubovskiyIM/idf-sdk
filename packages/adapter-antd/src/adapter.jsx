@@ -208,6 +208,9 @@ function AntdTextInput({ spec, value, onChange, error }) {
       onChange={(e) => onChange(e.target.value)}
       placeholder={spec.placeholder}
       status={error ? "error" : undefined}
+      maxLength={spec.maxLength}
+      minLength={spec.minLength}
+      pattern={spec.pattern}
     />
   );
 }
@@ -265,9 +268,12 @@ function AntdTextarea({ spec, value, onChange, error }) {
 }
 
 function AntdNumber({ spec, value, onChange, error }) {
-  // Финансовый number: форматтер по fieldRole (money/percentage). Пока —
-  // базовый InputNumber с шириной 100%.
-  const isMoney = spec.fieldRole === "money" || /price|amount|cost|fee|value/i.test(spec.name || "");
+  // Финансовый number: форматтер по fieldRole. SDK inferFieldRole маппит
+  // money → "price" (для PriceBlock primitive), поэтому принимаем оба.
+  const isMoney =
+    spec.fieldRole === "money" ||
+    spec.fieldRole === "price" ||
+    /price|amount|cost|fee|value/i.test(spec.name || "");
   const isPct = spec.fieldRole === "percentage" || /percent|rate|allocation/i.test(spec.name || "");
 
   return labelWrap(
@@ -304,14 +310,31 @@ function AntdDateTime({ spec, value, onChange, error }) {
     );
   }
 
+  // Авто-детекция «нужно ли время»:
+  //   - spec.withTime === true
+  //   - spec.precision ∈ {"minute","second"}
+  //   - spec.control === "datetime-local"
+  //   - type === "datetime" по ontology (через fieldRole="timestamp" или kind)
+  // Без этих сигналов остаёмся на date-only — чтобы не регрессить birthDate etc.
+  const wantsTime =
+    spec.withTime === true ||
+    spec.precision === "minute" ||
+    spec.precision === "second" ||
+    spec.control === "datetime-local";
+
+  const showTime = wantsTime ? { minuteStep: 5, format: "HH:mm" } : false;
+  const format = wantsTime ? "DD.MM.YYYY HH:mm" : "DD.MM.YYYY";
+  const outFormat = wantsTime ? "YYYY-MM-DD HH:mm" : "YYYY-MM-DD";
+
   return labelWrap(
     label,
     <DatePicker
       value={value ? dayjs(value) : null}
-      onChange={(v) => onChange(v ? v.format("YYYY-MM-DD") : "")}
-      format="DD.MM.YYYY"
+      onChange={(v) => onChange(v ? v.format(outFormat) : "")}
+      showTime={showTime}
+      format={format}
       style={{ width: "100%" }}
-      placeholder="Выберите дату"
+      placeholder={wantsTime ? "Выберите дату и время" : "Выберите дату"}
       status={error ? "error" : undefined}
     />
   );
@@ -339,7 +362,14 @@ function AntdSelect({ spec, value, onChange, error }) {
 // Buttons
 // ============================================================
 
-function AntdPrimaryButton({ label, icon, onClick, disabled, title, size }) {
+// Backlog 2.1: принимаем label ИЛИ children. Приоритет label (explicit domain spec)
+// над children (декларативный API, как у renderer/controls/FormModal).
+function buttonContent(label, children) {
+  if (label != null && label !== "") return label;
+  return children;
+}
+
+function AntdPrimaryButton({ label, icon, onClick, disabled, title, size, children }) {
   return (
     <AntButton
       type="primary"
@@ -349,12 +379,12 @@ function AntdPrimaryButton({ label, icon, onClick, disabled, title, size }) {
       icon={normalizeIcon(icon)}
       size={size === "lg" ? "large" : size === "sm" ? "small" : "middle"}
     >
-      {label}
+      {buttonContent(label, children)}
     </AntButton>
   );
 }
 
-function AntdSecondaryButton({ label, icon, onClick, disabled, title, size }) {
+function AntdSecondaryButton({ label, icon, onClick, disabled, title, size, children }) {
   return (
     <AntButton
       onClick={onClick}
@@ -363,12 +393,12 @@ function AntdSecondaryButton({ label, icon, onClick, disabled, title, size }) {
       icon={normalizeIcon(icon)}
       size={size === "lg" ? "large" : size === "sm" ? "small" : "middle"}
     >
-      {label}
+      {buttonContent(label, children)}
     </AntButton>
   );
 }
 
-function AntdDangerButton({ label, icon, onClick, disabled, title, size }) {
+function AntdDangerButton({ label, icon, onClick, disabled, title, size, children }) {
   return (
     <AntButton
       danger
@@ -378,7 +408,7 @@ function AntdDangerButton({ label, icon, onClick, disabled, title, size }) {
       icon={normalizeIcon(icon)}
       size={size === "lg" ? "large" : size === "sm" ? "small" : "middle"}
     >
-      {label}
+      {buttonContent(label, children)}
     </AntButton>
   );
 }
@@ -564,6 +594,35 @@ function AntdTabs({ items, active, onSelect, extra }) {
     />
   );
 }
+
+// ============================================================
+// Affinity декларации — для scoring-based выбора компонента
+// через renderer.pickAdaptedComponent (matching.js). Используются
+// как opt-in: renderer может продолжать звать getAdaptedComponent
+// и получит прежний lookup.
+// ============================================================
+
+AntdNumber.affinity = {
+  roles: ["money", "price", "percentage"],
+  types: ["number"],
+  fields: ["amount", "total", "price", "fee", "balance"],
+};
+
+AntdDateTime.affinity = {
+  roles: ["timestamp", "datetime"],
+  types: ["datetime"],
+  features: ["withTime"],
+};
+
+AntdTel.affinity = {
+  types: ["tel"],
+  fields: ["phone", "phoneNumber", "mobile"],
+};
+
+AntdEmail.affinity = {
+  types: ["email"],
+  fields: ["email", "contactEmail"],
+};
 
 // ============================================================
 // Adapter export
