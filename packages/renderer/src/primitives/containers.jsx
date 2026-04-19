@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { resolveCompositions } from "@intent-driven/core";
 import SlotRenderer from "../SlotRenderer.jsx";
 import { resolve, evalCondition, evalIntentCondition } from "../eval.js";
 import { resolveNavigateAction } from "../navigation/navigate.js";
@@ -411,6 +412,15 @@ function InlineOverflowMenu({ items, ctx, item, menuOpen, setMenuOpen }) {
 export function List({ node, ctx }) {
   const source = node.source ? resolve(ctx.world, node.source) : [];
   let items = Array.isArray(source) ? [...source] : [];
+
+  // R9: если artifact объявляет compositions, обогащаем items alias-полями
+  // ДО filter/sort/render. Это позволяет использовать "task.title" в
+  // witnesses, filter expressions, sort — по-настоящему end-to-end.
+  // Spec: idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md
+  const compositions = ctx?.artifact?.compositions;
+  if (Array.isArray(compositions) && compositions.length > 0 && items.length > 0) {
+    items = resolveCompositions(items, compositions, ctx.world);
+  }
 
   if (node.filter) {
     items = items.filter(it => evalCondition(node.filter, {
