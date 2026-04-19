@@ -2,15 +2,51 @@
 
 Reusable npm packages для парадигмы Intent-Driven Frontend.
 
+![IDF Studio — авторская среда](docs/screenshots/idf-studio.png)
+
 ## Пакеты
 
-- **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2, materializers (pixels/voice/agent-API/document), invariants, baseRoles, preapprovalGuard
-- **@intent-driven/renderer** — ProjectionRendererV2, 7 архетипов, primitives (atoms/containers/chart/map/IrreversibleBadge), adapter registry с capability surface
+- **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2, materializers (pixels/voice/agent-API/document), invariants, baseRoles, preapprovalGuard, **Pattern Bank** (28 stable + 127 candidate), matching-score adapter resolution
+- **@intent-driven/renderer** — ProjectionRendererV2, 7 архетипов, primitives (atoms/containers/chart/map/IrreversibleBadge/Countdown/UndoToast/AuthForm), AdapterProvider (Context + hooks), `pickAdaptedComponent` со scoring
 - **@intent-driven/adapter-mantine** — corporate / data-dense
 - **@intent-driven/adapter-shadcn** — handcrafted / doodle
 - **@intent-driven/adapter-apple** — premium / visionOS-glass
 - **@intent-driven/adapter-antd** — enterprise-fintech / dashboard
 - **@intent-driven/canvas-kit** — SVG-утилиты для domain canvas
+
+## IDF Studio
+
+Авторская среда (§27 манифеста) для проектирования онтологии, намерений и проекций. Показывает один артефакт с шести сторон.
+
+### Граф онтологии
+Entities / roles / references визуально, с подсветкой ownership и ranges.
+
+![Граф онтологии](docs/screenshots/idf-studio-graph.png)
+
+### Живой прототип
+Проекции рендерятся прямо в среде — кристаллизатор выполняется на каждое изменение intents/ontology.
+
+![Прототип](docs/screenshots/idf-studio-prototype.png)
+
+### Pattern Inspector
+Preview/Commit режим для stable Pattern Bank. Подсвечивает derived-слоты через `PatternPreviewOverlay` и показывает explanation каждого match/near-miss.
+
+![Pattern Bank Inspector](docs/screenshots/idf-studio-patterns.png)
+
+### Chat-пилот с Claude
+Claude haiku/sonnet/opus через subprocess; system prompt со спецификацией кешируется (>90% скидка). Генерирует и уточняет intents через разговор.
+
+![Chat-пилот](docs/screenshots/idf-studio-chat.png)
+
+### Алгебра намерений
+Визуализация связей ▷ ⇌ ⊕ ∥ (causal / antagonistic / merge / parallel). Помогает видеть lifecycle-phases и причинные цепочки.
+
+![Алгебра](docs/screenshots/idf-studio-algebra.png)
+
+### Checks & invariants
+Real-time статус 6-kind global invariants (role-capability / referential / transition / cardinality / aggregate / expression) + integrity-правил.
+
+![Инварианты](docs/screenshots/idf-studio-integrity.png)
 
 ## Дальше (отдельные spec'и)
 
