@@ -31,6 +31,38 @@ export function witnessR1Catalog(entityName, creators) {
 }
 
 /**
+ * R9: composite projection — mainEntity обогащается join'ами через ontology.compositions.
+ * Спецификация: idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md
+ *
+ * @param {string} mainEntity
+ * @param {Array<{entity: string, as: string, via: string, mode?: "one"|"many"}>} joins
+ * @param {string} projectionId
+ */
+export function witnessR9Composite(mainEntity, joins, projectionId) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R9",
+    input: {
+      mainEntity,
+      joins: joins.map(j => ({ entity: j.entity, as: j.as, via: j.via, mode: j.mode || "one" })),
+      source: "compositions",
+      projectionId,
+    },
+    output: {
+      compositions: joins.map(j => ({
+        entity: j.entity,
+        as: j.as,
+        via: j.via,
+        mode: j.mode || "one",
+      })),
+      entities: [mainEntity, ...new Set(joins.map(j => j.entity))],
+    },
+    rationale: `ontology.compositions.${mainEntity}: ${joins.length} join'${joins.length === 1 ? "" : "ов"} (${joins.map(j => `${j.entity} as ${j.as}`).join(", ")}) → проекция ${projectionId} обогащена composition-aliases`,
+  };
+}
+
+/**
  * R10: scoped catalog выведен из role.scope (m2m-via через assignment).
  * Спецификация: idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md
  *

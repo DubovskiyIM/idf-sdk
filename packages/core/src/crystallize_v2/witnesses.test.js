@@ -216,6 +216,96 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.isolated_list).toBeUndefined();
   });
 
+  it("R9: ontology.compositions обогащает catalog — entities + compositions + witness", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: { fields: { amount: { type: "number" }, taskId: { type: "entityRef" }, customerId: { type: "entityRef" } } },
+        Task: { fields: { title: { type: "text" } } },
+        User: { fields: { name: { type: "text" } } },
+      },
+      compositions: {
+        Deal: [
+          { entity: "Task", as: "task",     via: "taskId" },
+          { entity: "User", as: "customer", via: "customerId", mode: "one" },
+        ],
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.deal_list).toBeDefined();
+    expect(projections.deal_list.compositions).toEqual([
+      { entity: "Task", as: "task",     via: "taskId",     mode: "one" },
+      { entity: "User", as: "customer", via: "customerId", mode: "one" },
+    ]);
+    expect(projections.deal_list.entities).toEqual(expect.arrayContaining(["Deal", "Task", "User"]));
+    const r9 = projections.deal_list.derivedBy.find(w => w.ruleId === "R9");
+    expect(r9).toBeDefined();
+    expect(r9.input.joins.length).toBe(2);
+    expect(r9.input.source).toBe("compositions");
+  });
+
+  it("R9: нет compositions — проекция не обогащается, witness не пишется", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+    };
+    const ONTOLOGY = {
+      entities: { Deal: { fields: { amount: { type: "number" } } } },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.deal_list).toBeDefined();
+    expect(projections.deal_list.compositions).toBeUndefined();
+    const r9 = projections.deal_list.derivedBy.find(w => w.ruleId === "R9");
+    expect(r9).toBeUndefined();
+  });
+
+  it("R9: incomplete composition entries игнорируются", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+    };
+    const ONTOLOGY = {
+      entities: { Deal: { fields: { amount: { type: "number" } } }, Task: { fields: {} } },
+      compositions: {
+        Deal: [
+          { entity: "Task", as: "task", via: "taskId" },
+          { entity: "User" },  // incomplete — отсутствуют as, via
+          { via: "someId" },   // incomplete — отсутствуют entity, as
+        ],
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    // Должен обогатиться только валидной записью Task
+    expect(projections.deal_list.compositions).toEqual([
+      { entity: "Task", as: "task", via: "taskId", mode: "one" },
+    ]);
+  });
+
+  it("R9: обогащает и catalog, и detail для одного mainEntity", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+      edit_deal: { particles: { effects: [{ α: "replace", target: "deal.amount" }] } },
+      close_deal: { particles: { effects: [{ α: "replace", target: "deal.status" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: { fields: { amount: { type: "number" }, status: { type: "text" }, taskId: { type: "entityRef" } } },
+        Task: { fields: { title: { type: "text" } } },
+      },
+      compositions: {
+        Deal: [{ entity: "Task", as: "task", via: "taskId" }],
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.deal_list.compositions).toBeDefined();
+    expect(projections.deal_detail.compositions).toBeDefined();
+    expect(projections.deal_detail.compositions[0].as).toBe("task");
+  });
+
   it("R10: scoped catalog выведен из role.scope m2m-via", () => {
     const INTENTS = {
       view_client: { particles: { entities: ["viewer:User"], witnesses: ["name", "email"] } },
