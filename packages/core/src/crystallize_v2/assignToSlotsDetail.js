@@ -500,6 +500,12 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
   const sort = typeof subDef.sort === "string" ? subDef.sort : undefined;
   const where = subDef.where != null ? subDef.where : undefined;
 
+  // Backlog 4.8: если у sub-entity есть enum-статусное поле с терминальными
+  // значениями (withdrawn/cancelled/rejected/expired/closed/refunded), section
+  // получает `terminalStatus` — рендерер применит opacity/badge к item'ам,
+  // у которых item[statusField] ∈ terminal set.
+  const terminalStatus = detectTerminalStatus(entityDef);
+
   return {
     id: collection,
     title,
@@ -514,7 +520,30 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     editableFields: editableFields.length > 0 ? editableFields : undefined,
     sort,
     where,
+    terminalStatus,
   };
+}
+
+// Backlog 4.8: «терминальные» значения status-enum, после которых item
+// считается выведенным из активного набора. SDK консервативен: только
+// хорошо известные имена, автор может переопределить через subDef.
+const TERMINAL_STATUS_VALUES = new Set([
+  "withdrawn", "cancelled", "canceled", "rejected", "expired",
+  "closed", "refunded", "archived", "deleted", "revoked",
+]);
+
+function detectTerminalStatus(entityDef) {
+  const fields = entityDef?.fields;
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) return undefined;
+  for (const [name, f] of Object.entries(fields)) {
+    if (!Array.isArray(f?.options)) continue;
+    const terminal = f.options.filter(
+      v => typeof v === "string" && TERMINAL_STATUS_VALUES.has(v),
+    );
+    if (terminal.length === 0) continue;
+    return { field: name, values: terminal };
+  }
+  return undefined;
 }
 
 /**
