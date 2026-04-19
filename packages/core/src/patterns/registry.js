@@ -110,6 +110,7 @@ import facetedFilterPanel       from "./stable/catalog/faceted-filter-panel.js";
 import reputationTierBadge      from "./stable/cross/reputation-tier-badge.js";
 import paidVisibilityElevation  from "./stable/catalog/paid-visibility-elevation.js";
 import computedCtaLabel         from "./stable/detail/computed-cta-label.js";
+import undoToastWindow          from "./stable/cross/undo-toast-window.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -129,6 +130,7 @@ const STABLE_PATTERNS = [
   reputationTierBadge,
   paidVisibilityElevation,
   computedCtaLabel,
+  undoToastWindow,
 ];
 
 export function loadStablePatterns(registry) {
