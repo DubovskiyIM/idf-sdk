@@ -4,6 +4,7 @@ import { Chart, Sparkline } from "./chart.jsx";
 import { Map } from "./map.jsx";
 import { IrreversibleBadge } from "./IrreversibleBadge.jsx";
 import EmptyState from "./EmptyState.jsx";
+import RatingAggregate from "./RatingAggregate.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -33,4 +34,5 @@ export const PRIMITIVES = {
   sparkline: Sparkline,
   map: Map,
   irreversibleBadge: IrreversibleBadge,
+  ratingAggregate: RatingAggregate,
 };
