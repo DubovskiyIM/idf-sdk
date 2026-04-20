@@ -5,6 +5,7 @@ import FileControl from "./FileControl.jsx";
 import ImageControl from "./ImageControl.jsx";
 import MultiImageControl from "./MultiImageControl.jsx";
 import PresetChips from "./PresetChips.jsx";
+import HelpCard from "./HelpCard.jsx";
 import { getAdaptedComponent, pickAdaptedComponent } from "../adapters/registry.js";
 
 // Built-in fallback: используется если адаптер не зарегистрирован или
@@ -43,14 +44,16 @@ export default function ParameterControl({ spec, value, onChange, error }) {
     Array.isArray(spec.presets) &&
     spec.presets.length > 0 &&
     PRESET_CAPABLE_CONTROLS.has(spec.control);
+  const showHelp = Boolean(spec.help);
 
   const rendered = <Component spec={spec} value={value} onChange={onChange} error={error} />;
-  if (!showPresets) return rendered;
+  if (!showPresets && !showHelp) return rendered;
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       {rendered}
-      <PresetChips presets={spec.presets} value={value} onChange={onChange} />
+      {showPresets && <PresetChips presets={spec.presets} value={value} onChange={onChange} />}
+      {showHelp && <HelpCard help={spec.help} />}
     </div>
   );
 }
