@@ -1,10 +1,70 @@
 import { useMemo, useState } from "react";
 import SlotRenderer from "../SlotRenderer.jsx";
 import SubCollectionAdd from "../controls/SubCollectionAdd.jsx";
-import { evalIntentCondition } from "../eval.js";
+import { evalIntentCondition, evalCondition, resolve } from "../eval.js";
 import Icon from "../adapters/Icon.jsx";
 import { getAdaptedComponent } from "../adapters/registry.js";
 import { EventTimeline } from "../primitives/eventTimeline.jsx";
+
+/**
+ * Apply section-level filter (backlog §4.7). Поддержка двух форм:
+ *   where: "item.status !== 'withdrawn'"  — строка eval
+ *   where: { field: "status", not: "withdrawn" }  — простой object
+ * Не-строковые / unparsable — pass-through.
+ */
+function applyWhere(items, where, ctx) {
+  if (!where) return items;
+  if (typeof where === "string") {
+    return items.filter(it => evalCondition(where, {
+      ...it, item: it, viewer: ctx.viewer, world: ctx.world,
+    }));
+  }
+  if (typeof where === "object") {
+    return items.filter(it => {
+      for (const [field, expected] of Object.entries(where)) {
+        if (field === "not") continue; // not-handling below
+        if (it[field] !== expected) return false;
+      }
+      if (where.not && typeof where.not === "object") {
+        for (const [field, val] of Object.entries(where.not)) {
+          if (it[field] === val) return false;
+        }
+      }
+      return true;
+    });
+  }
+  return items;
+}
+
+/**
+ * Apply section-level sort (backlog §4.7). Format: "-createdAt" / "+priority" / "field".
+ */
+function applySort(items, sortSpec) {
+  if (!sortSpec || typeof sortSpec !== "string") return items;
+  const desc = sortSpec.startsWith("-");
+  const field = sortSpec.replace(/^[-+]/, "");
+  if (!field) return items;
+  return [...items].sort((a, b) => {
+    const va = resolve(a, field);
+    const vb = resolve(b, field);
+    if (va === vb) return 0;
+    if (va == null) return 1;
+    if (vb == null) return -1;
+    if (desc) return vb > va ? 1 : -1;
+    return va > vb ? 1 : -1;
+  });
+}
+
+const DEFAULT_TERMINAL_STATUSES = new Set([
+  "withdrawn", "cancelled", "canceled", "rejected", "expired", "closed",
+  "refunded", "archived", "deleted", "completed_ack",
+]);
+
+function isTerminalItem(item, statusField) {
+  if (!statusField) return false;
+  const v = item?.[statusField];
+  return typeof v === "string" && DEFAULT_TERMINAL_STATUSES.has(v);
+}
 
 /**
  * SubCollectionSection — секция связанной коллекции в detail-проекции.
@@ -21,14 +81,32 @@ import { EventTimeline } from "../primitives/eventTimeline.jsx";
  * автоматически отключают UI в чужой фазе.
  */
 export default function SubCollectionSection({ section, target, ctx }) {
-  const { title, source, foreignKey, itemView, itemIntents, addControl, emptyLabel, editableFields } = section;
+  const {
+    title, source, foreignKey, itemView, itemIntents, addControl, emptyLabel, editableFields,
+    // Author-decl (backlog §4.7/§4.8):
+    sort: sectionSort,
+    where: sectionWhere,
+    terminalStatus,
+    hideTerminal: hideTerminalFlag,
+    toggleTerminalLabel,
+  } = section;
 
-  // Фильтруем коллекцию по foreignKey === target.id
+  // §6.7: toggle "показать всё" для terminal items. hidden by default когда terminalStatus задан.
+  const [showAllTerminal, setShowAllTerminal] = useState(false);
+
+  // Фильтруем коллекцию по foreignKey === target.id + author where + sort + terminal hiding
   const items = useMemo(() => {
     const all = ctx.world?.[source] || [];
-    if (!foreignKey || !target?.id) return all;
-    return all.filter(it => it[foreignKey] === target.id);
-  }, [ctx.world, source, foreignKey, target]);
+    let result = (!foreignKey || !target?.id)
+      ? all
+      : all.filter(it => it[foreignKey] === target.id);
+    result = applyWhere(result, sectionWhere, ctx);
+    if (hideTerminalFlag && terminalStatus && !showAllTerminal) {
+      result = result.filter(it => !isTerminalItem(it, terminalStatus));
+    }
+    result = applySort(result, sectionSort);
+    return result;
+  }, [ctx.world, source, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer]);
 
   // Temporal sub-entity (v0.14): если section.renderAs.type === "eventTimeline",
   // рендерим через EventTimeline primitive, пропуская default path.
@@ -63,8 +141,18 @@ export default function SubCollectionSection({ section, target, ctx }) {
     return conds.every(c => evalIntentCondition(c, target, ctx.viewer));
   }, [addControl, target, ctx.viewer]);
 
-  // Пустая секция без возможности добавления — не показываем
-  if (items.length === 0 && !canAdd) return null;
+  // Скрытые terminal items для toggle affordance (§6.7).
+  const hiddenTerminalCount = useMemo(() => {
+    if (!hideTerminalFlag || !terminalStatus || showAllTerminal) return 0;
+    const all = ctx.world?.[source] || [];
+    const scoped = (!foreignKey || !target?.id)
+      ? all
+      : all.filter(it => it[foreignKey] === target.id);
+    return scoped.filter(it => isTerminalItem(it, terminalStatus)).length;
+  }, [hideTerminalFlag, terminalStatus, showAllTerminal, ctx.world, source, foreignKey, target]);
+
+  // Пустая секция без возможности добавления и без скрытых terminal — не показываем
+  if (items.length === 0 && !canAdd && hiddenTerminalCount === 0) return null;
 
   const AdaptedPaper = getAdaptedComponent("primitive", "paper");
   const Wrapper = AdaptedPaper || FallbackPaper;
@@ -73,14 +161,38 @@ export default function SubCollectionSection({ section, target, ctx }) {
     <Wrapper padding="lg">
       {/* Заголовок */}
       <div style={{
-        fontSize: 11,
-        fontWeight: 600,
-        textTransform: "uppercase",
-        letterSpacing: "0.06em",
-        color: "var(--idf-text-muted)",
+        display: "flex", alignItems: "center", justifyContent: "space-between",
         marginBottom: 12,
       }}>
-        {title} ({items.length})
+        <div style={{
+          fontSize: 11,
+          fontWeight: 600,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          color: "var(--idf-text-muted)",
+        }}>
+          {title} ({items.length})
+        </div>
+        {hideTerminalFlag && terminalStatus && (hiddenTerminalCount > 0 || showAllTerminal) && (
+          <button
+            type="button"
+            onClick={() => setShowAllTerminal(v => !v)}
+            style={{
+              border: "none",
+              background: "transparent",
+              color: "var(--idf-primary, #6366f1)",
+              fontSize: 11,
+              fontWeight: 500,
+              cursor: "pointer",
+              padding: "2px 6px",
+              borderRadius: 4,
+            }}
+          >
+            {showAllTerminal
+              ? "Скрыть завершённые"
+              : `${toggleTerminalLabel || "Показать все"} (+${hiddenTerminalCount})`}
+          </button>
+        )}
       </div>
 
       {/* Inline-композер для добавления */}

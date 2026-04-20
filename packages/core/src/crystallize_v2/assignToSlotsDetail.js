@@ -372,6 +372,11 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     label,
     addable = true,
     itemIntentIds,
+    // Author-decl pass-through (backlog §4.6/§4.7/§4.8):
+    sort: authorSort,
+    where: authorWhere,
+    itemView: authorItemView,
+    statusField: authorStatusField,
   } = subDef;
 
   const parentEntity = parentProjection.mainEntity;
