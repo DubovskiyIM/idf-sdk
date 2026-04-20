@@ -537,3 +537,86 @@ function extractBinds(node) {
   walk(node);
   return binds;
 }
+
+describe("ownershipConditionFor — multi-owner (§3.2)", () => {
+  const mkProjection = () => ({
+    name: "Deal",
+    kind: "detail",
+    entities: ["Deal"],
+    mainEntity: "Deal",
+    idParam: "dealId",
+  });
+  const mkIntents = (intentOverrides = {}) => ({
+    edit_deal: {
+      name: "Редактировать Deal",
+      particles: {
+        entities: ["deal: Deal"],
+        witnesses: ["deal.status"],
+        confirmation: "form",
+        conditions: [],
+        effects: [{ α: "replace", target: "deal.status" }],
+      },
+      parameters: [{ name: "status", type: "text", required: true }],
+      ...intentOverrides,
+    },
+  });
+
+  it("legacy single ownerField → 'field === viewer.id'", () => {
+    const ontology = {
+      entities: { Deal: { ownerField: "clientId", fields: ["id", "clientId", "status"] } },
+    };
+    const slots = assignToSlotsDetail(mkIntents(), mkProjection(), ontology);
+    const btn = slots.toolbar.find(b => b.intentId === "edit_deal");
+    expect(btn.condition).toBe("clientId === viewer.id");
+  });
+
+  it("multi-owner owners[] → OR expression обёрнут в скобки", () => {
+    const ontology = {
+      entities: {
+        Deal: {
+          owners: ["customerId", "executorId"],
+          fields: ["id", "customerId", "executorId", "status"],
+        },
+      },
+    };
+    const slots = assignToSlotsDetail(mkIntents(), mkProjection(), ontology);
+    const btn = slots.toolbar.find(b => b.intentId === "edit_deal");
+    expect(btn.condition).toBe("(customerId === viewer.id || executorId === viewer.id)");
+  });
+
+  it("permittedFor string → только указанное поле", () => {
+    const ontology = {
+      entities: {
+        Deal: {
+          owners: ["customerId", "executorId"],
+          fields: ["id", "customerId", "executorId", "status"],
+        },
+      },
+    };
+    const slots = assignToSlotsDetail(
+      mkIntents({ permittedFor: "executorId" }),
+      mkProjection(),
+      ontology,
+    );
+    const btn = slots.toolbar.find(b => b.intentId === "edit_deal");
+    expect(btn.condition).toBe("executorId === viewer.id");
+  });
+
+  it("permittedFor array → OR пересечения", () => {
+    const ontology = {
+      entities: {
+        Deal: {
+          owners: ["customerId", "executorId", "observerId"],
+          fields: ["id", "customerId", "executorId", "observerId", "status"],
+        },
+      },
+    };
+    const slots = assignToSlotsDetail(
+      mkIntents({ permittedFor: ["customerId", "executorId"] }),
+      mkProjection(),
+      ontology,
+    );
+    const btn = slots.toolbar.find(b => b.intentId === "edit_deal");
+    expect(btn.condition).toBe("(customerId === viewer.id || executorId === viewer.id)");
+  });
+});

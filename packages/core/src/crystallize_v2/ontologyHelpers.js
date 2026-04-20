@@ -244,3 +244,34 @@ export function mapOntologyTypeToControl(ontologyType) {
   };
   return map[ontologyType] || "text";
 }
+
+/**
+ * Возвращает canonical массив owner-полей для сущности.
+ *
+ * Приоритет:
+ *   1. entity.owners: ["a", "b"] (multi-owner, backlog 3.2)
+ *   2. entity.ownerField: "x" (legacy single-owner)
+ *   3. [] (сущность без owner'а)
+ *
+ * С intent.permittedFor — сужение подмножества:
+ *   - string → ["fieldName"]
+ *   - ["a", "b"] → пересечение с owners
+ *   - "owner" или отсутствует → все owners
+ *   - Нет пересечения (e.g. "unknownField") → fallback к полным owners.
+ *     Предотвращает ситуацию "автор опечатался в permittedFor, intent
+ *     стал невидимым никому" — better fail loud чем silent.
+ */
+export function getOwnerFields(entityDef, intent = null) {
+  const owners = Array.isArray(entityDef?.owners)
+    ? entityDef.owners
+    : entityDef?.ownerField ? [entityDef.ownerField] : [];
+
+  if (!owners.length) return [];
+
+  const permittedFor = intent?.permittedFor;
+  if (!permittedFor || permittedFor === "owner") return owners;
+
+  const want = Array.isArray(permittedFor) ? permittedFor : [permittedFor];
+  const match = owners.filter(f => want.includes(f));
+  return match.length ? match : owners;
+}

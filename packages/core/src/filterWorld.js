@@ -25,6 +25,8 @@
  *                                      (opt) m[statusField] ∈ statusAllowed }
  */
 
+import { getOwnerFields } from "./crystallize_v2/ontologyHelpers.js";
+
 function pluralize(word) {
   if (!word) return word;
   if (word.endsWith("y")) return word.slice(0, -1) + "ies";
@@ -125,10 +127,13 @@ function filterWorldForRole(rawWorld, ontology, roleName, viewer) {
       // ownership не применяется — все видят все строки. Role.visibleFields
       // всё равно контролирует какие поля выдавать. §26.5 закрытие.
       owned = rows;
-    } else if (entityDef.ownerField) {
-      owned = rows.filter(r => r[entityDef.ownerField] === viewer.id);
     } else {
-      owned = rows;
+      const ownerFields = getOwnerFields(entityDef);
+      if (ownerFields.length > 0) {
+        owned = rows.filter(r => ownerFields.some(f => r[f] === viewer.id));
+      } else {
+        owned = rows;
+      }
     }
 
     const projected = owned.map(row => {
