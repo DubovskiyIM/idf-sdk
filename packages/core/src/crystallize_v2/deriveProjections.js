@@ -26,6 +26,7 @@ import {
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
+  witnessR7bMultiOwnerFilter,
   witnessR9Composite,
   witnessR10RoleScope,
 } from "./derivationWitnesses.js";
@@ -329,14 +330,36 @@ export function deriveProjections(intents, ontology) {
     }
   }
 
-  // R7: Owner-filtered catalog
+  // R7 / R7b: Owner-filtered catalog
+  // ownerField может быть строкой (R7 — single owner) или массивом (R7b —
+  // multi-owner disjunction). Spec:
+  //   R7  — idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md
+  //   R7b — idf-manifest-v2.1/docs/design/rule-R7b-multi-owner-spec.md
   for (const entityName of entityNames) {
     const lower = entityName.toLowerCase();
     const entityDef = ontology.entities[entityName];
     const ownerField = entityDef?.ownerField;
     const catalogId = `${lower}_list`;
 
-    if (ownerField && projections[catalogId]) {
+    if (!ownerField || !projections[catalogId]) continue;
+
+    if (Array.isArray(ownerField) && ownerField.length >= 2) {
+      // R7b: disjunction filter
+      projections[`my_${lower}_list`] = {
+        kind: "catalog",
+        mainEntity: entityName,
+        entities: [entityName],
+        witnesses: projections[catalogId].witnesses,
+        filter: {
+          kind: "disjunction",
+          fields: [...ownerField],
+          op: "=",
+          value: "me.id",
+        },
+        derivedBy: [witnessR7bMultiOwnerFilter(entityName, ownerField, catalogId)],
+      };
+    } else if (typeof ownerField === "string") {
+      // R7: single owner
       projections[`my_${lower}_list`] = {
         kind: "catalog",
         mainEntity: entityName,

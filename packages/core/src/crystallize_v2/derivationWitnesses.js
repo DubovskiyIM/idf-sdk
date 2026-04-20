@@ -186,6 +186,40 @@ export function witnessR7OwnerFilter(entityName, ownerField, sourceCatalogId) {
 }
 
 /**
+ * R7b: my_*_list с disjunction-фильтром через multi-ownerField.
+ * Применяется когда entity имеет ≥2 owner-field'а (e.g. Deal.customerId + executorId).
+ * Спецификация: idf-manifest-v2.1/docs/design/rule-R7b-multi-owner-spec.md
+ *
+ * @param {string} entityName
+ * @param {string[]} ownerFields — массив owner-полей (≥2 элементов)
+ * @param {string} sourceCatalogId
+ */
+export function witnessR7bMultiOwnerFilter(entityName, ownerFields, sourceCatalogId) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R7b",
+    input: {
+      entity: entityName,
+      ownerFields: [...ownerFields],
+      count: ownerFields.length,
+      sourceCatalog: sourceCatalogId,
+    },
+    output: {
+      kind: "catalog",
+      mainEntity: entityName,
+      filter: {
+        kind: "disjunction",
+        fields: [...ownerFields],
+        op: "=",
+        value: "me.id",
+      },
+    },
+    rationale: `${entityName}.ownerField = [${ownerFields.join(", ")}] (${ownerFields.length} owner-fields) + catalog(${sourceCatalogId}) существует → my_* catalog с OR-filter ${ownerFields.map(f => `${f}===me.id`).join(" OR ")}`,
+  };
+}
+
+/**
  * R4: subCollection добавлен в detail(parent) из foreignKey child → parent.
  * Witness лежит на parent-detail, одна запись на каждый FK.
  */
