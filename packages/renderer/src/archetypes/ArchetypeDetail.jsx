@@ -11,6 +11,68 @@ import { getAdaptedComponent } from "../adapters/registry.js";
 import Icon from "../adapters/Icon.jsx";
 import EmptyState from "../primitives/EmptyState.jsx";
 import PatternPreviewOverlay from "../slots/PatternPreviewOverlay.jsx";
+import IntentButton from "../controls/IntentButton.jsx";
+
+/**
+ * Для singleton empty-state: найти первый intent, который создаёт mainEntity.
+ * Учитывает:
+ *  - creates: "Entity" / "Entity(variant)" — прямая декларация
+ *  - particles.effects[].target — fallback когда creates опущен (targets главу
+ *    pluralized или <entity>.<field>)
+ *  - permittedFor / particles.conditions — см. shouldShowCreator.
+ * Возвращает { id, spec } где spec обогащён intentId + label для IntentButton.
+ */
+function findCreatorIntent(intents, mainEntity, viewer) {
+  if (!intents || !mainEntity) return null;
+  const entityLower = mainEntity.toLowerCase();
+  const entityPlural = entityLower.endsWith("s") ? entityLower : entityLower + "s";
+  for (const [id, intent] of Object.entries(intents)) {
+    if (intent?.α !== "add") continue;
+    const createsMatch = typeof intent.creates === "string"
+      && intent.creates.split("(")[0].trim() === mainEntity;
+    let targetsMain = createsMatch;
+    if (!targetsMain) {
+      const effects = intent.particles?.effects || [];
+      targetsMain = effects.some(e => {
+        const t = e.target;
+        if (!t) return false;
+        if (t === entityPlural) return true;
+        if (t.startsWith(`${entityLower}.`)) return true;
+        return false;
+      });
+    }
+    if (!targetsMain) continue;
+    if (!shouldShowCreator(intent, viewer)) continue;
+    return {
+      id,
+      spec: { ...intent, intentId: id, label: intent.label || intent.name },
+    };
+  }
+  return null;
+}
+
+/**
+ * Policy для показа creator-intent на singleton empty-state:
+ * - permittedFor: owner-field (*Id) — пропускаем (target ещё нет).
+ *   Иначе role-label — проверяем viewer.role.
+ * - particles.conditions: ссылающиеся на entity-alias (e.g. `wallet.userId = me.id`) —
+ *   пропускаем (target отсутствует). Остальные — eval с target=null.
+ */
+function shouldShowCreator(intent, viewer) {
+  const { permittedFor } = intent;
+  if (permittedFor && !/Id$/.test(permittedFor)) {
+    if (viewer?.role && viewer.role !== permittedFor) return false;
+  }
+  const conditions = intent.particles?.conditions || [];
+  const entityAliases = (intent.particles?.entities || [])
+    .map(e => e.split(":")[0].trim().toLowerCase());
+  for (const cond of conditions) {
+    const refsEntity = entityAliases.some(alias => cond.includes(`${alias}.`));
+    if (refsEntity) continue;
+    if (!evalIntentCondition(cond, null, viewer)) return false;
+  }
+  return true;
+}
 
 /**
  * Detail-архетип: показывает одну сущность по mainEntity+idParam из routeParams.
@@ -77,12 +139,24 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
     if (projection?.singleton) {
       // Singleton detail (R3b): для viewer не нашлось записи — обычно
       // первое посещение, сущность ещё не создана (Wallet, Settings, Profile).
+      // Если среди intents есть creator для mainEntity — рендерим его CTA
+      // под EmptyState, чтобы пользователь мог создать запись, а не упирался
+      // в dead-end. Закрывает freelance backlog §3.6.
+      const creator = findCreatorIntent(parentCtx.intents, projection.mainEntity, parentCtx.viewer);
       return (
-        <EmptyState
-          icon="✨"
-          title={`${entityName} ещё не создан`}
-          hint="Создайте запись — она привяжется к вашему аккаунту."
-        />
+        <div style={{
+          display: "flex", flexDirection: "column",
+          alignItems: "center", gap: 16, padding: 24,
+        }}>
+          <EmptyState
+            icon="✨"
+            title={`${entityName} ещё не создан`}
+            hint="Создайте запись — она привяжется к вашему аккаунту."
+          />
+          {creator && (
+            <IntentButton spec={creator.spec} ctx={ctx} />
+          )}
+        </div>
       );
     }
     const id = parentCtx.routeParams?.[projection?.idParam];
