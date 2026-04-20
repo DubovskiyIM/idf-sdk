@@ -138,6 +138,86 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(r7.output.filter).toEqual({ field: "sellerId", op: "=", value: "me.id" });
   });
 
+  it("R7b: my_*_list с disjunction filter для multi-ownerField массива", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: {
+          ownerField: ["customerId", "executorId"],
+          fields: {
+            customerId: { type: "entityRef" },
+            executorId: { type: "entityRef" },
+            amount: { type: "number" },
+          },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.my_deal_list).toBeDefined();
+    const r7b = projections.my_deal_list.derivedBy.find(w => w.ruleId === "R7b");
+    expect(r7b).toBeDefined();
+    expect(r7b.input.ownerFields).toEqual(["customerId", "executorId"]);
+    expect(r7b.input.count).toBe(2);
+    expect(r7b.output.filter).toEqual({
+      kind: "disjunction",
+      fields: ["customerId", "executorId"],
+      op: "=",
+      value: "me.id",
+    });
+    expect(r7b.rationale).toContain("OR");
+
+    // Не должно быть R7 (strict mutual exclusion)
+    const r7 = projections.my_deal_list.derivedBy.find(w => w.ruleId === "R7");
+    expect(r7).toBeUndefined();
+
+    // Проекция имеет disjunction filter, не single
+    expect(projections.my_deal_list.filter.kind).toBe("disjunction");
+  });
+
+  it("R7b: ownerField single-element array → R7 path (не R7b)", () => {
+    const INTENTS = {
+      add_listing: { creates: "Listing", particles: { effects: [{ α: "create", target: "listing" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Listing: {
+          ownerField: ["sellerId"],  // array с 1 элементом
+          fields: { sellerId: { type: "entityRef" }, title: { type: "text" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    // Array с length=1 не должен триггерить R7b (требование ≥2)
+    expect(projections.my_listing_list).toBeUndefined();
+  });
+
+  it("R7b: three+ ownerFields — все в disjunction", () => {
+    const INTENTS = {
+      add_thing: { creates: "Thing", particles: { effects: [{ α: "create", target: "thing" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Thing: {
+          ownerField: ["userId", "collaboratorId", "observerId"],
+          fields: {
+            userId: { type: "entityRef" },
+            collaboratorId: { type: "entityRef" },
+            observerId: { type: "entityRef" },
+          },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    const r7b = projections.my_thing_list.derivedBy.find(w => w.ruleId === "R7b");
+    expect(r7b.input.count).toBe(3);
+    expect(r7b.output.filter.fields.length).toBe(3);
+  });
+
   it("R1b: read-only catalog для entity.kind === 'reference' без creators", () => {
     const INTENTS = {
       add_position: {
