@@ -27,6 +27,50 @@ export default {
     description:
       "body.layout={type:'kanban', columnField:'status'}. Каждая status-enum = колонка. Карточки группируются " +
       "визуально. Drag между колонками = replace на status. Composer добавляется в первую колонку (backlog/new).",
+    /**
+     * Apply: устанавливает `body.layout = { type: "kanban", columnField,
+     * columns: [...] }` из enum-options status-поля entity. Renderer
+     * (containers/List) детектит kanban-layout и группирует items.
+     *
+     * Author-override: существующий `body.layout` не перезаписывается.
+     * Drag-to-replace — renderer-responsibility (читает replace-intents
+     * на `.status`).
+     */
+    apply(slots, context) {
+      const { ontology, mainEntity } = context || {};
+      if (!mainEntity || !ontology?.entities) return slots;
+      const entity = ontology.entities[mainEntity];
+      if (!entity) return slots;
+
+      const statusField = entity.fields?.status;
+      const statusOptions = entity.statuses
+        || (statusField && Array.isArray(statusField.options) ? statusField.options : null);
+      if (!Array.isArray(statusOptions) || statusOptions.length < 3) return slots;
+
+      const body = slots?.body;
+      if (!body || typeof body !== "object") return slots;
+
+      // Author-override: явный body.layout (строка или объект) → skip.
+      if (body.layout !== undefined && body.layout !== null) return slots;
+
+      const columns = statusOptions.map(opt => {
+        if (typeof opt === "string") return { id: opt, label: opt };
+        return { id: opt.value ?? opt.id, label: opt.label ?? opt.value ?? opt.id };
+      });
+
+      return {
+        ...slots,
+        body: {
+          ...body,
+          layout: {
+            type: "kanban",
+            columnField: "status",
+            columns,
+            source: "derived:kanban-phase-column-board",
+          },
+        },
+      };
+    },
   },
   rationale: {
     hypothesis:

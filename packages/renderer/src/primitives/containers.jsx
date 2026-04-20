@@ -485,6 +485,9 @@ export function List({ node, ctx }) {
   const onItemClick = node.onItemClick;
 
   const isGrid = node.layout === "grid";
+  const kanbanLayout = (node.layout && typeof node.layout === "object" && node.layout.type === "kanban")
+    ? node.layout
+    : null;
 
   const containerStyle = isGrid
     ? {
@@ -500,7 +503,16 @@ export function List({ node, ctx }) {
         ...(node.sx || {}),
       };
 
-  const listBody = (
+  const listBody = kanbanLayout ? (
+    <KanbanBoard
+      ref={scrollRef}
+      layout={kanbanLayout}
+      items={items}
+      node={node}
+      ctx={ctx}
+      onItemClick={onItemClick}
+    />
+  ) : (
     <div ref={scrollRef} style={containerStyle}>
       {items.map((item, i) => {
         const content = isGrid
@@ -522,6 +534,106 @@ export function List({ node, ctx }) {
     <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
       <TabBar tabs={tabs} activeId={activeTabId} onChange={setActiveTabId} />
       {listBody}
+    </div>
+  );
+}
+
+/**
+ * KanbanBoard — horizontal columns, items группируются по layout.columnField.
+ * Value каждого item в этом поле матчится с column.id. Unmatched items
+ * попадают в последнюю колонку.
+ *
+ * Drag-to-replace status — TODO (HTML5 drag API + ctx.exec). Сейчас только
+ * grouping + per-item click-navigation.
+ */
+function KanbanBoard({ layout, items, node, ctx, onItemClick }) {
+  const columns = Array.isArray(layout.columns) ? layout.columns : [];
+  const columnField = layout.columnField || "status";
+  const columnIds = new Set(columns.map(c => c.id));
+  const grouped = new Map();
+  for (const col of columns) grouped.set(col.id, []);
+  const overflow = [];
+  for (const item of items) {
+    const key = item?.[columnField];
+    if (columnIds.has(key)) grouped.get(key).push(item);
+    else overflow.push(item);
+  }
+
+  return (
+    <div
+      role="group"
+      aria-label="Kanban"
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        gap: 12,
+        overflowX: "auto",
+        minHeight: 200,
+      }}
+    >
+      {columns.map(col => {
+        const colItems = grouped.get(col.id) || [];
+        const extra = col.id === columns[columns.length - 1]?.id ? overflow : [];
+        const allItems = [...colItems, ...extra];
+        return (
+          <div
+            key={col.id}
+            data-column={col.id}
+            style={{
+              flex: "0 0 260px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 8,
+              padding: 10,
+              borderRadius: 8,
+              background: "var(--idf-surface-soft, #f8fafb)",
+              border: "1px solid var(--idf-border, #e5e7eb)",
+              minHeight: 160,
+            }}
+          >
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                fontSize: 12,
+                fontWeight: 600,
+                color: "var(--idf-text-muted, #6b7280)",
+                textTransform: "uppercase",
+                letterSpacing: "0.3px",
+              }}
+            >
+              <span>{col.label || col.id}</span>
+              <span
+                style={{
+                  background: "var(--idf-surface, #fff)",
+                  borderRadius: 12,
+                  padding: "1px 8px",
+                  fontSize: 11,
+                }}
+              >
+                {allItems.length}
+              </span>
+            </div>
+            {allItems.map((item, i) => {
+              const content = (
+                <SlotRenderer item={node.item} ctx={ctx} contextItem={item} />
+              );
+              if (!onItemClick) return <div key={item.id || i}>{content}</div>;
+              return (
+                <ClickableItem
+                  key={item.id || i}
+                  action={onItemClick}
+                  item={item}
+                  ctx={ctx}
+                >
+                  {content}
+                </ClickableItem>
+              );
+            })}
+          </div>
+        );
+      })}
     </div>
   );
 }
