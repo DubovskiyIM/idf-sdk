@@ -52,13 +52,32 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
         </div>
       )}
 
-      <div style={{ flex: 1, overflow: "auto", padding: 16 }}>
-        {slots.hero?.length > 0 && (
-          <div>
-            <SlotRenderer items={slots.hero} ctx={ctx} />
-          </div>
+      <div style={{ flex: 1, overflow: "auto", display: "flex", flexDirection: "row", minHeight: 0 }}>
+        {slots.sidebar?.length > 0 && (
+          <aside
+            aria-label="Боковая панель"
+            style={{
+              width: 260,
+              flexShrink: 0,
+              padding: 16,
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+              borderRight: "1px solid var(--idf-border)",
+              background: "var(--idf-surface-soft, var(--idf-surface))",
+            }}
+          >
+            <SlotRenderer items={slots.sidebar} ctx={ctx} />
+          </aside>
         )}
-        <SlotRenderer item={slots.body} ctx={ctx} />
+        <div style={{ flex: 1, overflow: "auto", padding: 16, minWidth: 0 }}>
+          {slots.hero?.length > 0 && (
+            <div>
+              <SlotRenderer items={slots.hero} ctx={ctx} />
+            </div>
+          )}
+          <SlotRenderer item={slots.body} ctx={ctx} />
+        </div>
       </div>
 
       {slots.fab?.length > 0 && (
