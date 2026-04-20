@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/core",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "description": "Intent-Driven Frontend — core engine, fold, intent algebra, crystallizer, materializers (pixels/voice/agent-API/document), invariants",
   "type": "module",
   "main": "./dist/index.cjs",
