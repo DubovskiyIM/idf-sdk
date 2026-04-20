@@ -1,5 +1,12 @@
 # @intent-driven/cli
 
+## 1.0.26
+
+### Patch Changes
+
+- Updated dependencies [ddc222c]
+  - @intent-driven/core@0.25.0
+
 ## 1.0.25
 
 ### Patch Changes
