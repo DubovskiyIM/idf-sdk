@@ -509,6 +509,92 @@ function ShadcnPaper({ children, ...props }) {
   );
 }
 
+/**
+ * Shadcn/doodle Sidebar. Handcrafted-стилистика: dashed-borders между
+ * секциями, чуть-чуть скошенная типографика, box-shadow как у ShadcnPaper.
+ * Секции collapsible через локальный state.
+ */
+function ShadcnSidebar({ sections, active, onSelect, projectionNames }) {
+  const [collapsed, setCollapsed] = React.useState({});
+  const toggle = (s) => setCollapsed(p => ({ ...p, [s]: !p[s] }));
+
+  return (
+    <div style={{
+      width: 240, flexShrink: 0, height: "100%",
+      overflow: "auto",
+      background: "var(--color-doodle-bg, #fffbeb)",
+      borderRight: "2px dashed var(--color-doodle-ink, #292524)",
+      padding: 8,
+      fontFamily: "var(--font-doodle, system-ui, sans-serif)",
+    }}>
+      {(sections || []).map((sec, i) => (
+        <div key={sec.section} style={{
+          marginBottom: 12,
+          paddingBottom: 12,
+          borderBottom: i < sections.length - 1
+            ? "1.5px dashed var(--color-doodle-ink, #292524)" : "none",
+        }}>
+          <button
+            onClick={() => toggle(sec.section)}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              width: "100%", padding: "6px 8px",
+              background: "transparent", border: "none",
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 14, fontWeight: 700,
+              color: "var(--color-doodle-ink, #292524)",
+              letterSpacing: "0.02em",
+            }}
+          >
+            {sec.icon && <span aria-hidden>{sec.icon}</span>}
+            <span style={{ flex: 1, textAlign: "left" }}>{sec.section}</span>
+            <span style={{ fontSize: 11, opacity: 0.6 }}>
+              {collapsed[sec.section] ? "✎" : "○"}
+            </span>
+          </button>
+          {!collapsed[sec.section] && (
+            <div style={{ marginTop: 4, paddingLeft: 10 }}>
+              {(sec.items || []).map(projId => {
+                const isActive = active === projId;
+                return (
+                  <button
+                    key={projId}
+                    onClick={() => onSelect && onSelect(projId)}
+                    style={{
+                      display: "block", width: "100%",
+                      textAlign: "left",
+                      padding: "6px 10px",
+                      margin: "3px 0",
+                      borderRadius: "var(--radius-doodle, 10px)",
+                      border: isActive
+                        ? "1.5px solid var(--color-doodle-ink, #292524)"
+                        : "1.5px solid transparent",
+                      background: isActive
+                        ? "var(--color-doodle-accent, #fef3c7)"
+                        : "transparent",
+                      boxShadow: isActive
+                        ? "2px 2px 0 var(--color-doodle-ink, #292524)"
+                        : "none",
+                      cursor: "pointer", fontFamily: "inherit",
+                      fontSize: 13,
+                      color: "var(--color-doodle-ink, #292524)",
+                      fontWeight: isActive ? 600 : 400,
+                      transform: isActive ? "rotate(-0.5deg)" : "none",
+                      transition: "transform 0.12s ease",
+                    }}
+                  >
+                    {projectionNames?.[projId] || projId}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Adapter Export ───
 
 // Affinity для matching-score (см. renderer/adapters/matching.js).
@@ -525,6 +611,9 @@ ShadcnDateTime.affinity = {
 
 export const shadcnAdapter = {
   name: "shadcn",
+  capabilities: {
+    shell: { modal: true, tabs: true, sidebar: true },
+  },
   parameter: {
     text: ShadcnTextInput,
     textarea: ShadcnTextarea,
@@ -545,6 +634,7 @@ export const shadcnAdapter = {
   shell: {
     modal: ShadcnModalShell,
     tabs: ShadcnTabs,
+    sidebar: ShadcnSidebar,
   },
   primitive: {
     heading: ShadcnHeading,

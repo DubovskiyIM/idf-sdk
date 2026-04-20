@@ -565,8 +565,100 @@ AppleDateTime.affinity = {
   features: ["withTime"],
 };
 
+/**
+ * Apple visionOS-glass Sidebar. Frosted-glass background, translucent
+ * rounded pills для активных пунктов, subtle dividers без hard-lines.
+ * Секции видны из-за типографики и spacing, а не обводок.
+ */
+function AppleSidebar({ sections, active, onSelect, projectionNames }) {
+  const [collapsed, setCollapsed] = React.useState({});
+  const toggle = (s) => setCollapsed(p => ({ ...p, [s]: !p[s] }));
+
+  return (
+    <div style={{
+      width: 260, flexShrink: 0, height: "100%",
+      overflow: "auto",
+      background: "rgba(255,255,255,0.55)",
+      backdropFilter: "blur(40px) saturate(180%)",
+      WebkitBackdropFilter: "blur(40px) saturate(180%)",
+      borderRight: "1px solid rgba(0,0,0,0.06)",
+      padding: "14px 10px",
+      fontFamily: "var(--font-apple, -apple-system, BlinkMacSystemFont, system-ui, sans-serif)",
+      letterSpacing: "-0.01em",
+    }}>
+      {(sections || []).map(sec => (
+        <div key={sec.section} style={{ marginBottom: 14 }}>
+          <button
+            onClick={() => toggle(sec.section)}
+            style={{
+              display: "flex", alignItems: "center", gap: 8,
+              width: "100%", padding: "4px 10px",
+              background: "transparent", border: "none",
+              cursor: "pointer", fontFamily: "inherit",
+              fontSize: 11, fontWeight: 600,
+              color: "var(--color-apple-text-secondary, #86868b)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+            }}
+          >
+            {sec.icon && <span aria-hidden style={{ fontSize: 12 }}>{sec.icon}</span>}
+            <span style={{ flex: 1, textAlign: "left" }}>{sec.section}</span>
+            <span style={{ fontSize: 9, opacity: 0.5 }}>
+              {collapsed[sec.section] ? "›" : "⌄"}
+            </span>
+          </button>
+          {!collapsed[sec.section] && (
+            <div style={{ marginTop: 2 }}>
+              {(sec.items || []).map(projId => {
+                const isActive = active === projId;
+                return (
+                  <button
+                    key={projId}
+                    onClick={() => onSelect && onSelect(projId)}
+                    style={{
+                      display: "block", width: "100%",
+                      textAlign: "left",
+                      padding: "9px 14px",
+                      margin: "2px 0",
+                      borderRadius: 12,
+                      border: "none",
+                      background: isActive
+                        ? "rgba(0,122,255,0.15)"
+                        : "transparent",
+                      backdropFilter: isActive ? "blur(20px)" : "none",
+                      WebkitBackdropFilter: isActive ? "blur(20px)" : "none",
+                      cursor: "pointer", fontFamily: "inherit",
+                      fontSize: 14,
+                      color: isActive
+                        ? "var(--color-apple-accent, #007aff)"
+                        : "var(--color-apple-text, #1d1d1f)",
+                      fontWeight: isActive ? 600 : 400,
+                      transition: "background 0.18s ease",
+                    }}
+                    onMouseEnter={e => {
+                      if (!isActive) e.currentTarget.style.background = "rgba(0,0,0,0.04)";
+                    }}
+                    onMouseLeave={e => {
+                      if (!isActive) e.currentTarget.style.background = "transparent";
+                    }}
+                  >
+                    {projectionNames?.[projId] || projId}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export const appleAdapter = {
   name: "apple",
+  capabilities: {
+    shell: { modal: true, tabs: true, sidebar: true },
+  },
   parameter: {
     text: AppleTextInput,
     textarea: AppleTextarea,
@@ -588,6 +680,7 @@ export const appleAdapter = {
   shell: {
     modal: AppleModalShell,
     tabs: AppleTabs,
+    sidebar: AppleSidebar,
   },
   primitive: {
     heading: AppleHeading,

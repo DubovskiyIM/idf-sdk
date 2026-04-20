@@ -25,6 +25,9 @@ import {
   Avatar,
   Paper,
   Menu,
+  NavLink,
+  ScrollArea,
+  Collapse,
 } from "@mantine/core";
 import { DateInput, TimeInput } from "@mantine/dates";
 import { Icon, labels } from "@intent-driven/renderer";
@@ -679,6 +682,50 @@ MantineEmail.affinity = {
   fields: ["email", "contactEmail"],
 };
 
+/**
+ * Mantine Sidebar как shell.sidebar. Corporate dense-layout:
+ * вложенные NavLink'и с collapsible-секциями. Mantine NavLink умеет
+ * children + defaultOpened, и сам отрисовывает chevron.
+ *
+ * Контракт (общий для всех адаптеров):
+ *   { sections: [{section, icon?, items}], active, onSelect(id),
+ *     projectionNames: { id: label } }
+ */
+function MantineSidebar({ sections, active, onSelect, projectionNames }) {
+  return (
+    <ScrollArea
+      style={{
+        width: 240, flexShrink: 0, height: "100%",
+        borderRight: "1px solid var(--mantine-color-default-border)",
+        background: "var(--mantine-color-body)",
+      }}
+    >
+      <div style={{ padding: 4 }}>
+        {(sections || []).map(sec => (
+          <NavLink
+            key={sec.section}
+            label={<Text fw={700} size="sm">{sec.section}</Text>}
+            leftSection={sec.icon ? <span aria-hidden>{sec.icon}</span> : null}
+            defaultOpened
+            variant="subtle"
+            childrenOffset={28}
+          >
+            {(sec.items || []).map(projId => (
+              <NavLink
+                key={projId}
+                label={projectionNames?.[projId] || projId}
+                active={active === projId}
+                onClick={() => onSelect && onSelect(projId)}
+                variant="filled"
+              />
+            ))}
+          </NavLink>
+        ))}
+      </div>
+    </ScrollArea>
+  );
+}
+
 export const mantineAdapter = {
   name: "mantine",
   // §26.4 + §26.6: capability surface. Mantine-адаптер не реализует
@@ -691,7 +738,7 @@ export const mantineAdapter = {
       statistic: false, // нет — используется chart-fallback или text-primitive
       heading: true, text: true, badge: true, avatar: true, paper: true,
     },
-    shell: { modal: true, tabs: true },
+    shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
   },
   parameter: {
@@ -717,6 +764,7 @@ export const mantineAdapter = {
   shell: {
     modal: MantineModalShell,
     tabs: MantineTabs,
+    sidebar: MantineSidebar,
   },
   primitive: {
     heading: MantineHeading,
