@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.13.0
+
+### Minor Changes
+
+- 2a86bac: feat(parameter): `parameter.presets` — quick-value chips (UI-gap #3, Workzilla-style).
+
+  Авторы могут декларировать быстрые значения на параметре:
+
+  ```js
+  { name: "budget", type: "number", fieldRole: "price",
+    presets: [
+      { label: "500 ₽", value: 500 },
+      { label: "1500 ₽", value: 1500 },
+      { label: "5000 ₽", value: 5000 },
+    ],
+  }
+  ```
+
+  Или shortcut form (preset as plain value, label = String(value)):
+
+  ```js
+  { name: "retries", type: "number", presets: [1, 3, 5, 10] }
+  ```
+
+  Renderer: ParameterControl оборачивает Component + PresetChips (ряд кликабельных button'ов под input'ом). Click на chip → `onChange(preset.value)`. Active-state подсвечивается когда текущий value совпадает с preset.value (aria-pressed).
+
+  Preset-capable control types: `text` / `email` / `tel` / `url` / `number` / `datetime`. File / image / multiImage — skip (нет "значения" в обычном смысле).
+
+  PresetChips использует Token Bridge CSS vars (`--idf-accent` / `--idf-surface-soft` / `--idf-text-muted` / `--idf-border`) — корректно вписывается в 4 UI-kit'а.
+
+  Мотивация: скриншоты Workzilla — quick-chip'ы "Через 2 часа / 6 часов" на deadline, "500 / 1500" на budget. 8 тестов (`PresetChips.test.jsx`).
+
 ## 0.12.1
 
 ### Patch Changes
@@ -41,14 +73,10 @@
   **core**
 
   - Новый shared helper `evalFilter(filter, row, { viewer, world })` —
-    единая surface для четырёх форматов, которые эмитят R-правила:
-    - `string` — legacy JS-выражение (back-compat для messenger buildBody и
-      authored viewState-фильтров);
-    - `{ field, op, value }` — простой predicate (R3b singleton, R11 v2 feed),
-      `value: "me.id"` резолвится через `viewer.id`;
-    - `{ kind: "disjunction", fields, op, value }` — OR across полей
-      (R7b multi-ownerField);
-    - `{ kind: "m2m-via", via, viewerField, joinField, localField,
+    единая surface для четырёх форматов, которые эмитят R-правила: - `string` — legacy JS-выражение (back-compat для messenger buildBody и
+    authored viewState-фильтров); - `{ field, op, value }` — простой predicate (R3b singleton, R11 v2 feed),
+    `value: "me.id"` резолвится через `viewer.id`; - `{ kind: "disjunction", fields, op, value }` — OR across полей
+    (R7b multi-ownerField); - `{ kind: "m2m-via", via, viewerField, joinField, localField,
 statusField?, statusAllowed? }` — bridge-lookup (R10 role.scope).
   - `documentMaterializer` и `voiceMaterializer` мигрированы на этот helper —
     теперь тоже корректно фильтруют structured-filter'ы (до этого упали бы
