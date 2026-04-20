@@ -8,6 +8,7 @@ import Carousel from "./Carousel.jsx";
 import GatingPanel from "./GatingPanel.jsx";
 import CriterionSummary from "./CriterionSummary.jsx";
 import RatingAggregate from "./RatingAggregate.jsx";
+import TreeNav from "./TreeNav.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -17,6 +18,7 @@ export { IrreversibleBadge } from "./IrreversibleBadge.jsx";
 export { default as EmptyState } from "./EmptyState.jsx";
 export { default as Carousel } from "./Carousel.jsx";
 export { default as GatingPanel } from "./GatingPanel.jsx";
+export { default as TreeNav } from "./TreeNav.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -44,4 +46,5 @@ export const PRIMITIVES = {
   gatingPanel: GatingPanel,
   criterionSummary: CriterionSummary,
   ratingAggregate: RatingAggregate,
+  treeNav: TreeNav,
 };
