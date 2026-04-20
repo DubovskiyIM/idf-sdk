@@ -111,6 +111,8 @@ import reputationTierBadge      from "./stable/cross/reputation-tier-badge.js";
 import paidVisibilityElevation  from "./stable/catalog/paid-visibility-elevation.js";
 import computedCtaLabel         from "./stable/detail/computed-cta-label.js";
 import undoToastWindow          from "./stable/cross/undo-toast-window.js";
+// B2 curated promotion (2026-04-20)
+import reviewCriterionBreakdown from "./stable/detail/review-criterion-breakdown.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -131,6 +133,8 @@ const STABLE_PATTERNS = [
   paidVisibilityElevation,
   computedCtaLabel,
   undoToastWindow,
+  // B2 curated promotion (2026-04-20)
+  reviewCriterionBreakdown,
 ];
 
 export function loadStablePatterns(registry) {
