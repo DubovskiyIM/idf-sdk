@@ -33,4 +33,5 @@ export const PRIMITIVES = {
   sparkline: Sparkline,
   map: Map,
   irreversibleBadge: IrreversibleBadge,
+  emptyState: EmptyState,
 };
