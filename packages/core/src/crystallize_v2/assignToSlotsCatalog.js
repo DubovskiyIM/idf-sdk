@@ -17,6 +17,14 @@ import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
+  // projection.gating (UI-gap #6) — onboarding prerequisites: шаги к
+  // разблокировке проекции. Node-shape { title, steps }, Array<step>
+  // с { id, label, icon?, done?, cta? }. Renderer рендерит GatingPanel
+  // выше body; если все steps done — скрывается автоматически.
+  const gatingNode = projection.gating && Array.isArray(projection.gating.steps)
+    ? { type: "gatingPanel", title: projection.gating.title, steps: projection.gating.steps }
+    : null;
+
   const slots = {
     header: [],
     toolbar: [],
@@ -30,6 +38,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     // Не intent-driven (workzilla tutorial / promo / examples cards). Renderer
     // (ArchetypeCatalog) рендерит aside-column шириной 260px если не пусто.
     sidebar: Array.isArray(projection.sidebar) ? [...projection.sidebar] : [],
+    gating: gatingNode,
   };
 
   const itemIntents = [];
