@@ -201,6 +201,78 @@ describe("expression kind (backlog 1.2)", () => {
     );
     expect(res.ok).toBe(true);
   });
+
+  it("predicate получает world для cross-entity lookup (compliance-домен)", () => {
+    const world = {
+      approvals:      [{ id: "a1", role: "cfo", entryId: "je1", approverId: "carol" }],
+      journalentries: [{ id: "je1", preparerId: "carol", amount: 200000 }],
+    };
+    const res = checkInvariants(world, {
+      invariants: [{
+        name: "sod-cfo-neq-own-je", kind: "expression",
+        entity: "Approval",
+        where: { role: "cfo" },
+        predicate: (row, w) => {
+          const je = w.journalentries.find(j => j.id === row.entryId);
+          return !je || row.approverId !== je.preparerId;
+        },
+      }],
+    });
+    expect(res.ok).toBe(false);
+    expect(res.violations[0].details.id).toBe("a1");
+    expect(res.violations[0].details.reason).toBe("predicate_false");
+  });
+
+  it("predicate получает viewer из opts (role-aware)", () => {
+    const world = { entries: [{ id: "je1" }] };
+    const res = checkInvariants(
+      world,
+      {
+        invariants: [{
+          name: "auditor-read-only", kind: "expression",
+          entity: "Entry",
+          predicate: (row, _w, viewer) => viewer?.role !== "auditor",
+        }],
+      },
+      { viewer: { role: "auditor" } },
+    );
+    expect(res.ok).toBe(false);
+  });
+
+  it("predicate получает context из opts (alpha-aware)", () => {
+    const world = { entries: [{ id: "je1" }] };
+    const res = checkInvariants(
+      world,
+      {
+        invariants: [{
+          name: "no-update-in-this-context", kind: "expression",
+          entity: "Entry",
+          predicate: (row, _w, _v, ctx) => ctx?.alpha !== "update",
+        }],
+      },
+      { context: { alpha: "update" } },
+    );
+    expect(res.ok).toBe(false);
+  });
+
+  it("expression-строка видит world, viewer, context как отдельные имена", () => {
+    const world = {
+      tasks: [{ id: "t1", customerId: "u1" }],
+      users: [{ id: "u1", role: "owner" }],
+    };
+    const res = checkInvariants(
+      world,
+      {
+        invariants: [{
+          name: "customer-exists-and-not-viewer", kind: "expression",
+          entity: "Task",
+          expression: "world.users.some(u => u.id === customerId) && customerId !== viewer.id",
+        }],
+      },
+      { viewer: { id: "u2" } },
+    );
+    expect(res.ok).toBe(true);
+  });
 });
 
 describe("cardinality composite groupBy (backlog 1.3)", () => {
