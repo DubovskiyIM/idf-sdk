@@ -177,6 +177,59 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.my_deal_list.filter.kind).toBe("disjunction");
   });
 
+  it("R7b: читает entityDef.owners (preference) с fallback к ownerField", () => {
+    const INTENTS = {
+      add_deal: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+    };
+    // Новый API — owners без ownerField.
+    const ONTOLOGY_OWNERS = {
+      entities: {
+        Deal: {
+          owners: ["customerId", "executorId"],
+          fields: {
+            customerId: { type: "entityRef" },
+            executorId: { type: "entityRef" },
+          },
+        },
+      },
+    };
+    const projOwners = deriveProjections(INTENTS, ONTOLOGY_OWNERS);
+    expect(projOwners.my_deal_list).toBeDefined();
+    expect(projOwners.my_deal_list.filter.kind).toBe("disjunction");
+    expect(projOwners.my_deal_list.filter.fields).toEqual(["customerId", "executorId"]);
+
+    // Legacy API — ownerField. Должно работать идентично.
+    const ONTOLOGY_LEGACY = {
+      entities: {
+        Deal: {
+          ownerField: ["customerId", "executorId"],
+          fields: {
+            customerId: { type: "entityRef" },
+            executorId: { type: "entityRef" },
+          },
+        },
+      },
+    };
+    const projLegacy = deriveProjections(INTENTS, ONTOLOGY_LEGACY);
+    expect(projLegacy.my_deal_list.filter).toEqual(projOwners.my_deal_list.filter);
+
+    // Оба одновременно (idf/freelance workaround) — owners побеждает.
+    const ONTOLOGY_BOTH = {
+      entities: {
+        Deal: {
+          owners: ["customerId", "executorId"],
+          ownerField: ["ignoredA", "ignoredB"],  // отличается от owners
+          fields: {
+            customerId: { type: "entityRef" },
+            executorId: { type: "entityRef" },
+          },
+        },
+      },
+    };
+    const projBoth = deriveProjections(INTENTS, ONTOLOGY_BOTH);
+    expect(projBoth.my_deal_list.filter.fields).toEqual(["customerId", "executorId"]);
+  });
+
   it("R7b: ownerField single-element array → R7 path (не R7b)", () => {
     const INTENTS = {
       add_listing: { creates: "Listing", particles: { effects: [{ α: "create", target: "listing" }] } },

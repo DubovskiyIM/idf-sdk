@@ -347,7 +347,12 @@ export function deriveProjections(intents, ontology) {
   for (const entityName of entityNames) {
     const lower = entityName.toLowerCase();
     const entityDef = ontology.entities[entityName];
-    const ownerField = entityDef?.ownerField;
+    // Preference к entityDef.owners (multi-owner, backlog 3.2 API);
+    // fallback к entityDef.ownerField (legacy single или массив). Оба
+    // синтаксически совместимы: string | string[]. Author может писать
+    // либо одно, либо оба одновременно (одинаковый value); дубликация
+    // не требуется.
+    const ownerField = entityDef?.owners ?? entityDef?.ownerField;
     if (!ownerField) continue;
 
     const catalogId = `${lower}_list`;
@@ -394,7 +399,8 @@ export function deriveProjections(intents, ontology) {
     const lower = entityName.toLowerCase();
     const entityDef = ontology.entities[entityName];
     if (!entityDef?.singleton) continue;
-    const ownerField = entityDef.ownerField;
+    // Preference к owners (backlog 3.2), fallback к ownerField (legacy).
+    const ownerField = entityDef.owners ?? entityDef.ownerField;
     if (typeof ownerField !== "string") continue;  // R3b требует single ownerField
     const detailId = `${lower}_detail`;
     if (!projections[detailId]) continue;  // R3 должен был вывести base detail
