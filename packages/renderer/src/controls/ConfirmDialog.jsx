@@ -3,10 +3,31 @@ import { ModalShell } from "./FormModal.jsx";
 import { template, resolve } from "../eval.js";
 import { getAdaptedComponent } from "../adapters/registry.js";
 
+function getIrreversibilityContext(spec, item) {
+  // Явная декларация intent.__irr имеет приоритет над item.__irr.
+  const specIrr = spec?.__irr;
+  if (specIrr && typeof specIrr === "object" && specIrr.point === "high") {
+    return { point: "high", reason: specIrr.reason || null };
+  }
+  if (spec?.irreversibility === "high") {
+    return { point: "high", reason: spec?.__irr?.reason || null };
+  }
+  // item.__irr — если intent уже применился и написал его в Φ (после-confirm).
+  const itemIrr = item?.__irr;
+  if (itemIrr?.point === "high" && itemIrr?.at) {
+    return { point: "high", reason: itemIrr.reason || null };
+  }
+  return null;
+}
+
 export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
   const [typed, setTyped] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const item = overlayContext?.item;
+
+  const irr = getIrreversibilityContext(spec, item);
+  const isDestructive = spec?.α === "remove" || spec?.danger === true;
+  const confirmLabel = spec?.confirmLabel || (isDestructive ? "Удалить" : "Подтвердить");
 
   const message = template(spec.message || "Подтвердить?", { ...ctx.world, item });
   const expectedText = spec.confirmBy?.expected
@@ -34,6 +55,30 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
 
   return (
     <ModalShell onClose={onClose} title={spec.title || "Подтверждение"}>
+      {irr && (
+        <div style={{
+          display: "flex", alignItems: "flex-start", gap: 10,
+          padding: "12px 14px", marginBottom: 16,
+          borderRadius: 10,
+          background: "rgba(255, 59, 48, 0.08)",
+          border: "1px solid rgba(255, 59, 48, 0.2)",
+        }}>
+          <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>⚠️</span>
+          <div style={{
+            fontSize: 13, lineHeight: 1.4,
+            color: "#1c1c1e",
+            fontFamily: "-apple-system, system-ui, sans-serif",
+          }}>
+            <div style={{ fontWeight: 600, marginBottom: irr.reason ? 4 : 0 }}>
+              Необратимое действие
+            </div>
+            {irr.reason && (
+              <div style={{ color: "#6b7280" }}>{irr.reason}</div>
+            )}
+          </div>
+        </div>
+      )}
+
       <p style={{
         fontSize: 17, color: "#1c1c1e", lineHeight: 1.5, margin: "0 0 20px",
         fontFamily: "-apple-system, system-ui, sans-serif",
@@ -78,9 +123,9 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
             fontFamily: "-apple-system, system-ui, sans-serif",
           }}>Отмена</button>
         )}
-        {DangerBtn ? (
+        {DangerBtn && isDestructive ? (
           <DangerBtn onClick={onConfirm} disabled={!canConfirm || submitting}>
-            {submitting ? "…" : "Удалить"}
+            {submitting ? "…" : confirmLabel}
           </DangerBtn>
         ) : (
           <button
@@ -88,14 +133,16 @@ export default function ConfirmDialog({ spec, ctx, overlayContext, onClose }) {
             disabled={!canConfirm || submitting}
             style={{
               padding: "12px 24px", borderRadius: 12, border: "none",
-              background: canConfirm ? "#ff3b30" : "rgba(120,120,128,0.12)",
+              background: canConfirm
+                ? (isDestructive ? "#ff3b30" : "#007aff")
+                : "rgba(120,120,128,0.12)",
               color: canConfirm ? "#fff" : "#8e8e93",
               fontSize: 17, fontWeight: 600,
               cursor: canConfirm && !submitting ? "pointer" : "default",
               opacity: submitting ? 0.6 : 1,
               fontFamily: "-apple-system, system-ui, sans-serif",
             }}
-          >{submitting ? "…" : "Удалить"}</button>
+          >{submitting ? "…" : confirmLabel}</button>
         )}
       </div>
     </ModalShell>
