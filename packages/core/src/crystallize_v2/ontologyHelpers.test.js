@@ -6,6 +6,7 @@ import {
   canRead,
   mapOntologyTypeToControl,
   inferFieldRole,
+  getOwnerFields,
 } from "./ontologyHelpers.js";
 
 describe("normalizeField", () => {
@@ -468,5 +469,49 @@ describe("inferFieldRole — temporal roles (v0.12)", () => {
     it("scheduledEndAt — scheduled побеждает end→occurred", () => {
       expect(inferFieldRole("scheduledEndAt", { type: "datetime" }).role).toBe("scheduled");
     });
+  });
+});
+
+describe("getOwnerFields", () => {
+  it("returns [] for entity without owner declarations", () => {
+    expect(getOwnerFields({})).toEqual([]);
+    expect(getOwnerFields(null)).toEqual([]);
+    expect(getOwnerFields(undefined)).toEqual([]);
+  });
+
+  it("returns [ownerField] for legacy single-owner", () => {
+    expect(getOwnerFields({ ownerField: "clientId" })).toEqual(["clientId"]);
+  });
+
+  it("returns owners[] for multi-owner declaration", () => {
+    expect(getOwnerFields({ owners: ["customerId", "executorId"] }))
+      .toEqual(["customerId", "executorId"]);
+  });
+
+  it("prefers owners over ownerField when both declared", () => {
+    expect(getOwnerFields({
+      owners: ["customerId", "executorId"],
+      ownerField: "legacyField",
+    })).toEqual(["customerId", "executorId"]);
+  });
+
+  it("respects intent.permittedFor as subset filter", () => {
+    const entity = { owners: ["customerId", "executorId"] };
+    expect(getOwnerFields(entity, { permittedFor: "executorId" }))
+      .toEqual(["executorId"]);
+    expect(getOwnerFields(entity, { permittedFor: ["customerId"] }))
+      .toEqual(["customerId"]);
+  });
+
+  it("falls back to full owners if permittedFor empty intersection", () => {
+    const entity = { owners: ["customerId", "executorId"] };
+    expect(getOwnerFields(entity, { permittedFor: "unknownField" }))
+      .toEqual(["customerId", "executorId"]);
+  });
+
+  it("treats permittedFor 'owner' as no-override sentinel", () => {
+    const entity = { owners: ["customerId", "executorId"] };
+    expect(getOwnerFields(entity, { permittedFor: "owner" }))
+      .toEqual(["customerId", "executorId"]);
   });
 });
