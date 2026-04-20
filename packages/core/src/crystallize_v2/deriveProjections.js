@@ -23,6 +23,7 @@ import {
   witnessR1bReadOnlyCatalog,
   witnessR2FeedOverride,
   witnessR3Detail,
+  witnessR3bSingletonDetail,
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
@@ -369,6 +370,30 @@ export function deriveProjections(intents, ontology) {
         derivedBy: [witnessR7OwnerFilter(entityName, ownerField, catalogId)],
       };
     }
+  }
+
+  // R3b: Singleton owner-scoped detail — для entity с entity.singleton:true + string ownerField.
+  // Применяется к сущностям типа Wallet, RiskProfile, UserSettings — по одной записи на owner.
+  // Генерирует my_<entity>_detail (в дополнение к <entity>_detail из R3), без idParam,
+  // с owner-фильтром. Spec: idf-manifest-v2.1/docs/design/rule-R3b-singleton-detail-spec.md
+  for (const entityName of entityNames) {
+    const lower = entityName.toLowerCase();
+    const entityDef = ontology.entities[entityName];
+    if (!entityDef?.singleton) continue;
+    const ownerField = entityDef.ownerField;
+    if (typeof ownerField !== "string") continue;  // R3b требует single ownerField
+    const detailId = `${lower}_detail`;
+    if (!projections[detailId]) continue;  // R3 должен был вывести base detail
+    const mutatorIds = analysis.mutators[entityName] || [];
+    projections[`my_${lower}_detail`] = {
+      kind: "detail",
+      mainEntity: entityName,
+      entities: [entityName],
+      witnesses: projections[detailId].witnesses,
+      filter: { field: ownerField, op: "=", value: "me.id" },
+      singleton: true,
+      derivedBy: [witnessR3bSingletonDetail(entityName, ownerField, mutatorIds, detailId)],
+    };
   }
 
   // R10: Role-scope filtered catalog — для каждой роли с scope-объявлением,

@@ -195,6 +195,93 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.my_listing_list).toBeUndefined();
   });
 
+  it("R3b: singleton detail с ownerField → my_*_detail без idParam с owner-фильтром", () => {
+    const INTENTS = {
+      create_wallet:  { creates: "Wallet", particles: { effects: [{ α: "create", target: "wallet" }] } },
+      topup_wallet:   { particles: { effects: [{ α: "replace", target: "wallet.balance" }] } },
+      reserve_wallet: { particles: { effects: [{ α: "replace", target: "wallet.reserved" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Wallet: {
+          ownerField: "userId",
+          singleton: true,
+          fields: { userId: { type: "entityRef" }, balance: { type: "number" }, reserved: { type: "number" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.my_wallet_detail).toBeDefined();
+    expect(projections.wallet_detail).toBeDefined();
+    expect(projections.my_wallet_detail.singleton).toBe(true);
+    expect(projections.my_wallet_detail.filter).toEqual({ field: "userId", op: "=", value: "me.id" });
+
+    const r3b = projections.my_wallet_detail.derivedBy.find(w => w.ruleId === "R3b");
+    expect(r3b).toBeDefined();
+    expect(r3b.input.ownerField).toBe("userId");
+    expect(r3b.input.sourceDetail).toBe("wallet_detail");
+    expect(r3b.output.singleton).toBe(true);
+  });
+
+  it("R3b: не срабатывает без singleton:true флага", () => {
+    const INTENTS = {
+      create_w: { creates: "Wallet", particles: { effects: [{ α: "create", target: "wallet" }] } },
+      edit_w:   { particles: { effects: [{ α: "replace", target: "wallet.balance" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Wallet: {
+          ownerField: "userId",
+          // singleton: true — отсутствует
+          fields: { userId: { type: "entityRef" }, balance: { type: "number" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.wallet_detail).toBeDefined();
+    expect(projections.my_wallet_detail).toBeUndefined();
+  });
+
+  it("R3b: не срабатывает когда ownerField — массив (требует single owner)", () => {
+    const INTENTS = {
+      create_d: { creates: "Deal", particles: { effects: [{ α: "create", target: "deal" }] } },
+      edit_d:   { particles: { effects: [{ α: "replace", target: "deal.amount" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: {
+          ownerField: ["customerId", "executorId"],
+          singleton: true,
+          fields: { customerId: { type: "entityRef" }, executorId: { type: "entityRef" }, amount: { type: "number" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.my_deal_detail).toBeUndefined();
+  });
+
+  it("R3b: не срабатывает если base detail (R3) не был выведен (mutator=1)", () => {
+    const INTENTS = {
+      create_solo: { creates: "Solo", particles: { effects: [{ α: "create", target: "solo" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Solo: {
+          ownerField: "userId",
+          singleton: true,
+          fields: { userId: { type: "entityRef" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.solo_detail).toBeUndefined();
+    expect(projections.my_solo_detail).toBeUndefined();
+  });
+
   it("R7b: three+ ownerFields — все в disjunction", () => {
     const INTENTS = {
       add_thing: { creates: "Thing", particles: { effects: [{ α: "create", target: "thing" }] } },
