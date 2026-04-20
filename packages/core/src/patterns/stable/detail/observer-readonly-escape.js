@@ -39,6 +39,54 @@ export default {
     description:
       "Единственный primary CTA в detail-view для observer-role: high-irreversibility escape (Dispute/Escalate/Flag/Freeze). " +
       "Require type-to-confirm для случайных кликов. Остальная surface read-only.",
+    /**
+     * Apply: если viewer — observer-role, добавить readonly-баннер в header
+     * slot (виден на всех detail-экранах этого домена). Высокий CTA остаётся
+     * в primaryCTA slot через обычный crystallize-routing (intent.irreversibility:"high"
+     * + observer.canExecute). Apply не мигрирует CTA-routing — только делает
+     * observer-режим видимым через banner.
+     *
+     * Детали:
+     *   - Banner node { type: "readonlyBanner", role, escapeIntentIds } —
+     *     renderer примитив (fallback: text+badge через PRIMITIVES).
+     *   - Idempotent: если banner уже в slots.header — no-op.
+     *   - Pure function: возвращает новый slots-объект.
+     */
+    apply(slots, context) {
+      const { ontology, intents } = context || {};
+      if (!ontology?.roles || !Array.isArray(intents)) return slots;
+
+      const observerRoles = Object.entries(ontology.roles)
+        .filter(([, r]) => r.base === "observer");
+      if (observerRoles.length === 0) return slots;
+
+      // Собираем escape-intents (high-irreversibility из observer.canExecute).
+      const observerIntentIds = new Set();
+      for (const [, r] of observerRoles) {
+        for (const id of r.canExecute || []) observerIntentIds.add(id);
+      }
+      const escapeIntentIds = intents
+        .filter(i => observerIntentIds.has(i.id) && i.irreversibility === "high")
+        .map(i => i.id);
+      if (escapeIntentIds.length === 0) return slots;
+
+      // Idempotency: если header уже содержит readonlyBanner — не дублируем.
+      const existingHeader = slots?.header || [];
+      if (existingHeader.some(h => h?.type === "readonlyBanner")) return slots;
+
+      const roleName = observerRoles[0][0];
+      const bannerNode = {
+        type: "readonlyBanner",
+        role: roleName,
+        escapeIntentIds,
+        source: "derived:observer-readonly-escape",
+      };
+
+      return {
+        ...slots,
+        header: [bannerNode, ...existingHeader],
+      };
+    },
   },
   rationale: {
     hypothesis:
