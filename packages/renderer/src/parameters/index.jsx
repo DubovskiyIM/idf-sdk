@@ -4,6 +4,7 @@ import DateTimeControl from "./DateTimeControl.jsx";
 import FileControl from "./FileControl.jsx";
 import ImageControl from "./ImageControl.jsx";
 import MultiImageControl from "./MultiImageControl.jsx";
+import PresetChips from "./PresetChips.jsx";
 import { getAdaptedComponent, pickAdaptedComponent } from "../adapters/registry.js";
 
 // Built-in fallback: используется если адаптер не зарегистрирован или
@@ -22,6 +23,12 @@ const CONTROLS_BY_TYPE = {
   multiImage: MultiImageControl,
 };
 
+// Presets рендерятся только для контролов, где quick-fill семантически
+// корректен. File / image не имеют "значения" в обычном смысле.
+const PRESET_CAPABLE_CONTROLS = new Set([
+  "text", "email", "tel", "url", "number", "datetime",
+]);
+
 export default function ParameterControl({ spec, value, onChange, error }) {
   // Сначала пробуем UI-адаптер через matching-score (§17 адаптивный слой).
   // pickAdaptedComponent учитывает spec.fieldRole, spec.name, spec.features
@@ -30,9 +37,20 @@ export default function ParameterControl({ spec, value, onChange, error }) {
   // Fallback: exact lookup по spec.control (back-compat), потом built-in.
   const Picked = pickAdaptedComponent("parameter", spec);
   const Adapted = Picked || getAdaptedComponent("parameter", spec.control);
-  if (Adapted) {
-    return <Adapted spec={spec} value={value} onChange={onChange} error={error} />;
-  }
-  const Component = CONTROLS_BY_TYPE[spec.control] || TextControl;
-  return <Component spec={spec} value={value} onChange={onChange} error={error} />;
+  const Component = Adapted || CONTROLS_BY_TYPE[spec.control] || TextControl;
+
+  const showPresets =
+    Array.isArray(spec.presets) &&
+    spec.presets.length > 0 &&
+    PRESET_CAPABLE_CONTROLS.has(spec.control);
+
+  const rendered = <Component spec={spec} value={value} onChange={onChange} error={error} />;
+  if (!showPresets) return rendered;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column" }}>
+      {rendered}
+      <PresetChips presets={spec.presets} value={value} onChange={onChange} />
+    </div>
+  );
 }
