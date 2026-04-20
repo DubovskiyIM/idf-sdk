@@ -152,3 +152,7 @@ export function getDefaultRegistry() {
 export function resetDefaultRegistry() {
   _defaultRegistry = null;
 }
+
+// Re-export для удобного импорта loadCandidatePatterns из registry.js
+// (default registry candidate НЕ грузит автоматически — opt-in).
+export { loadCandidatePatterns } from "./candidate/index.js";
