@@ -80,7 +80,9 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     }
   }
 
-  for (const [id, intent] of Object.entries(INTENTS)) {
+  const intentEntries = Object.entries(INTENTS);
+  for (let declarationOrder = 0; declarationOrder < intentEntries.length; declarationOrder++) {
+    const [id, intent] = intentEntries[declarationOrder];
     if (isUnsupportedInM2(id)) continue;
     if (subHandledIntents.has(id)) continue; // уже в секции
     if (!appliesToMainEntity(intent, mainEntity)) continue;
@@ -157,8 +159,8 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
 
     if (hasOverlay) {
       const trigger = ownershipCond
-        ? { ...wrapped.trigger, condition: ownershipCond, salience }
-        : { ...wrapped.trigger, salience };
+        ? { ...wrapped.trigger, condition: ownershipCond, salience, declarationOrder }
+        : { ...wrapped.trigger, salience, declarationOrder };
       slots.toolbar.push(trigger);
       slots.overlay.push(wrapped.overlay);
       continue;
@@ -166,8 +168,8 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
 
     if (wrapped.type === "intentButton") {
       const btn = ownershipCond
-        ? { ...wrapped, condition: ownershipCond, salience }
-        : { ...wrapped, salience };
+        ? { ...wrapped, condition: ownershipCond, salience, declarationOrder }
+        : { ...wrapped, salience, declarationOrder };
       slots.toolbar.push(btn);
     }
   }

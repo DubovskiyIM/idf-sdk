@@ -162,3 +162,66 @@ describe("detectTiedGroups — witness alphabetical-fallback", () => {
     expect(ws[0].salience).toBe(40);
   });
 });
+
+describe("bySalienceDesc — declaration-order tiebreak", () => {
+  it("salience desc доминирует над declarationOrder", () => {
+    const a = { intentId: "a", salience: 50, declarationOrder: 10 };
+    const b = { intentId: "b", salience: 100, declarationOrder: 20 };
+    // b имеет выше salience (100) → b первым
+    expect(bySalienceDesc(a, b)).toBeGreaterThan(0);
+  });
+
+  it("equal salience → declarationOrder asc wins (authorial order)", () => {
+    const earlier = { intentId: "z_late", salience: 100, declarationOrder: 3 };
+    const later = { intentId: "a_alpha_first", salience: 100, declarationOrder: 7 };
+    // earlier (declarationOrder=3) ДОЛЖЕН быть первым, несмотря на alpha
+    expect(bySalienceDesc(earlier, later)).toBeLessThan(0);
+  });
+
+  it("equal salience + equal declarationOrder → alphabetical fallback", () => {
+    const a = { intentId: "abc", salience: 100, declarationOrder: 5 };
+    const b = { intentId: "xyz", salience: 100, declarationOrder: 5 };
+    expect(bySalienceDesc(a, b)).toBeLessThan(0);
+  });
+
+  it("missing declarationOrder → Infinity (ставит в конец)", () => {
+    const withOrder = { intentId: "zeta", salience: 100, declarationOrder: 0 };
+    const withoutOrder = { intentId: "alpha", salience: 100 };
+    expect(bySalienceDesc(withOrder, withoutOrder)).toBeLessThan(0);
+  });
+});
+
+describe("detectTiedGroups — witness basis", () => {
+  const ctx = { slot: "toolbar", projection: "p1" };
+
+  it('basis "declaration-order" когда declarationOrder уникален в группе', () => {
+    const items = [
+      { intentId: "edit", salience: 100, declarationOrder: 0 },
+      { intentId: "accept", salience: 100, declarationOrder: 1 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0].basis).toBe("declaration-order");
+    expect(ws[0].recommendation).toContain("declaration-order");
+  });
+
+  it('basis "alphabetical-fallback" когда declarationOrder дублируется', () => {
+    const items = [
+      { intentId: "edit", salience: 100, declarationOrder: 5 },
+      { intentId: "accept", salience: 100, declarationOrder: 5 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0].basis).toBe("alphabetical-fallback");
+  });
+
+  it('basis "alphabetical-fallback" когда declarationOrder не передан', () => {
+    const items = [
+      { intentId: "edit", salience: 100 },
+      { intentId: "accept", salience: 100 },
+    ];
+    const ws = detectTiedGroups(items, ctx);
+    expect(ws).toHaveLength(1);
+    expect(ws[0].basis).toBe("alphabetical-fallback");
+  });
+});
