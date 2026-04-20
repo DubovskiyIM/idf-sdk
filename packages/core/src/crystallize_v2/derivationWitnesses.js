@@ -164,6 +164,39 @@ export function witnessR3Detail(entityName, mutators) {
 }
 
 /**
+ * R3b: owner-scoped singleton detail. my_<entity>_detail без idParam
+ * с owner-фильтром. Применяется когда entity.singleton === true И
+ * ownerField (single string).
+ * Spec: idf-manifest-v2.1/docs/design/rule-R3b-singleton-detail-spec.md
+ *
+ * @param {string} entityName
+ * @param {string} ownerField
+ * @param {string[]} mutators
+ * @param {string} sourceDetailId
+ */
+export function witnessR3bSingletonDetail(entityName, ownerField, mutators, sourceDetailId) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R3b",
+    input: {
+      entity: entityName,
+      ownerField,
+      mutators: [...mutators],
+      sourceDetail: sourceDetailId,
+      singleton: true,
+    },
+    output: {
+      kind: "detail",
+      mainEntity: entityName,
+      filter: { field: ownerField, op: "=", value: "me.id" },
+      singleton: true,
+    },
+    rationale: `${entityName}.singleton === true + ownerField = "${ownerField}" + detail(${sourceDetailId}) существует → my_*_detail singleton (без idParam, с owner-фильтром) добавлен`,
+  };
+}
+
+/**
  * R7: my_*_list выведен из ownerField.
  */
 export function witnessR7OwnerFilter(entityName, ownerField, sourceCatalogId) {
