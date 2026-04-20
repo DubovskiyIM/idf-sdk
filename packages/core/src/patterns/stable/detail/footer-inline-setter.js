@@ -68,6 +68,9 @@ export default {
       const { projection, intents } = context || {};
       const mainEntity = projection?.mainEntity || "";
       const existingFooterIds = new Set((slots?.footer || []).map(f => f?.intentId));
+      // Author-override: projection.toolbar whitelist — автор явно хочет эти
+      // intents в toolbar, не трогаем их (не strip'аем, не копируем в footer).
+      const toolbarWhitelist = new Set(projection?.toolbar || []);
       const toolbarItems = slots?.toolbar || [];
       const newFooterItems = [];
       const toolbarIdsToStrip = new Set();
@@ -76,6 +79,7 @@ export default {
         const intentId = intent?.id;
         if (!intentId) continue;
         if (existingFooterIds.has(intentId)) continue;
+        if (toolbarWhitelist.has(intentId)) continue;
         if (!isSingleValueReplaceOnMain(intent, mainEntity)) continue;
         const toolbarItem = toolbarItems.find(t => t?.intentId === intentId);
         // Parameters: предпочитаем inferred-параметры из toolbar-элемента (их

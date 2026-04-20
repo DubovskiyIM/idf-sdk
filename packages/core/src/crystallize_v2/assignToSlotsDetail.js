@@ -68,6 +68,13 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
   // Footer intents — явный список из projection.footerIntents.
   const footerIntentIds = new Set(projection.footerIntents || []);
 
+  // Toolbar whitelist — явный список `projection.toolbar: [intentIds]`
+  // (authored). Intents из whitelist форсируются в toolbar минуя phase-CTA
+  // и footer-inline-setter pattern routing. Author-override: если intent
+  // тоже в footerIntents, footer побеждает (footerIntentIds проверяется
+  // первее ниже).
+  const toolbarWhitelist = new Set(projection.toolbar || []);
+
   // Sub-intents, которые будут обработаны в секциях, не должны попадать
   // в основной toolbar. Собираем их id заранее.
   const subHandledIntents = new Set();
@@ -139,7 +146,11 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
     // также не подходят primaryCTA — он не умеет рендерить form. Пропускаем
     // через обычный wrapByConfirmation flow: confirmation="form"/"formModal"
     // положит overlay-форму в toolbar с тем же effect'ом, что и primaryCTA.
+    //
+    // Author-override: если intent в projection.toolbar whitelist, skip
+    // primaryCTA routing — автор явно попросил toolbar.
     if (
+      !toolbarWhitelist.has(id) &&
       isPhaseTransition(intent, mainEntity) &&
       intent.irreversibility !== "high" &&
       parameters.length === 0

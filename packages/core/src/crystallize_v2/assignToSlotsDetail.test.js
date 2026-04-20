@@ -620,3 +620,91 @@ describe("ownershipConditionFor — multi-owner (§3.2)", () => {
     expect(btn.condition).toBe("(customerId === viewer.id || executorId === viewer.id)");
   });
 });
+
+describe("projection.toolbar whitelist (author-override)", () => {
+  // Phase-transition без params + не-high irreversibility → обычно уходит
+  // в primaryCTA. С whitelist должен остаться в toolbar.
+  const phaseTransitionProjection = (overrides = {}) => ({
+    name: "Task",
+    kind: "detail",
+    entities: ["Task"],
+    mainEntity: "Task",
+    idParam: "taskId",
+    ...overrides,
+  });
+  const phaseTransitionIntents = {
+    publish_task: {
+      name: "Опубликовать",
+      icon: "📢",
+      particles: {
+        entities: ["task: Task"],
+        witnesses: [],
+        confirmation: "click",
+        conditions: ["task.status = 'draft'"],
+        effects: [{ α: "replace", target: "task.status", value: "published" }],
+      },
+    },
+  };
+  const phaseOntology = {
+    entities: {
+      Task: {
+        ownerField: "customerId",
+        fields: ["id", "customerId", "title", "status"],
+      },
+    },
+  };
+
+  it("без whitelist: phase-transition → primaryCTA", () => {
+    const slots = assignToSlotsDetail(
+      phaseTransitionIntents,
+      phaseTransitionProjection(),
+      phaseOntology,
+    );
+    expect(slots.primaryCTA.some(b => b.intentId === "publish_task")).toBe(true);
+    expect(slots.toolbar.some(b => b.intentId === "publish_task")).toBe(false);
+  });
+
+  it("projection.toolbar whitelist → phase-transition остаётся в toolbar", () => {
+    const slots = assignToSlotsDetail(
+      phaseTransitionIntents,
+      phaseTransitionProjection({ toolbar: ["publish_task"] }),
+      phaseOntology,
+    );
+    expect(slots.toolbar.some(b => b.intentId === "publish_task")).toBe(true);
+    expect(slots.primaryCTA.some(b => b.intentId === "publish_task")).toBe(false);
+  });
+
+  it("whitelist сохраняет ownership-condition", () => {
+    const slots = assignToSlotsDetail(
+      phaseTransitionIntents,
+      phaseTransitionProjection({ toolbar: ["publish_task"] }),
+      phaseOntology,
+    );
+    const btn = slots.toolbar.find(b => b.intentId === "publish_task");
+    expect(btn?.condition).toBe("customerId === viewer.id");
+  });
+
+  it("whitelist не аффектит intents не из списка", () => {
+    const intents = {
+      ...phaseTransitionIntents,
+      close_task: {
+        name: "Закрыть",
+        icon: "🗑",
+        particles: {
+          entities: ["task: Task"],
+          witnesses: [],
+          confirmation: "click",
+          conditions: ["task.status = 'published'"],
+          effects: [{ α: "replace", target: "task.status", value: "closed" }],
+        },
+      },
+    };
+    const slots = assignToSlotsDetail(
+      intents,
+      phaseTransitionProjection({ toolbar: ["publish_task"] }),
+      phaseOntology,
+    );
+    expect(slots.toolbar.some(b => b.intentId === "publish_task")).toBe(true);
+    expect(slots.primaryCTA.some(b => b.intentId === "close_task")).toBe(true);
+  });
+});
