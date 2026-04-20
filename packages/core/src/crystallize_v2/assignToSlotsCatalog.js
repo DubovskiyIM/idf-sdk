@@ -37,7 +37,9 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
 
   const mainEntity = projection.mainEntity;
 
-  for (const [id, intent] of Object.entries(INTENTS)) {
+  const intentEntries = Object.entries(INTENTS);
+  for (let declarationOrder = 0; declarationOrder < intentEntries.length; declarationOrder++) {
+    const [id, intent] = intentEntries[declarationOrder];
     if (isUnsupportedInM2(id)) continue;
     if (!appliesToProjection(intent, projection)) continue;
     // customCapture (voiceRecorder/emojiPicker/entityPicker) теперь пройдёт
@@ -80,7 +82,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     // Salience 90 — выше edit (60), ниже explicit "primary" (100) — чтобы
     // не зарываться ниже creator-кнопок, но уступать явно помеченным primary.
     if (wrapped.type === "inlineSearch") {
-      slots.toolbar.push({ ...wrapped, salience: 90 });
+      slots.toolbar.push({ ...wrapped, salience: 90, declarationOrder });
       continue;
     }
 
@@ -121,9 +123,9 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
       const salience = computeSalience(intent, projection.mainEntity).value;
       if (hasOverlay) {
         slots.overlay.push(wrapped.overlay);
-        slots.toolbar.push({ ...wrapped.trigger, salience });
+        slots.toolbar.push({ ...wrapped.trigger, salience, declarationOrder });
       } else {
-        slots.toolbar.push({ ...wrapped, salience });
+        slots.toolbar.push({ ...wrapped, salience, declarationOrder });
       }
       continue;
     }
@@ -156,7 +158,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     // projection-level с overlay
     if (hasOverlay) {
       const salience = computeSalience(intent, projection.mainEntity).value;
-      slots.toolbar.push({ ...wrapped.trigger, salience });
+      slots.toolbar.push({ ...wrapped.trigger, salience, declarationOrder });
       slots.overlay.push(wrapped.overlay);
       continue;
     }
@@ -164,7 +166,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     // projection-level простой click
     if (wrapped.type === "intentButton") {
       const salience = computeSalience(intent, projection.mainEntity).value;
-      slots.toolbar.push({ ...wrapped, salience });
+      slots.toolbar.push({ ...wrapped, salience, declarationOrder });
     }
   }
 
