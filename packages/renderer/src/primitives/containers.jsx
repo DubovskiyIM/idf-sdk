@@ -409,7 +409,31 @@ function InlineOverflowMenu({ items, ctx, item, menuOpen, setMenuOpen }) {
   );
 }
 
+function applyFilter(items, filter, ctx) {
+  if (!filter) return items;
+  if (typeof filter === "object") {
+    return items.filter(it => evalFilter(filter, it, {
+      viewer: ctx.viewer, world: ctx.world,
+    }));
+  }
+  return items.filter(it => evalCondition(filter, {
+    ...it, item: it, viewer: ctx.viewer, world: ctx.world,
+    viewState: ctx.viewState || {},
+  }));
+}
+
 export function List({ node, ctx }) {
+  // projection.tabs (UI-gap #1): декларативные filter-варианты. Активный
+  // tab хранится в локальном state (per-List), применяется ПОСЛЕ node.filter
+  // (базовый фильтр) — composition: base && activeTab.
+  const tabs = Array.isArray(node.tabs) && node.tabs.length > 0 ? node.tabs : null;
+  const [activeTabId, setActiveTabId] = useState(() => {
+    if (!tabs) return null;
+    if (node.defaultTab && tabs.some(t => t.id === node.defaultTab)) return node.defaultTab;
+    return tabs[0].id;
+  });
+  const activeTab = tabs ? tabs.find(t => t.id === activeTabId) : null;
+
   const source = node.source ? resolve(ctx.world, node.source) : [];
   let items = Array.isArray(source) ? [...source] : [];
 
@@ -422,21 +446,13 @@ export function List({ node, ctx }) {
     items = resolveCompositions(items, compositions, ctx.world);
   }
 
-  if (node.filter) {
-    // Structured filter (R3b/R7b/R10/R11 v2) приходит как объект. Legacy
-    // string-filter (messenger chat, authored viewState-выражения) —
-    // через evalCondition, чтобы сохранить доступ к viewState (поиск по query).
-    if (typeof node.filter === "object") {
-      items = items.filter(it => evalFilter(node.filter, it, {
-        viewer: ctx.viewer, world: ctx.world,
-      }));
-    } else {
-      items = items.filter(it => evalCondition(node.filter, {
-        ...it, item: it, viewer: ctx.viewer, world: ctx.world,
-        viewState: ctx.viewState || {},
-      }));
-    }
+  // Base filter (node.filter) — structured (объект) или legacy string-expression.
+  items = applyFilter(items, node.filter, ctx);
+  // Tab-filter applied on top of base filter.
+  if (activeTab?.filter) {
+    items = applyFilter(items, activeTab.filter, ctx);
   }
+
   if (node.sort) {
     // Для direction:"bottom-up" сортируем ПО ВОЗРАСТАНИЮ (старое сверху,
     // новое внизу — классический чат). Для обычного списка — по убыванию
@@ -480,7 +496,7 @@ export function List({ node, ctx }) {
         ...(node.sx || {}),
       };
 
-  return (
+  const listBody = (
     <div ref={scrollRef} style={containerStyle}>
       {items.map((item, i) => {
         const content = isGrid
@@ -491,6 +507,59 @@ export function List({ node, ctx }) {
           <ClickableItem key={item.id || i} action={onItemClick} item={item} ctx={ctx}>
             {content}
           </ClickableItem>
+        );
+      })}
+    </div>
+  );
+
+  if (!tabs) return listBody;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <TabBar tabs={tabs} activeId={activeTabId} onChange={setActiveTabId} />
+      {listBody}
+    </div>
+  );
+}
+
+function TabBar({ tabs, activeId, onChange }) {
+  return (
+    <div
+      role="tablist"
+      style={{
+        display: "flex",
+        gap: 24,
+        borderBottom: "1px solid var(--idf-border, #e5e7eb)",
+        padding: "0 4px",
+      }}
+    >
+      {tabs.map(tab => {
+        const isActive = tab.id === activeId;
+        return (
+          <button
+            key={tab.id}
+            role="tab"
+            aria-selected={isActive}
+            type="button"
+            onClick={() => onChange(tab.id)}
+            style={{
+              padding: "10px 2px",
+              background: "transparent",
+              border: "none",
+              borderBottom: `2px solid ${
+                isActive ? "var(--idf-accent, #1677ff)" : "transparent"
+              }`,
+              color: isActive
+                ? "var(--idf-text, #1a1a2e)"
+                : "var(--idf-accent, #1677ff)",
+              fontSize: 14,
+              fontWeight: isActive ? 600 : 500,
+              cursor: "pointer",
+              marginBottom: -1,
+            }}
+          >
+            {tab.label || tab.id}
+          </button>
         );
       })}
     </div>
