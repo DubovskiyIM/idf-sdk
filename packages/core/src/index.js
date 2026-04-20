@@ -75,6 +75,7 @@ export {
 
 // Filter world per role + many-to-many через role.scope (§5)
 export { filterWorldForRole } from "./filterWorld.js";
+export { evalFilter } from "./filterExpr.js";
 
 // Базовые роли (§5 v1.6.1) — таксономия owner / viewer / agent / observer
 export {

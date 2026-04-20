@@ -30,6 +30,8 @@
  *   wizard   → не поддерживается (interactive flow)
  */
 
+import { evalFilter } from "../filterExpr.js";
+
 function pluralize(word) {
   if (!word) return word;
   if (word.endsWith("y")) return word.slice(0, -1) + "ies";
@@ -46,20 +48,6 @@ function findCollection(world, entityName) {
     if (Array.isArray(world[c])) return world[c];
   }
   return [];
-}
-
-function evalFilter(expr, item, viewer) {
-  if (!expr) return true;
-  try {
-    // Тот же паттерн, что в ArchetypeWizard/crystallize_v2 eval.js:
-    // поля item передаются как именованные аргументы функции.
-    // Строковые литералы в expression остаются нетронутыми (не парсим regex'ом).
-    const keys = Object.keys(item);
-    const fn = new Function(...keys, "viewer", `return !!(${expr})`);
-    return fn(...keys.map(k => item[k]), viewer);
-  } catch {
-    return true; // permissive fallback
-  }
 }
 
 function humanizeValue(val, fieldName) {
@@ -85,7 +73,7 @@ function humanizeFieldName(name) {
 function materializeCatalog(projection, world, viewer) {
   const rows = findCollection(world, projection.mainEntity);
   const filtered = projection.filter
-    ? rows.filter(r => evalFilter(projection.filter, r, viewer))
+    ? rows.filter(r => evalFilter(projection.filter, r, { viewer, world }))
     : rows;
 
   const witnesses = projection.witnesses || [];

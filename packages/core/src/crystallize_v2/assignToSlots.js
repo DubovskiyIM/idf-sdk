@@ -7,7 +7,7 @@
 import { inferParameters } from "./inferParameters.js";
 import { inferControlType, enrichWithOptions } from "./inferControlType.js";
 import { wrapByConfirmation } from "./wrapByConfirmation.js";
-import { assignToSlotsCatalog } from "./assignToSlotsCatalog.js";
+import { assignToSlotsCatalog, buildCatalogBody } from "./assignToSlotsCatalog.js";
 import { assignToSlotsDetail } from "./assignToSlotsDetail.js";
 import {
   needsCustomCapture,
@@ -29,7 +29,7 @@ function assignToSlotsFeed(INTENTS, projection, ONTOLOGY) {
   const slots = {
     header: [],
     toolbar: [],
-    body: buildBody(projection),
+    body: buildBody(projection, ONTOLOGY),
     context: [],
     fab: [],
     overlay: [],
@@ -241,37 +241,45 @@ function capitalize(s) {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-function buildBody(projection) {
-  return {
-    type: "list",
-    source: "messages",
-    filter: "conversationId === world.conversationId && !((deletedFor||[]).includes(viewer && viewer.id)) && !((deletedFor||[]).includes('*')) && (!(viewState && viewState.query) || (content || '').toLowerCase().includes((viewState.query || '').toLowerCase()))",
-    sort: "createdAt",
-    direction: "bottom-up",
-    gap: 8,
-    item: {
-      type: "card",
-      variant: "chat",
-      children: [
-        // Имя отправителя (только для чужих — Card управляет видимостью через condition)
-        {
-          type: "text",
-          bind: "senderName",
-          style: { fontSize: 11, fontWeight: 600, color: "#6366f1", marginBottom: 2 },
-          condition: "senderId !== viewer.id",
-        },
-        // Голосовое сообщение: <audio> если есть audioUrl. SlotRenderer
-        // сам отфильтрует по condition.
-        {
-          type: "audio",
-          bind: "audioUrl",
-          condition: "audioUrl",
-        },
-        { type: "text", bind: "content", style: { fontSize: 14, whiteSpace: "pre-wrap" } },
-      ],
-      intents: [],
-    },
-  };
+function buildBody(projection, ONTOLOGY) {
+  // Messenger chat — domain-specific feed с bottom-up направлением,
+  // conversation scope, inline voice-сообщениями. Остальные feed'ы
+  // (R11 v2 temporal feed и т.п.) переиспользуют generic catalog body,
+  // который читает projection.filter / sort / layout декларативно.
+  if (projection.mainEntity === "Message") {
+    return {
+      type: "list",
+      source: "messages",
+      filter: "conversationId === world.conversationId && !((deletedFor||[]).includes(viewer && viewer.id)) && !((deletedFor||[]).includes('*')) && (!(viewState && viewState.query) || (content || '').toLowerCase().includes((viewState.query || '').toLowerCase()))",
+      sort: "createdAt",
+      direction: "bottom-up",
+      gap: 8,
+      item: {
+        type: "card",
+        variant: "chat",
+        children: [
+          // Имя отправителя (только для чужих — Card управляет видимостью через condition)
+          {
+            type: "text",
+            bind: "senderName",
+            style: { fontSize: 11, fontWeight: 600, color: "#6366f1", marginBottom: 2 },
+            condition: "senderId !== viewer.id",
+          },
+          // Голосовое сообщение: <audio> если есть audioUrl. SlotRenderer
+          // сам отфильтрует по condition.
+          {
+            type: "audio",
+            bind: "audioUrl",
+            condition: "audioUrl",
+          },
+          { type: "text", bind: "content", style: { fontSize: 14, whiteSpace: "pre-wrap" } },
+        ],
+        intents: [],
+      },
+    };
+  }
+
+  return buildCatalogBody(projection, ONTOLOGY);
 }
 
 function buildComposer(intentId, intent, parameters, INTENTS) {
