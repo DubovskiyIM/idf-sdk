@@ -24,6 +24,34 @@ export default {
     description:
       "Toolbar-бар появляется при selection.length ≥1. Показывает доступные bulk_*-intents как кнопки " +
       "+ счётчик выделенного + «отменить выбор». Скрывается при selection=0.",
+    /**
+     * Apply: добавляет `_bulkMode` metadata в slots — renderer-сигнал,
+     * что catalog/feed должен активировать multi-select mode. Список
+     * bulk-intent id'ов в `slots._bulkActions`. Renderer при
+     * `selection.length ≥ 1` показывает bar поверх существующего toolbar.
+     *
+     * Idempotent: existing `_bulkMode` не перезаписывается.
+     */
+    apply(slots, context) {
+      const { intents } = context || {};
+      if (!Array.isArray(intents)) return slots;
+
+      const bulkIntentIds = intents
+        .filter(i => typeof i.id === "string" && i.id.startsWith("bulk_"))
+        .map(i => i.id);
+      if (bulkIntentIds.length < 2) return slots;
+
+      if (slots?._bulkMode) return slots;
+
+      return {
+        ...slots,
+        _bulkMode: {
+          enabled: true,
+          actions: bulkIntentIds,
+          source: "derived:bulk-action-toolbar",
+        },
+      };
+    },
   },
   rationale: {
     hypothesis:

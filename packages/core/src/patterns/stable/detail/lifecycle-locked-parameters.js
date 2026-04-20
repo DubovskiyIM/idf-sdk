@@ -46,6 +46,64 @@ export default {
       "Locked-parameters-секция в detail: read-only view параметров (maxAmount, scope, expiresAt) с inline explainer " +
       "«immutable after activation». Если status=draft/pending — fields writable. После active → read-only с tooltip и " +
       "ссылкой на intent cancel_and_recreate если полная переконфигурация нужна.",
+    /**
+     * Apply: добавляет секцию `lockedParameters` в `slots.sections` со
+     * списком полей, которые замораживаются при mainEntity.status=active
+     * (или similar terminal-state). Renderer читает секцию + runtime-
+     * значение status; если active → рендерит read-only view с tooltip
+     * «immutable after activation».
+     *
+     * Locked fields = targets всех replace-intents на mainEntity.* (кроме
+     * status). Это параметры конфигурации, которые после активации
+     * должны быть read-only.
+     *
+     * Idempotent: existing section с id "lockedParameters" не перезаписывается.
+     */
+    apply(slots, context) {
+      const { ontology, mainEntity, intents } = context || {};
+      if (!mainEntity || !ontology?.entities) return slots;
+      const entity = ontology.entities[mainEntity];
+      if (!entity) return slots;
+
+      const statuses = entity.statuses ||
+        (typeof entity.fields === "object" && entity.fields.status?.options) || [];
+      const activeStatus = statuses.find(s => /active|running|confirmed|captured|accepted/i.test(s));
+      if (!activeStatus) return slots;
+
+      const mainLower = mainEntity.toLowerCase();
+      const lockedFields = new Set();
+      for (const intent of intents || []) {
+        const effects = intent.particles?.effects || [];
+        for (const ef of effects) {
+          if (ef.α !== "replace") continue;
+          if (typeof ef.target !== "string") continue;
+          if (!ef.target.toLowerCase().startsWith(`${mainLower}.`)) continue;
+          const field = ef.target.slice(mainLower.length + 1);
+          if (!field) continue;
+          if (field === "status") continue; // status сам управляет lifecycle'ом
+          if (field.includes(".")) continue; // nested fields skip
+          lockedFields.add(field);
+        }
+      }
+      if (lockedFields.size === 0) return slots;
+
+      if ((slots?.sections || []).some(s => s?.id === "lockedParameters")) return slots;
+
+      const section = {
+        id: "lockedParameters",
+        title: "Параметры после активации",
+        kind: "lockedParameters",
+        entity: mainEntity,
+        lockedWhen: `item.status === '${activeStatus}'`,
+        fields: [...lockedFields],
+        explainer: "Эти параметры фиксируются при активации и не могут быть изменены.",
+        source: "derived:lifecycle-locked-parameters",
+      };
+      return {
+        ...slots,
+        sections: [...(slots?.sections || []), section],
+      };
+    },
   },
   rationale: {
     hypothesis:
