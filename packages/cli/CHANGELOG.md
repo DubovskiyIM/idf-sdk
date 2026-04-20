@@ -1,5 +1,12 @@
 # @intent-driven/cli
 
+## 1.0.39
+
+### Patch Changes
+
+- Updated dependencies [cfb2d64]
+  - @intent-driven/core@0.35.0
+
 ## 1.0.38
 
 ### Patch Changes
