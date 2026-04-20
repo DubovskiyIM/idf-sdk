@@ -12,17 +12,18 @@ import categoryTreeWithCounter from "./catalog/category-tree-with-counter.js";
 import paidPromotionSlot from "./catalog/paid-promotion-slot.js";
 import mapFilterCatalog from "./catalog/map-filter-catalog.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
-import ratingAggregateHero from "./detail/rating-aggregate-hero.js";
 import reviewCriterionBreakdown from "./detail/review-criterion-breakdown.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 import responseCostBeforeAction from "./feed/response-cost-before-action.js";
+
+// rating-aggregate-hero promoted в stable (2026-04-20, B2) — см.
+// packages/core/src/patterns/stable/detail/rating-aggregate-hero.js.
 
 export {
   categoryTreeWithCounter,
   paidPromotionSlot,
   mapFilterCatalog,
   reputationLevelBadge,
-  ratingAggregateHero,
   reviewCriterionBreakdown,
   directInviteSidebar,
   responseCostBeforeAction,
@@ -33,7 +34,6 @@ export const CURATED_CANDIDATES = [
   paidPromotionSlot,
   mapFilterCatalog,
   reputationLevelBadge,
-  ratingAggregateHero,
   reviewCriterionBreakdown,
   directInviteSidebar,
   responseCostBeforeAction,

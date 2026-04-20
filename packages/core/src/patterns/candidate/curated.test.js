@@ -37,7 +37,8 @@ describe("curated candidate bank — schema validity", () => {
   }
 
   it("в curated bank ровно 8 паттернов (profi+avito merged)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(8);
+    // 8 original − 1 (rating-aggregate-hero promoted в stable 2026-04-20 B2) = 7.
+    expect(CURATED_CANDIDATES.length).toBe(7);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -59,12 +60,12 @@ describe("curated candidate bank — registry integration", () => {
     const registry = createRegistry();
     loadStablePatterns(registry);
     loadCandidatePatterns(registry);
-    // Sanity: все stable (28) + все curated (8) = 36 минимум.
+    // Sanity: все stable (29 — +rating-aggregate-hero B2) + все curated (8) = 37 минимум.
     // Totals могут быть выше за счёт manifest-свалки (127+), но она
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(28);
+    expect(stableCount).toBe(29);
     // Curated (8) прошли validatePattern; manifest-свалка может добавить >0.
     expect(candidateCount).toBeGreaterThanOrEqual(8);
     // Проверка, что каждый curated действительно в registry.
