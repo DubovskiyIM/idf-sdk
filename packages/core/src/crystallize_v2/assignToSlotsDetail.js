@@ -16,7 +16,7 @@ import {
   isUnsupportedInM2,
   normalizeCreates,
 } from "./assignToSlotsShared.js";
-import { getEntityFields, canRead, inferFieldRole } from "./ontologyHelpers.js";
+import { getEntityFields, canRead, inferFieldRole, getOwnerFields } from "./ontologyHelpers.js";
 import { getIntentIcon } from "./getIntentIcon.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
@@ -277,27 +277,7 @@ function collapseToolbar(toolbar, projectionId) {
   return { toolbar: visible, witnesses };
 }
 
-/**
- * Разрешить список owner-полей для entity + intent'а.
- *
- * Backlog 3.2: multi-owner поддержка.
- *   - entity.owners: ["customerId", "executorId"] — массив полей.
- *   - entity.ownerField: "clientId" — single-owner (legacy).
- *   - intent.permittedFor: "executorId" | ["customerId"] — override per-intent,
- *     сужает массив owners до подмножества. Если подмножество пусто — fallback
- *     на все owners.
- */
-function resolveOwnerFields(entityDef, intent) {
-  const owners = Array.isArray(entityDef?.owners)
-    ? entityDef.owners
-    : entityDef?.ownerField ? [entityDef.ownerField] : [];
-  const permittedFor = intent?.permittedFor;
-  if (!owners.length) return [];
-  if (!permittedFor || permittedFor === "owner") return owners;
-  const want = Array.isArray(permittedFor) ? permittedFor : [permittedFor];
-  const match = owners.filter(f => want.includes(f));
-  return match.length ? match : owners;
-}
+// resolveOwnerFields поднят в shared util ontologyHelpers.getOwnerFields.
 
 /**
  * Ownership-condition для detail: если intent меняет mainEntity и сущность
@@ -317,7 +297,7 @@ function resolveOwnerFields(entityDef, intent) {
  */
 function ownershipConditionFor(intent, mainEntity, ONTOLOGY) {
   const entityDef = ONTOLOGY?.entities?.[mainEntity];
-  const ownerFields = resolveOwnerFields(entityDef, intent);
+  const ownerFields = getOwnerFields(entityDef, intent);
 
   // Для User backward-compat: id === viewer.id (нет ownerField в ontology)
   if (!ownerFields.length && mainEntity !== "User") return null;
