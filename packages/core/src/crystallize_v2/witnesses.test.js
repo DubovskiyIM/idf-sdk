@@ -570,6 +570,94 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.deal_detail.compositions[0].as).toBe("task");
   });
 
+  it("R11: temporal entity → <entity>_feed с sort:\"-<timestampField>\"", () => {
+    const INTENTS = {
+      add_insight: {
+        creates: "Insight",
+        particles: { effects: [{ α: "create", target: "insight" }] },
+      },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Insight: {
+          temporal: true,  // R11 trigger
+          fields: {
+            title: { type: "text" },
+            createdAt: { type: "datetime" },
+          },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.insight_list).toBeDefined();  // R1 всё ещё сработал
+    expect(projections.insight_feed).toBeDefined();  // R11 добавил feed
+    expect(projections.insight_feed.kind).toBe("feed");
+    expect(projections.insight_feed.sort).toBe("-createdAt");
+
+    const r11 = projections.insight_feed.derivedBy.find(w => w.ruleId === "R11");
+    expect(r11).toBeDefined();
+    expect(r11.input.timestampField).toBe("createdAt");
+    expect(r11.input.sourceBase).toBe("insight_list");
+  });
+
+  it("R11: explicit timestampField override", () => {
+    const INTENTS = {
+      add_event: { creates: "Event", particles: { effects: [{ α: "create", target: "event" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Event: {
+          temporal: true,
+          timestampField: "occurredAt",
+          fields: { name: { type: "text" }, occurredAt: { type: "datetime" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.event_feed.sort).toBe("-occurredAt");
+    const r11 = projections.event_feed.derivedBy.find(w => w.ruleId === "R11");
+    expect(r11.input.timestampField).toBe("occurredAt");
+  });
+
+  it("R11: не срабатывает без temporal:true флага", () => {
+    const INTENTS = {
+      add_thing: { creates: "Thing", particles: { effects: [{ α: "create", target: "thing" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Thing: { fields: { name: { type: "text" } } },  // no temporal
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.thing_list).toBeDefined();
+    expect(projections.thing_feed).toBeUndefined();
+  });
+
+  it("R11: fallback на R3 detail если нет R1 catalog", () => {
+    const INTENTS = {
+      edit_note: { particles: { effects: [{ α: "replace", target: "note.body" }] } },
+      pin_note:  { particles: { effects: [{ α: "replace", target: "note.pinned" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Note: {
+          temporal: true,
+          fields: { body: { type: "text" }, pinned: { type: "boolean" }, createdAt: { type: "datetime" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.note_list).toBeUndefined();
+    expect(projections.note_detail).toBeDefined();  // R3 (2 mutators)
+    expect(projections.note_feed).toBeDefined();  // R11 через R3 fallback
+    const r11 = projections.note_feed.derivedBy.find(w => w.ruleId === "R11");
+    expect(r11.input.sourceBase).toBe("note_detail");
+  });
+
   it("R10: scoped catalog выведен из role.scope m2m-via", () => {
     const INTENTS = {
       view_client: { particles: { entities: ["viewer:User"], witnesses: ["name", "email"] } },
