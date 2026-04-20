@@ -4,8 +4,14 @@
  */
 
 const KNOWN_ARCHETYPES = ["feed", "catalog", "detail", "dashboard", "canvas", "form", "wizard"];
+// composer исторически требовался для feed из messenger-кейса (chat с
+// обязательным полем ввода). Для non-chat feed (R11 temporal, R11 v2
+// owner-scoped, любая read-only временная лента) композера не бывает —
+// нет intent'а `confirmation:"enter" + creates:mainEntity`, assignToSlotsFeed
+// возвращает `slots.composer = null`. «Feed обязан иметь composer» —
+// messenger-specific, не общий инвариант.
 const REQUIRED_SLOTS_BY_ARCHETYPE = {
-  feed:      ["body", "composer"],
+  feed:      ["body"],
   catalog:   ["body"],
   detail:    ["body"],
   dashboard: ["body"],

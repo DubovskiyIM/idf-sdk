@@ -43,11 +43,13 @@ describe("validateArtifact", () => {
     expect(r.errors.some(e => e.includes("archetype"))).toBe(true);
   });
 
-  it("требует composer для feed", () => {
-    const bad = { ...validFeed, slots: { ...validFeed.slots, composer: undefined } };
-    const r = validateArtifact(bad);
-    expect(r.ok).toBe(false);
-    expect(r.errors.some(e => e.includes("composer"))).toBe(true);
+  it("composer необязателен для feed (non-chat feed, R11 / R11 v2)", () => {
+    // Исторически composer требовался: наследство messenger chat-кейса.
+    // Снято в pdaс 0.31: non-chat feed (read-only временная лента) — валиден.
+    const noComposer = { ...validFeed, slots: { ...validFeed.slots, composer: undefined } };
+    expect(validateArtifact(noComposer).ok).toBe(true);
+    const nullComposer = { ...validFeed, slots: { ...validFeed.slots, composer: null } };
+    expect(validateArtifact(nullComposer).ok).toBe(true);
   });
 
   it("требует body для любого архетипа", () => {
