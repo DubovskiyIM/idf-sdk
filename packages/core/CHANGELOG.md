@@ -1,5 +1,39 @@
 # Changelog
 
+## 0.40.0
+
+### Minor Changes
+
+- 59715cd: Pattern Bank: curated-кандидаты — 8 researcher-паттернов из profi+avito field
+  research (2026-04-17-18), прошедшие human review и строгий `validatePattern`
+  (включая `falsification.shouldMatch`/`shouldNotMatch`). Matching-ready, без
+  `structure.apply`.
+
+  Новые файлы в `packages/core/src/patterns/candidate/{catalog,detail,feed}/`:
+  category-tree-with-counter + paid-promotion-slot (merged profi+avito),
+  map-filter-catalog, reputation-level-badge, rating-aggregate-hero,
+  review-criterion-breakdown, direct-invite-sidebar, response-cost-before-action.
+
+  Экспорт `CURATED_CANDIDATES` (отдельно от manifest-свалки 127+). Общий
+  `CANDIDATE_PATTERNS` теперь union: сначала curated (строгая схема),
+  потом manifest (schema-lax). `loadCandidatePatterns` регистрирует обоих,
+  first-wins при коллизии id. Default registry по-прежнему stable-only —
+  candidate остаются explicit opt-in.
+
+  Promotion в stable + `structure.apply` — отдельный sub-project.
+
+- 59715cd: Promote review-criterion-breakdown candidate → stable с полной реализацией.
+
+  **core:** новый stable pattern (detail archetype) с `structure.apply` — prepend'ит
+  в `slots.sections` section `{type: "criterionSummary", subEntity, fkField, criteria,
+title}`. Trigger: detail-проекция с sub-entity имеющим ≥3 criterion-полей
+  (_\_rating / _\_score суффикс, whitelist quality/punctuality/..., или
+  fieldRole:"rating"). Убран из curated candidate bank.
+
+  **renderer:** новый primitive `CriterionSummary` — runtime compute avg по каждому
+  criterion'у из `world[pluralized(subEntity)]`. Horizontal bar-chart с auto-scale
+  (5 vs 10). Зарегистрирован в `PRIMITIVES.criterionSummary`.
+
 ## 0.39.0
 
 ### Minor Changes
