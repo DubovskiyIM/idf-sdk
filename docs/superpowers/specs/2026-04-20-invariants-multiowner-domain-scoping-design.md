@@ -5,7 +5,17 @@
 **Парный PR:** host freelance domain update (отдельно в `idf/`)
 **Связано:** `docs/sdk-improvements-backlog.md` §1.1 / §1.4 / §3.2 (frelance field-test P0)
 
-## Проблема
+## ⚠ State update 2026-04-20
+
+Deep check codebase'а после spec approval показал что §1.1 и §1.4 **уже реализованы** в main (параллельный агент). §3.2 multi-owner реализовано только частично — `assignToSlotsDetail.js` поддерживает `entity.owners` + `intent.permittedFor`, но `filterWorld.js` всё ещё hardcoded single `entity.ownerField`. Тестов на multi-owner нигде нет.
+
+**Revised scope этого PR**: завершить §3.2 multi-owner до конца — поднять logic из inline `resolveOwnerFields` в shared util, подключить к `filterWorld.js`, покрыть тестами.
+
+Ниже секции ниже — оригинальный design для reference. Актуальный план — в [`plans/2026-04-20-multiowner-filterworld.md`](../plans/2026-04-20-multiowner-filterworld.md).
+
+---
+
+## Проблема (original)
 
 Freelance field-test (2026-04-19) выявил 4 P0 блокера в SDK core, на которые накладывались локальные workaround'ы в `idf/src/runtime/DomainRuntime.jsx`. Три из них объединяются одной темой — **контракт онтологии и viewer-scoping недостаточно богат для реальных доменов**:
 
