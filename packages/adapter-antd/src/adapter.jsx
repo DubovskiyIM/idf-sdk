@@ -27,6 +27,7 @@ import {
   Card,
   Dropdown,
   Statistic,
+  Menu,
 } from "antd";
 import {
   EditOutlined,
@@ -624,6 +625,42 @@ AntdEmail.affinity = {
   fields: ["email", "contactEmail"],
 };
 
+/**
+ * AntD Sidebar — enterprise-fintech dense-style через antd Menu с
+ * SubMenu для секций. Plays well with dark-mode-friendly темами и
+ * tight-spacing layout'ами invest-домена.
+ */
+function AntdSidebar({ sections, active, onSelect, projectionNames }) {
+  const items = (sections || []).map(sec => ({
+    key: `__section:${sec.section}`,
+    label: sec.section,
+    icon: sec.icon ? <span aria-hidden>{sec.icon}</span> : null,
+    type: "group",
+    children: (sec.items || []).map(projId => ({
+      key: projId,
+      label: projectionNames?.[projId] || projId,
+    })),
+  }));
+  return (
+    <div style={{
+      width: 240, flexShrink: 0, height: "100%", overflow: "auto",
+      borderRight: "1px solid rgba(255,255,255,0.08)",
+      background: "var(--ant-color-bg-container, #1f1f1f)",
+    }}>
+      <Menu
+        mode="inline"
+        theme="dark"
+        selectedKeys={active ? [active] : []}
+        onClick={({ key }) => {
+          if (key && !key.startsWith("__section:") && onSelect) onSelect(key);
+        }}
+        items={items}
+        style={{ border: "none", background: "transparent", fontSize: 13 }}
+      />
+    </div>
+  );
+}
+
 // ============================================================
 // Adapter export
 // ============================================================
@@ -639,7 +676,7 @@ export const antdAdapter = {
       statistic: true,
       heading: true, text: true, badge: true, avatar: true, paper: true,
     },
-    shell: { modal: true, tabs: true },
+    shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
   },
   parameter: {
@@ -662,6 +699,7 @@ export const antdAdapter = {
   shell: {
     modal: AntdModalShell,
     tabs: AntdTabs,
+    sidebar: AntdSidebar,
   },
   primitive: {
     heading: AntdHeading,
