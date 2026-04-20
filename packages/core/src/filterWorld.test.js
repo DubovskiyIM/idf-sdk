@@ -79,3 +79,64 @@ describe("filterWorldForRole — pluralize / camelCase collection names", () => 
     expect(out.agentpreapprovals).toBeUndefined();
   });
 });
+
+describe("filterWorldForRole — multi-owner (§3.2)", () => {
+  const ontology = {
+    entities: {
+      Deal: {
+        owners: ["customerId", "executorId"],
+        fields: { id: {}, customerId: {}, executorId: {}, status: {} },
+      },
+    },
+    roles: {
+      user: {
+        visibleFields: {
+          Deal: ["id", "customerId", "executorId", "status"],
+        },
+      },
+    },
+  };
+
+  const world = {
+    deals: [
+      { id: "d1", customerId: "alice", executorId: "bob",  status: "open" },
+      { id: "d2", customerId: "carol", executorId: "dave", status: "open" },
+      { id: "d3", customerId: "alice", executorId: "dave", status: "open" },
+    ],
+  };
+
+  it("customer видит свои Deal'ы (как customerId)", () => {
+    const out = filterWorldForRole(world, ontology, "user", { id: "alice" });
+    const ids = out.deals.map(d => d.id).sort();
+    expect(ids).toEqual(["d1", "d3"]);
+  });
+
+  it("executor видит свои Deal'ы (как executorId)", () => {
+    const out = filterWorldForRole(world, ontology, "user", { id: "dave" });
+    const ids = out.deals.map(d => d.id).sort();
+    expect(ids).toEqual(["d2", "d3"]);
+  });
+
+  it("viewer видит Deal когда совпадает ХОТЬ ОДНО owner-поле", () => {
+    const out = filterWorldForRole(world, ontology, "user", { id: "bob" });
+    const ids = out.deals.map(d => d.id).sort();
+    expect(ids).toEqual(["d1"]);
+  });
+
+  it("viewer не видит Deal где не является ни одним из owners", () => {
+    const out = filterWorldForRole(world, ontology, "user", { id: "eve" });
+    expect(out.deals).toEqual([]);
+  });
+
+  it("legacy ownerField продолжает работать (backward-compat)", () => {
+    const legacyOntology = {
+      entities: {
+        Deal: { ownerField: "customerId", fields: { id: {}, customerId: {} } },
+      },
+      roles: { user: { visibleFields: { Deal: ["id", "customerId"] } } },
+    };
+    const out = filterWorldForRole(world, legacyOntology, "user", { id: "alice" });
+    const ids = out.deals.map(d => d.id).sort();
+    expect(ids).toEqual(["d1", "d3"]);
+  });
+});
