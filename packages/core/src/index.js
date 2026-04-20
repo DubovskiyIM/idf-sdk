@@ -102,6 +102,13 @@ export {
   renderVoicePlain,
 } from "./materializers/voiceMaterializer.js";
 
+// Audit log — производная материализация над Φ для observer-role
+// (compliance/SOX ICFR, 13-й полевой тест)
+export {
+  materializeAuditLog,
+  buildAuditContext,
+} from "./materializers/auditLog.js";
+
 // Global invariants (§14 v1.6.1) — schema-level ∀-свойства world
 export {
   checkInvariants,
