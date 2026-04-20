@@ -14,7 +14,9 @@ import mapFilterCatalog from "./catalog/map-filter-catalog.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import ratingAggregateHero from "./detail/rating-aggregate-hero.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
-import responseCostBeforeAction from "./feed/response-cost-before-action.js";
+
+// response-cost-before-action promoted в stable (2026-04-20, B2 #3) — см.
+// packages/core/src/patterns/stable/feed/response-cost-before-action.js.
 
 // review-criterion-breakdown promoted в stable (2026-04-20, B2 #2) — см.
 // packages/core/src/patterns/stable/detail/review-criterion-breakdown.js.
@@ -26,7 +28,6 @@ export {
   reputationLevelBadge,
   ratingAggregateHero,
   directInviteSidebar,
-  responseCostBeforeAction,
 };
 
 export const CURATED_CANDIDATES = [
@@ -36,5 +37,4 @@ export const CURATED_CANDIDATES = [
   reputationLevelBadge,
   ratingAggregateHero,
   directInviteSidebar,
-  responseCostBeforeAction,
 ];
