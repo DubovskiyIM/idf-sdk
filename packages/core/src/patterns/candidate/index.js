@@ -14,7 +14,19 @@
  * Регенерация manifest.js после добавления новых кандидатов в bank/:
  *   node packages/core/scripts/generate-candidates-manifest.mjs
  */
-import { CANDIDATE_PATTERNS } from "./manifest.js";
+import { CANDIDATE_PATTERNS as MANIFEST_CANDIDATES } from "./manifest.js";
+import { CURATED_CANDIDATES } from "./curated.js";
+
+/**
+ * Общий массив кандидатов — union манифеста (свалка, 127+) и курированных
+ * (структурированные JS-модули в catalog/detail/feed, проходят строгий
+ * validatePattern).
+ *
+ * Порядок: сначала курированные (строгая схема, включая falsification),
+ * потом manifest-свалка. Дубликаты id разрешаются в loadCandidatePatterns
+ * (first wins) — курированный побеждает manifest-версию, если id совпал.
+ */
+const CANDIDATE_PATTERNS = [...CURATED_CANDIDATES, ...MANIFEST_CANDIDATES];
 
 /**
  * Получить все candidate-паттерны (как array). Не валидируются жёстко —
@@ -105,3 +117,4 @@ export function loadCandidatePatterns(registry) {
 }
 
 export { CANDIDATE_PATTERNS };
+export { CURATED_CANDIDATES } from "./curated.js";

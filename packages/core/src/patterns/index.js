@@ -9,6 +9,15 @@ export { classifyPattern } from "./classifier.js";
 export { buildStrategy, DEFAULT_STRATEGY } from "./strategy.js";
 export { BUILT_IN_PATTERNS } from "./bank.js";
 export { createRegistry, getDefaultRegistry, loadStablePatterns } from "./registry.js";
+export {
+  CANDIDATE_PATTERNS,
+  CURATED_CANDIDATES,
+  getCandidatePatterns,
+  getCandidatesByArchetype,
+  getCandidate,
+  groupCandidatesByTheme,
+  loadCandidatePatterns,
+} from "./candidate/index.js";
 export { validatePattern, evaluateTrigger } from "./schema.js";
 export { computeSlotAttribution } from "./slotAttribution.js";
 
