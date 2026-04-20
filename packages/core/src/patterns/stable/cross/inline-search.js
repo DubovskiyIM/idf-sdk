@@ -12,7 +12,28 @@ export default {
       });
     },
   },
-  structure: { slot: "toolbar", description: "Search input в toolbar как projection-level utility" },
+  structure: {
+    slot: "toolbar",
+    description: "Search input в toolbar как projection-level utility",
+    /**
+     * Apply: маркирует toolbar-items типа `inlineSearch` с
+     * `source: "derived:inline-search"`. SDK `inlineSearch`-archetype
+     * уже кладёт их в `slots.toolbar`; apply формализует и позволяет
+     * renderer'у применять pattern-specific styling.
+     *
+     * Idempotent.
+     */
+    apply(slots, context) {
+      const toolbar = slots?.toolbar;
+      if (!Array.isArray(toolbar)) return slots;
+      const idx = toolbar.findIndex(item => item?.type === "inlineSearch");
+      if (idx === -1) return slots;
+      if (toolbar[idx].source === "derived:inline-search") return slots;
+      const tagged = [...toolbar];
+      tagged[idx] = { ...toolbar[idx], source: "derived:inline-search" };
+      return { ...slots, toolbar: tagged };
+    },
+  },
   rationale: {
     hypothesis: "Поиск — универсальная утилита, не привязанная к конкретной сущности",
     evidence: [

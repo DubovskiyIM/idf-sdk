@@ -12,6 +12,29 @@ export default {
   structure: {
     slot: "primaryCTA",
     description: "Phase-changing intents как крупные primary-кнопки внизу body. Деструктивные (high) — в toolbar через confirmDialog.",
+    /**
+     * Apply: формализует SDK behavior (`assignToSlotsDetail` уже маршрутит
+     * phase-transition intents в `slots.primaryCTA`). Marks items с
+     * `source: "derived:phase-aware-primary-cta"` — renderer может
+     * применять pattern-specific стили (крупные кнопки, визуальное
+     * выделение "что делать дальше").
+     *
+     * Idempotent.
+     */
+    apply(slots, context) {
+      const { mainEntity } = context || {};
+      if (!mainEntity) return slots;
+      const primary = slots?.primaryCTA;
+      if (!Array.isArray(primary) || primary.length === 0) return slots;
+      const needsTag = primary.some(item => item && !item.source);
+      if (!needsTag) return slots;
+      const tagged = primary.map(item =>
+        item && !item.source
+          ? { ...item, source: "derived:phase-aware-primary-cta" }
+          : item
+      );
+      return { ...slots, primaryCTA: tagged };
+    },
   },
   rationale: {
     hypothesis: "Визуальное разделение фазовых переходов от деструктивных действий улучшает понимание 'что делать дальше'",

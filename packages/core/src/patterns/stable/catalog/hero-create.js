@@ -19,6 +19,29 @@ export default {
   structure: {
     slot: "hero",
     description: "Inline creator mainEntity над списком. UX: ввёл название — Enter. Один hero на catalog.",
+    /**
+     * Apply: формализует существующую SDK-логику (`assignToSlotsCatalog`
+     * уже кладёт heroCreate intent в `slots.hero`). Marks первый
+     * heroCreate item с `source: "derived:hero-create"`, renderer
+     * может opt-in в pattern-specific styling.
+     *
+     * Idempotent: source-marker preserving.
+     */
+    apply(slots, context) {
+      const { mainEntity } = context || {};
+      if (!mainEntity) return slots;
+      const hero = slots?.hero;
+      if (!Array.isArray(hero) || hero.length === 0) return slots;
+
+      // Ищем heroCreate-элемент (SDK wraps как { type: "heroCreate" }).
+      const idx = hero.findIndex(h => h?.type === "heroCreate");
+      if (idx === -1) return slots;
+      if (hero[idx].source === "derived:hero-create") return slots;
+
+      const tagged = [...hero];
+      tagged[idx] = { ...hero[idx], source: "derived:hero-create" };
+      return { ...slots, hero: tagged };
+    },
   },
   rationale: {
     hypothesis: "Inline-создание снижает friction vs кнопка+модалка для частых операций",
