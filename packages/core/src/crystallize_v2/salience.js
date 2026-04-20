@@ -22,7 +22,15 @@
  *      - remove на main entity             → 30 (destructive ниже edit)
  *      - read-only / utility               → 10
  *
- * Tied (равный salience) — alphabetical по id (стабильно и видимо).
+ * Tied (равный salience) — tie-break ladder:
+ *   1. declarationOrder (insertion order в INTENTS-object) — authorial signal,
+ *      автор кладёт важнее вперёд
+ *   2. alphabetical по id — last-resort, практически unreachable (declarationOrder
+ *      уникален между двумя intents в одном INTENTS-object)
+ *
+ * Witness `basis: "declaration-order"` — резолюция через tier 1 (норма).
+ * Witness `basis: "alphabetical-fallback"` — через tier 2 (редко, когда
+ * declarationOrder не передан или одинаковый у обоих tied entries).
  *
  * Применение в PoC: только в assignToSlotsDetail для сортировки standalone
  * кнопок toolbar перед срезом capacity=3. Остальные слоты пока не затронуты.
@@ -98,13 +106,43 @@ export function computeSalience(intent, mainEntity) {
 
 /**
  * Comparator для сортировки standalone toolbar-кнопок.
- * Button: { intentId, salience: number } — salience пробрасывается из assignToSlots.
+ *
+ * Button: { intentId, salience: number, declarationOrder?: number }.
+ * - salience пробрасывается из assignToSlots.
+ * - declarationOrder — index в Object.entries(INTENTS); authorial signal
+ *   «я поставил это раньше потому что оно важнее». Опционален; без него
+ *   fallback на alphabetical.
+ *
+ * Tie-break ladder: salience desc → declarationOrder asc → alphabetical asc.
  */
 export function bySalienceDesc(a, b) {
   const sA = a.salience ?? 40;
   const sB = b.salience ?? 40;
   if (sA !== sB) return sB - sA;
+
+  const dA = typeof a.declarationOrder === "number" ? a.declarationOrder : Infinity;
+  const dB = typeof b.declarationOrder === "number" ? b.declarationOrder : Infinity;
+  if (dA !== dB) return dA - dB;
+
   return a.intentId.localeCompare(b.intentId);
+}
+
+/**
+ * Классифицировать tie-resolution между двумя intents для witness-basis.
+ * Используется в collapseToolbar для правильной пометки резолюции.
+ *
+ * Returns: "salience" | "declaration-order" | "alphabetical-fallback"
+ */
+export function classifyTieResolution(a, b) {
+  const sA = a.salience ?? 40;
+  const sB = b.salience ?? 40;
+  if (sA !== sB) return "salience";
+
+  const dA = typeof a.declarationOrder === "number" ? a.declarationOrder : Infinity;
+  const dB = typeof b.declarationOrder === "number" ? b.declarationOrder : Infinity;
+  if (dA !== dB) return "declaration-order";
+
+  return "alphabetical-fallback";
 }
 
 /**
@@ -138,20 +176,37 @@ export function detectTiedGroups(sortedItems, { slot, projection }) {
     const salience = items[i].salience ?? 40;
     const start = i;
     while (i < items.length && (items[i].salience ?? 40) === salience) i++;
-    const group = items.slice(start, i).map((x) => x.intentId);
-    if (group.length >= 2) {
-      const [chosen, ...peers] = group;
-      witnesses.push({
-        basis: "alphabetical-fallback",
-        reliability: "heuristic",
-        slot,
-        projection,
-        salience,
-        chosen,
-        peers,
-        recommendation: `Проставьте intent.salience одному из [${group.join(", ")}] чтобы зафиксировать порядок явно.`,
-      });
-    }
+    const group = items.slice(start, i);
+    if (group.length < 2) continue;
+
+    // Проверяем, все ли declarationOrder в группе уникальны:
+    // - уникальны → резолюция через authorial order (tier 1), witness-basis
+    //   "declaration-order". Менее шумно, не требует intent.salience.
+    // - есть duplicates → fallback на alphabetical (tier 2), witness-basis
+    //   "alphabetical-fallback". Практически недостижимо в одном INTENTS-object
+    //   (Object.entries даёт уникальный index), встречается только при merged
+    //   domains или ручной сборке toolbar'ов.
+    const orders = group.map((x) => (typeof x.declarationOrder === "number" ? x.declarationOrder : Infinity));
+    const uniqueOrders = new Set(orders);
+    const hasDupOrder = uniqueOrders.size < orders.length;
+    const basis = hasDupOrder ? "alphabetical-fallback" : "declaration-order";
+
+    const groupIds = group.map((x) => x.intentId);
+    const [chosen, ...peers] = groupIds;
+    const recommendation = basis === "declaration-order"
+      ? `Порядок разрешён по declaration-order в INTENTS (authorial signal). Если хотите явно закрепить — проставьте intent.salience одному из [${groupIds.join(", ")}].`
+      : `Проставьте intent.salience одному из [${groupIds.join(", ")}] чтобы зафиксировать порядок явно.`;
+
+    witnesses.push({
+      basis,
+      reliability: "heuristic",
+      slot,
+      projection,
+      salience,
+      chosen,
+      peers,
+      recommendation,
+    });
   }
   return witnesses;
 }
