@@ -1,5 +1,18 @@
 # @intent-driven/cli
 
+## 1.0.23
+
+### Patch Changes
+
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+- Updated dependencies [eb2954d]
+  - @intent-driven/core@0.22.0
+
 ## 1.0.22
 
 ### Patch Changes

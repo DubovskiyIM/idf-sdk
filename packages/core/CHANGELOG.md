@@ -1,5 +1,290 @@
 # Changelog
 
+## 0.22.0
+
+### Minor Changes
+
+- eb2954d: feat(core): witness-of-crystallization для R1–R8 в artifact.witnesses
+
+  Каждое срабатывание правил деривации (R1 catalog, R2 feed override, R3 detail, R4 subCollection, R6 field-union, R7 ownerField, R8 hub absorption — parent и child side) оставляет запись в `artifact.witnesses[]` с `basis: "crystallize-rule"`, полями `ruleId`, `input`, `output`, `rationale`.
+
+  Назначение: debugging derived UI — второй автор видит observable trail того, какое правило и на каком входе породило проекцию/обогащение. Вместе с существующими `pattern-bank` и `alphabetical-fallback` witnesses даёт полный derivation-граф для Studio Inspector и spec-debt метрик.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md`.
+
+  **API additions** (аддитивно, zero-breaking):
+
+  - `proj.derivedBy: CrystallizeWitness[]` — внутренний канал между `deriveProjections` и `crystallizeV2`; пробрасывается в `artifact.witnesses` первыми (origin-witnesses идут до pattern-bank).
+  - Новый модуль `crystallize_v2/derivationWitnesses.js` — чистые builder-функции per правило.
+
+  **Тесты**: +13 в `witnesses.test.js` (формат каждого witness'а + negative cases + integration через crystallizeV2 + hub через absorbHubChildren). 630/630 зелёные, functoriality probe без регрессий.
+
+- eb2954d: feat(core): explainCrystallize — unified witness query surface
+
+  Новая функция-query over artifact.witnesses[]. Принимает artifact и
+  возвращает структурированное объяснение его происхождения:
+
+  ```js
+  explainCrystallize(artifact) → {
+    projection: "listing_detail",
+    archetype: "detail",
+    origin: "derived+enriched",  // или "derived" | "authored" | "authored+enriched"
+    witnessesByBasis: {
+      "crystallize-rule": [...R1, R3, R4, R6, ...],
+      "pattern-bank": [...],
+      "polymorphic-variant": [...],
+      "temporal-section": [...],
+    },
+    ruleIds: ["R3", "R4", "R6"],
+    patternIds: ["subcollections", "grid-card-layout"],
+    trace: [
+      { step: 1, basis: "crystallize-rule", ruleId: "R3", rationale: "..." },
+      { step: 2, basis: "crystallize-rule", ruleId: "R6", rationale: "..." },
+      ...
+    ],
+    summary: 'detail "listing_detail" · выведена + обогащена · правила: R3, R4, R6 · паттерны: subcollections',
+  }
+  ```
+
+  Также экспортируется `explainAllCrystallize(artifacts)` — batch-вариант
+  над `Record<projId, artifact>`.
+
+  **Назначение**: единый consumer witness'ов из всех basis (crystallize-rule,
+  pattern-bank, polymorphic-variant, temporal-section, alphabetical-fallback,
+  authored). Главные callers — CrystallizeInspector в §27 Studio, spec-debt
+  dashboards, near-miss analyzers.
+
+  **Origin classification**:
+
+  - `derived` — только origin-правила (R1/R1b/R2/R3/R7/R10).
+  - `derived+enriched` — origin + enrichment-правила (R4/R6/R9).
+  - `authored+enriched` — authored проекция, обогащённая R9/R4/R6.
+  - `authored` — ни одного crystallize-rule witness.
+
+  Trace упорядочен по BASIS_ORDER (crystallize-rule → polymorphic → temporal →
+  pattern-bank → alphabetical-fallback → authored), внутри basis — в порядке
+  чтения artifact.witnesses[].
+
+  Спецификация: `idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md`
+  (секция explainCrystallize).
+
+  Тесты: +8 в `explainCrystallize.test.js` (derived origin, authored-only,
+  derived+enriched, trace order, patternIds, invalid input, batch,
+  summary content). 657/657 зелёные.
+
+- eb2954d: feat(core): near-miss witnesses — актionable rationale для не-сработавших правил
+
+  Новая функция `collectNearMissWitnesses(intents, ontology)` возвращает массив
+  «отрицательных» witness'ов: где R-правило могло бы сработать, но не сработало,
+  и что автор может сделать чтобы запустить.
+
+  Basis: `"crystallize-rule-near-miss"` (новый, отличается от positive
+  `"crystallize-rule"`).
+
+  **Покрываемые правила**:
+
+  - **R3**: entity с ровно 1 mutator (threshold = >1 для detail). Rationale:
+    «|mutators(Category)| = 1; R3 требует >1». Suggestion: «Добавьте второй
+    mutator или объявите category_detail явно».
+  - **R1b**: изолированная entity (creators=0, не kind:reference, не referenced
+    по FK). Suggestion: пометить `kind:"reference"` или удалить из ontology.
+  - **R7**: entity с creators и owner-candidate полем (userId/ownerId/authorId/
+    creatorId), но без `ownerField` declaration. Suggestion: объявить
+    `ontology.entities.E.ownerField = "userId"`.
+  - **R10**: agent/observer роль без scope declaration. Suggestion: добавить
+    `role.scope = { Entity: { via, viewerField, joinField, localField } }`.
+
+  **Исключения**: `entity.kind: "assignment"` не триггерит R1b/R3/R7;
+  owner/viewer base-роли без scope — не триггерят R10.
+
+  Также экспортируется `groupNearMissByRule(nms)` — группировка по ruleId для
+  render'а.
+
+  **Consumer**: CrystallizeInspector (§27 Studio), uncovered-classification.mjs,
+  explainCrystallize extensions.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md`
+  (секция «Witness'ы для не-сработавших правил»).
+
+  Тесты: +16 в nearMissWitnesses.test.js (R3/R1b/R7/R10 positive + negatives,
+  assignment-exclusion, group, edge cases). 689/689 зелёные.
+
+- eb2954d: feat(core): resolveCompositions — runtime helper для R9 aliased-fields
+
+  Завершает R9 end-to-end: crystallize добавляет `proj.compositions`,
+  runtime раскрывает alias'ы при чтении из `world`.
+
+  API:
+
+  ```js
+  resolveItemCompositions(item, compositions, world) → enrichedItem
+  resolveCompositions(items, compositions, world)    → enrichedItems[]
+  getAliasedField(item, "task.title")                → value | undefined
+  ```
+
+  Режимы:
+
+  - `mode: "one"` (default) — `item[as] = world[entity].find(x => x.id === item[via])`
+  - `mode: "many"` — `item[as] = world[entity].filter(x => x[via] === item.id)`
+
+  Обработка edge-cases:
+
+  - Missing FK value → `null` (one), `[]` (many).
+  - Missing entity в world → `null` (one), `[]` (many).
+  - Items не мутируется (чистая функция).
+
+  `getAliasedField(item, path)` — null-safe lookup для multi-level path'ов
+  (`"customer.address.city"`). Consumer — primitive atoms в
+  @intent-driven/renderer, которые должны уметь рендерить `witnesses`
+  вида `"task.title"` без падения на undefined.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md`.
+
+  Тесты: +16 в resolveCompositions.test.js (one/many mode, missing refs,
+  batch, null-safety, multi-level paths). 673/673 зелёные.
+
+  Следующий шаг для end-to-end R9: обновить primitive atoms в
+  @intent-driven/renderer чтобы использовать `getAliasedField` при чтении
+  alias-полей из `proj.witnesses`. Отдельный PR в renderer-пакете.
+
+- eb2954d: feat(core): R10 — role-scope filtered catalog rule
+
+  Новое правило деривации: для каждой роли с `role.scope[entityName]` в онтологии,
+  генерируется scoped read-only catalog с structured m2m-via filter.
+
+  Поддерживает формат `role.scope` v1.6 (реальный в invest):
+
+  ```js
+  ontology.roles.advisor = {
+    scope: {
+      User: {
+        via: "assignments",
+        viewerField: "advisorId",
+        joinField: "clientId",
+        localField: "id",
+        statusField: "status", // опционально
+        statusAllowed: ["active"], // опционально
+      },
+    },
+  };
+  ```
+
+  Output: `advisor_user_list` с `kind:"catalog"`, `readonly:true`, `filter:{ kind:"m2m-via", via, viewerField, joinField, localField, statusField, statusAllowed }`.
+
+  Witness `basis:"crystallize-rule"`, `ruleId:"R10"` несёт role, entity и full scope spec для audit trail.
+
+  Incomplete scope-spec'и (отсутствие via/viewerField/joinField/localField) игнорируются. Роли без scope — не триггерят.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md`.
+
+  **Baseline impact** (stacked on R1b):
+
+  - До R10: U = 23 (20%)
+  - После R10: U = 22 (19%)
+  - **Δ = -1** (invest.advisor_clients ← advisor_user_list)
+
+  Spec предсказывал -6–7. Расхождение — domain authoring gap: messenger/delivery/sales не объявляют `role.scope`, пишут filter-строки вручную в PROJECTIONS. Ontology authoring workstream — отдельно.
+
+  Тесты: +4 (m2m-via positive, multi-entity scope, incomplete-spec negative, no-scope negative). 645/645 зелёные.
+
+- eb2954d: feat(core): R1b — read-only entity catalog rule
+
+  Новое правило деривации: если `entity E` не имеет creator-intent'ов
+  (`creators(E) = ∅`), но либо объявлена `kind: "reference"` (v1.6 онтология),
+  либо на неё ссылаются foreignKey-поля (`type: "entityRef"`) из других
+  сущностей — `deriveProjections` выводит `<entity>_list` с
+  `readonly: true`.
+
+  Исключение: `entity.kind === "assignment"` (m2m-связки) не триггерят R1b.
+
+  Приоритет: R1 (обычный catalog при `creators ≠ ∅`) имеет приоритет над R1b.
+
+  Witness `basis:"crystallize-rule"` с `ruleId:"R1b"`:
+
+  ```js
+  {
+    input: { entity, creators: [], source: "kind:reference" | "referenced-by", referencedBy },
+    output: { kind: "catalog", mainEntity: entity, readonly: true },
+    rationale: "Entity.kind === 'reference' + creators = ∅ → read-only catalog"
+  }
+  ```
+
+  Тесты: 5 новых в `witnesses.test.js` (source:kind:reference,
+  source:referenced-by, assignment-exclusion, isolated-entity-negative,
+  R1-priority). 641/641 зелёные.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/rule-R1b-read-only-catalog-spec.md`.
+
+  **Baseline impact** (по measurement через `idf/scripts/uncovered-classification.mjs`
+  на 10 доменах):
+
+  - До R1b: U = 24 (21%)
+  - После R1b: U = 23 (20%)
+  - **Δ = -1 (вместо ожидаемых -7)**.
+
+  Причина расхождения: большая часть uncovered candidates
+  (`delivery.zones_catalog`, `delivery.couriers_list`, `booking.service_catalog`,
+  `lifequest.badge_list`) имеют FK-поля с `type: "text"` вместо `"entityRef"`.
+  R1b по спеке требует корректной типизации через `entityRef` — это ontology
+  audit gap, не bug SDK. Фикс ontologies — отдельный workstream.
+
+- eb2954d: feat(core): R9 — cross-entity composite projection (MVP)
+
+  Новое правило деривации: `ontology.compositions[mainEntity]: CompositionDef[]`
+  обогащает все проекции с этим mainEntity полями `compositions` (список
+  join-aliases) и расширяет `entities[]` целевыми сущностями.
+
+  Формат композиции:
+
+  ```js
+  ontology.compositions = {
+    Deal: [
+      { entity: "Task", as: "task", via: "taskId", mode: "one" },
+      { entity: "User", as: "customer", via: "customerId", mode: "one" },
+    ],
+  };
+  ```
+
+  Обогащение catalog/detail/feed с `mainEntity === "Deal"`:
+
+  - `proj.entities = ["Deal", "Task", "User"]`
+  - `proj.compositions = [...]`
+  - `proj.derivedBy += witnessR9Composite(...)`
+
+  Incomplete entries (без `entity`/`as`/`via`) игнорируются.
+
+  MVP scope: только обогащение проекций. **Не входит в PR:** renderer-поддержка
+  aliased path lookup (`task.title`), runtime `resolveCompositions(world, ...)`
+  helper, cascade multi-hop composition. Эти — последующие PR'ы в том же
+  workstream.
+
+  Спецификация: `idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md`.
+
+  **Baseline impact** (stacked on R1b + R10):
+
+  - До R9: U = 22 (19%)
+  - После R9: U = 22 (19%)
+  - **Δ = 0**
+
+  Ни один из 10 доменов не объявляет `ontology.compositions` — это новое
+  поле, предложенное спецификацией. R9 работает корректно (проверено тестами),
+  но реальное закрытие U требует domain authoring workstream — объявить
+  compositions в ontologies freelance (Deal, Wallet), delivery (Order, Cart),
+  sales (Watchlist).
+
+  **Совокупный результат SDK workstream**:
+
+  - baseline: U = 24 (21%)
+  - после R1b+R10+R9: U = 22 (19%), Δ = -2 из возможных -13 (15% от spec prediction)
+
+  **Главная эмпирическая находка**: SDK-правила корректны, но **impact заблокирован
+  ontology authoring gap**. Форматная capability появляется инкрементально, но её
+  полная реализация — параллельный workstream правильной типизации и декларации
+  в existing ontologies, не SDK change.
+
+  Тесты: +4 в witnesses.test.js (basic composition, no-compositions, incomplete
+  entries filtered, compositions on both catalog+detail). 649/649 зелёные.
+
 ## 0.21.0
 
 ### Minor Changes
