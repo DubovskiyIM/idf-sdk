@@ -25,6 +25,11 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     context: [],
     fab: [],
     overlay: [],
+    // projection.sidebar (UI-gap #2) — static-content блоки слева от body.
+    // Array<SlotRenderer node>: card / text / column / row / custom primitives.
+    // Не intent-driven (workzilla tutorial / promo / examples cards). Renderer
+    // (ArchetypeCatalog) рендерит aside-column шириной 260px если не пусто.
+    sidebar: Array.isArray(projection.sidebar) ? [...projection.sidebar] : [],
   };
 
   const itemIntents = [];
