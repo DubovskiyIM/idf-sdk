@@ -333,16 +333,29 @@ export function deriveProjections(intents, ontology) {
 
   // R7 / R7b: Owner-filtered catalog
   // ownerField может быть строкой (R7 — single owner) или массивом (R7b —
-  // multi-owner disjunction). Spec:
+  // multi-owner disjunction).
+  //
+  // Precondition (v2.1 relaxed): base projection существует — либо R1 catalog,
+  // либо R3 detail. Side-effect-created entities (Deal через accept_response и
+  // подобные, у которых нет `creates:E` intent'а) теперь тоже получают
+  // my_*_list. Witnesses наследуются от имеющегося base (catalog preferred).
+  //
+  // Spec:
   //   R7  — idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md
   //   R7b — idf-manifest-v2.1/docs/design/rule-R7b-multi-owner-spec.md
   for (const entityName of entityNames) {
     const lower = entityName.toLowerCase();
     const entityDef = ontology.entities[entityName];
     const ownerField = entityDef?.ownerField;
-    const catalogId = `${lower}_list`;
+    if (!ownerField) continue;
 
-    if (!ownerField || !projections[catalogId]) continue;
+    const catalogId = `${lower}_list`;
+    const detailId = `${lower}_detail`;
+    const baseProj = projections[catalogId] || projections[detailId];
+    if (!baseProj) continue;
+
+    const baseWitnesses = baseProj.witnesses || [];
+    const baseSourceId = projections[catalogId] ? catalogId : detailId;
 
     if (Array.isArray(ownerField) && ownerField.length >= 2) {
       // R7b: disjunction filter
@@ -350,14 +363,14 @@ export function deriveProjections(intents, ontology) {
         kind: "catalog",
         mainEntity: entityName,
         entities: [entityName],
-        witnesses: projections[catalogId].witnesses,
+        witnesses: baseWitnesses,
         filter: {
           kind: "disjunction",
           fields: [...ownerField],
           op: "=",
           value: "me.id",
         },
-        derivedBy: [witnessR7bMultiOwnerFilter(entityName, ownerField, catalogId)],
+        derivedBy: [witnessR7bMultiOwnerFilter(entityName, ownerField, baseSourceId)],
       };
     } else if (typeof ownerField === "string") {
       // R7: single owner
@@ -365,9 +378,9 @@ export function deriveProjections(intents, ontology) {
         kind: "catalog",
         mainEntity: entityName,
         entities: [entityName],
-        witnesses: projections[catalogId].witnesses,
+        witnesses: baseWitnesses,
         filter: { field: ownerField, op: "=", value: "me.id" },
-        derivedBy: [witnessR7OwnerFilter(entityName, ownerField, catalogId)],
+        derivedBy: [witnessR7OwnerFilter(entityName, ownerField, baseSourceId)],
       };
     }
   }

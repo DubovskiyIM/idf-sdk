@@ -195,6 +195,103 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.my_listing_list).toBeUndefined();
   });
 
+  it("R7: side-effect created entity (без creates) — R3 detail fallback, R1-independent", () => {
+    const INTENTS = {
+      accept_response: {
+        particles: { effects: [
+          { α: "replace", target: "response.status" },
+          { α: "create",  target: "deal" },
+        ]},
+      },
+      edit_deal:  { particles: { effects: [{ α: "replace", target: "deal.amount" }] } },
+      close_deal: { particles: { effects: [{ α: "replace", target: "deal.status" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: {
+          ownerField: "customerId",
+          fields: { customerId: { type: "entityRef" }, amount: { type: "number" }, status: { type: "text" } },
+        },
+        Response: { fields: { status: { type: "text" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.deal_list).toBeUndefined();  // R1 не сработал (нет creates:"Deal")
+    expect(projections.deal_detail).toBeDefined();   // R3 сработал (≥2 mutators)
+    expect(projections.my_deal_list).toBeDefined();  // R7 — теперь через R3 fallback
+    const r7 = projections.my_deal_list.derivedBy.find(w => w.ruleId === "R7");
+    expect(r7.input.sourceBase).toBe("deal_detail");
+    expect(r7.input.sourceCatalog).toBe("deal_detail");  // backward compat
+  });
+
+  it("R7b: side-effect entity с multi-owner — тоже через R3 fallback", () => {
+    const INTENTS = {
+      accept_response: {
+        particles: { effects: [
+          { α: "replace", target: "response.status" },
+          { α: "create",  target: "deal" },
+        ]},
+      },
+      edit_deal:  { particles: { effects: [{ α: "replace", target: "deal.amount" }] } },
+      close_deal: { particles: { effects: [{ α: "replace", target: "deal.status" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Deal: {
+          ownerField: ["customerId", "executorId"],
+          fields: {
+            customerId: { type: "entityRef" }, executorId: { type: "entityRef" },
+            amount: { type: "number" }, status: { type: "text" },
+          },
+        },
+        Response: { fields: { status: { type: "text" } } },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.deal_list).toBeUndefined();
+    expect(projections.my_deal_list).toBeDefined();
+    const r7b = projections.my_deal_list.derivedBy.find(w => w.ruleId === "R7b");
+    expect(r7b.input.sourceBase).toBe("deal_detail");
+    expect(projections.my_deal_list.filter.kind).toBe("disjunction");
+  });
+
+  it("R7: base R1 catalog приоритет над R3 detail когда оба существуют", () => {
+    const INTENTS = {
+      add_listing:  { creates: "Listing", particles: { effects: [{ α: "create", target: "listing" }] } },
+      edit_listing: { particles: { effects: [{ α: "replace", target: "listing.title" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Listing: {
+          ownerField: "sellerId",
+          fields: { sellerId: { type: "entityRef" }, title: { type: "text" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.listing_list).toBeDefined();
+    expect(projections.listing_detail).toBeDefined();
+    const r7 = projections.my_listing_list.derivedBy.find(w => w.ruleId === "R7");
+    expect(r7.input.sourceBase).toBe("listing_list");  // catalog предпочтён
+  });
+
+  it("R7: без base (ни catalog, ни detail) — не срабатывает", () => {
+    const INTENTS = {};
+    const ONTOLOGY = {
+      entities: {
+        Listing: {
+          ownerField: "sellerId",
+          fields: { sellerId: { type: "entityRef" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+    expect(projections.my_listing_list).toBeUndefined();
+  });
+
   it("R3b: singleton detail с ownerField → my_*_detail без idParam с owner-фильтром", () => {
     const INTENTS = {
       create_wallet:  { creates: "Wallet", particles: { effects: [{ α: "create", target: "wallet" }] } },

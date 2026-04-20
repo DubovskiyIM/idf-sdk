@@ -198,8 +198,11 @@ export function witnessR3bSingletonDetail(entityName, ownerField, mutators, sour
 
 /**
  * R7: my_*_list выведен из ownerField.
+ * v2.1: base precondition расширен — R1 catalog или R3 detail.
+ * `sourceCatalog` сохранён в input для backward compat; фактически содержит id
+ * base projection'а (catalog preferred, detail fallback).
  */
-export function witnessR7OwnerFilter(entityName, ownerField, sourceCatalogId) {
+export function witnessR7OwnerFilter(entityName, ownerField, sourceBaseId) {
   return {
     basis: "crystallize-rule",
     reliability: "rule-based",
@@ -207,14 +210,15 @@ export function witnessR7OwnerFilter(entityName, ownerField, sourceCatalogId) {
     input: {
       entity: entityName,
       ownerField,
-      sourceCatalog: sourceCatalogId,
+      sourceCatalog: sourceBaseId,
+      sourceBase: sourceBaseId,
     },
     output: {
       kind: "catalog",
       mainEntity: entityName,
       filter: { field: ownerField, op: "=", value: "me.id" },
     },
-    rationale: `${entityName}.ownerField = "${ownerField}" + catalog(${sourceCatalogId}) существует → my_* catalog с фильтром добавлен`,
+    rationale: `${entityName}.ownerField = "${ownerField}" + base(${sourceBaseId}) существует → my_* catalog с фильтром добавлен`,
   };
 }
 
@@ -227,7 +231,7 @@ export function witnessR7OwnerFilter(entityName, ownerField, sourceCatalogId) {
  * @param {string[]} ownerFields — массив owner-полей (≥2 элементов)
  * @param {string} sourceCatalogId
  */
-export function witnessR7bMultiOwnerFilter(entityName, ownerFields, sourceCatalogId) {
+export function witnessR7bMultiOwnerFilter(entityName, ownerFields, sourceBaseId) {
   return {
     basis: "crystallize-rule",
     reliability: "rule-based",
@@ -236,7 +240,8 @@ export function witnessR7bMultiOwnerFilter(entityName, ownerFields, sourceCatalo
       entity: entityName,
       ownerFields: [...ownerFields],
       count: ownerFields.length,
-      sourceCatalog: sourceCatalogId,
+      sourceCatalog: sourceBaseId,
+      sourceBase: sourceBaseId,
     },
     output: {
       kind: "catalog",
@@ -248,7 +253,7 @@ export function witnessR7bMultiOwnerFilter(entityName, ownerFields, sourceCatalo
         value: "me.id",
       },
     },
-    rationale: `${entityName}.ownerField = [${ownerFields.join(", ")}] (${ownerFields.length} owner-fields) + catalog(${sourceCatalogId}) существует → my_* catalog с OR-filter ${ownerFields.map(f => `${f}===me.id`).join(" OR ")}`,
+    rationale: `${entityName}.ownerField = [${ownerFields.join(", ")}] (${ownerFields.length} owner-fields) + base(${sourceBaseId}) существует → my_* catalog с OR-filter ${ownerFields.map(f => `${f}===me.id`).join(" OR ")}`,
   };
 }
 
