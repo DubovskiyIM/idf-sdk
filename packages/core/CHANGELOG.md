@@ -1,5 +1,38 @@
 # Changelog
 
+## 0.41.0
+
+### Minor Changes
+
+- 86ad499: Pattern Bank: curated-кандидаты — 8 researcher-паттернов из profi+avito field
+  research (2026-04-17-18), прошедшие human review и строгий `validatePattern`
+  (включая `falsification.shouldMatch`/`shouldNotMatch`). Matching-ready, без
+  `structure.apply`.
+
+  Новые файлы в `packages/core/src/patterns/candidate/{catalog,detail,feed}/`:
+  category-tree-with-counter + paid-promotion-slot (merged profi+avito),
+  map-filter-catalog, reputation-level-badge, rating-aggregate-hero,
+  review-criterion-breakdown, direct-invite-sidebar, response-cost-before-action.
+
+  Экспорт `CURATED_CANDIDATES` (отдельно от manifest-свалки 127+). Общий
+  `CANDIDATE_PATTERNS` теперь union: сначала curated (строгая схема),
+  потом manifest (schema-lax). `loadCandidatePatterns` регистрирует обоих,
+  first-wins при коллизии id. Default registry по-прежнему stable-only —
+  candidate остаются explicit opt-in.
+
+  Promotion в stable + `structure.apply` — отдельный sub-project.
+
+- 86ad499: Promote response-cost-before-action candidate → stable с полной реализацией.
+
+  Cross-archetype (catalog/detail/feed — везде с toolbar). `apply` обогащает label
+  toolbar-item'ов суффиксом ' · {cost} {currency}' для intent'ов с `costHint`
+  (top-level, `meta`, или `particles`). Idempotent, детерминирован.
+
+  Anti-footgun для monetized actions: 'Откликнуться · 80 ₽', 'Boost · 99 ₽'.
+  Cost transparent до клика — закрывает profi/workzilla/youdo UX-gap.
+
+  Modal-confirm force отложено (требует pipeline refactor).
+
 ## 0.40.0
 
 ### Minor Changes
