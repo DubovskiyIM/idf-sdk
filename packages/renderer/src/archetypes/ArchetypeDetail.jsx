@@ -1,4 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
+import { resolveItemCompositions } from "@intent-driven/core";
 import SlotRenderer from "../SlotRenderer.jsx";
 import OverlayManager, { useOverlayManager } from "../controls/OverlayManager.jsx";
 import SubCollectionSection from "./SubCollectionSection.jsx";
@@ -74,8 +75,15 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
     const list = parentCtx.world?.[collection] || [];
     const id = parentCtx.routeParams?.[idParam];
     if (!id) return null;
-    return list.find(e => e.id === id) || null;
-  }, [projection, parentCtx.world, parentCtx.routeParams]);
+    const found = list.find(e => e.id === id) || null;
+    // R9: если artifact объявляет compositions, обогащаем target alias-полями.
+    // Spec: idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md
+    const compositions = parentCtx?.artifact?.compositions;
+    if (found && Array.isArray(compositions) && compositions.length > 0) {
+      return resolveItemCompositions(found, compositions, parentCtx.world);
+    }
+    return found;
+  }, [projection, parentCtx.world, parentCtx.routeParams, parentCtx?.artifact?.compositions]);
 
   if (!target) {
     const id = parentCtx.routeParams?.[projection?.idParam];
