@@ -4,6 +4,7 @@ import DateTimeControl from "./DateTimeControl.jsx";
 import FileControl from "./FileControl.jsx";
 import ImageControl from "./ImageControl.jsx";
 import MultiImageControl from "./MultiImageControl.jsx";
+import MethodSelectControl from "./MethodSelectControl.jsx";
 import PresetChips from "./PresetChips.jsx";
 import HelpCard from "./HelpCard.jsx";
 import { getAdaptedComponent, pickAdaptedComponent } from "../adapters/registry.js";
@@ -22,6 +23,7 @@ const CONTROLS_BY_TYPE = {
   file: FileControl,
   image: ImageControl,
   multiImage: MultiImageControl,
+  methodSelect: MethodSelectControl,
 };
 
 // Presets рендерятся только для контролов, где quick-fill семантически
