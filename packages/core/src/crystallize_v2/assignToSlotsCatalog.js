@@ -25,10 +25,19 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     ? { type: "gatingPanel", title: projection.gating.title, steps: projection.gating.steps }
     : null;
 
+  // projection.hero (UI-gap #9) — authored горизонтальный banner над body.
+  // Node (carousel / card / image / custom) или array<node>. SDK + heroCreate
+  // archetype (inline-creator) аппендятся после authored. Legacy поведение
+  // (hero:[] → только heroCreate) сохраняется — когда projection.hero не
+  // задан.
+  const authoredHero = projection.hero
+    ? (Array.isArray(projection.hero) ? [...projection.hero] : [projection.hero])
+    : [];
+
   const slots = {
     header: [],
     toolbar: [],
-    hero: [], // inline-creator над body (heroCreate архетип)
+    hero: authoredHero, // authored baннер + heroCreate intent (ниже)
     body: buildCatalogBody(projection, ONTOLOGY),
     context: [],
     fab: [],
