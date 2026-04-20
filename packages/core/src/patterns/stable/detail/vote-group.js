@@ -18,7 +18,63 @@ export default {
       return Object.values(groups).some(count => count >= 2);
     },
   },
-  structure: { slot: "sections.itemIntents", description: "Взаимоисключающие creator-intents как voteGroup с цветными опциями" },
+  structure: {
+    slot: "sections.itemIntents",
+    description: "Взаимоисключающие creator-intents как voteGroup с цветными опциями",
+    /**
+     * Apply: группирует intents с `creates: "Entity(variant)"` по base entity.
+     * Emit metadata в `slots._voteGroups` — map { baseEntity → variants[] }.
+     * Renderer (SubCollectionItem / ArchetypeDetail) читает эту metadata и
+     * заменяет дублирующиеся intent-buttons единой voteGroup-виджет.
+     *
+     * Shape:
+     *   slots._voteGroups = {
+     *     Vote: [
+     *       { intentId: "vote_yes", value: "yes", label: "Да" },
+     *       { intentId: "vote_no",  value: "no",  label: "Нет" },
+     *       { intentId: "vote_maybe", value: "maybe", label: "Может быть" },
+     *     ],
+     *   }
+     *
+     * Author-override: existing `slots._voteGroups` → no-op (idempotent).
+     * Renderer-integration с sections.itemIntents — future work.
+     */
+    apply(slots, context) {
+      const { intents } = context || {};
+      if (!Array.isArray(intents)) return slots;
+
+      const groups = {};
+      for (const intent of intents) {
+        if (typeof intent.creates !== "string") continue;
+        const match = /^([A-Za-z_]+)\((.+)\)$/.exec(intent.creates);
+        if (!match) continue;
+        const [, base, variant] = match;
+        if (!groups[base]) groups[base] = [];
+        groups[base].push({
+          intentId: intent.id,
+          value: variant.trim(),
+          label: intent.name || intent.id,
+        });
+      }
+
+      // Оставляем только группы ≥ 2 variants (singletons не voteGroup).
+      const validGroups = {};
+      for (const [base, variants] of Object.entries(groups)) {
+        if (variants.length >= 2) validGroups[base] = variants;
+      }
+      if (Object.keys(validGroups).length === 0) return slots;
+
+      if (slots?._voteGroups) return slots;
+
+      return {
+        ...slots,
+        _voteGroups: {
+          ...validGroups,
+          _source: "derived:vote-group",
+        },
+      };
+    },
+  },
   rationale: {
     hypothesis: "Голосование как набор вариантов снижает когнитивную нагрузку",
     evidence: [
