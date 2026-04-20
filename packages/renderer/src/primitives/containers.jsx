@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { resolveCompositions } from "@intent-driven/core";
+import { resolveCompositions, evalFilter } from "@intent-driven/core";
 import SlotRenderer from "../SlotRenderer.jsx";
 import { resolve, evalCondition, evalIntentCondition } from "../eval.js";
 import { resolveNavigateAction } from "../navigation/navigate.js";
@@ -423,10 +423,19 @@ export function List({ node, ctx }) {
   }
 
   if (node.filter) {
-    items = items.filter(it => evalCondition(node.filter, {
-      ...it, item: it, viewer: ctx.viewer, world: ctx.world,
-      viewState: ctx.viewState || {},
-    }));
+    // Structured filter (R3b/R7b/R10/R11 v2) приходит как объект. Legacy
+    // string-filter (messenger chat, authored viewState-выражения) —
+    // через evalCondition, чтобы сохранить доступ к viewState (поиск по query).
+    if (typeof node.filter === "object") {
+      items = items.filter(it => evalFilter(node.filter, it, {
+        viewer: ctx.viewer, world: ctx.world,
+      }));
+    } else {
+      items = items.filter(it => evalCondition(node.filter, {
+        ...it, item: it, viewer: ctx.viewer, world: ctx.world,
+        viewState: ctx.viewState || {},
+      }));
+    }
   }
   if (node.sort) {
     // Для direction:"bottom-up" сортируем ПО ВОЗРАСТАНИЮ (старое сверху,

@@ -39,6 +39,8 @@ function pluralize(word) {
   return word + "s";
 }
 
+import { evalFilter } from "../filterExpr.js";
+
 function findCollection(world, entityName) {
   if (!entityName) return [];
   const candidates = [pluralize(entityName.toLowerCase())];
@@ -46,17 +48,6 @@ function findCollection(world, entityName) {
   if (segs.length > 1) candidates.push(pluralize(segs[segs.length - 1].toLowerCase()));
   for (const c of candidates) if (Array.isArray(world[c])) return world[c];
   return [];
-}
-
-function evalFilter(expr, item, viewer) {
-  if (!expr) return true;
-  try {
-    const keys = Object.keys(item);
-    const fn = new Function(...keys, "viewer", `return !!(${expr})`);
-    return fn(...keys.map(k => item[k]), viewer);
-  } catch {
-    return true;
-  }
 }
 
 /**
@@ -131,7 +122,7 @@ const TOP_ITEMS = 3; // сколько элементов catalog озвучив
 function voiceCatalog(projection, world, viewer) {
   const rows = findCollection(world, projection.mainEntity);
   const filtered = projection.filter
-    ? rows.filter(r => evalFilter(projection.filter, r, viewer))
+    ? rows.filter(r => evalFilter(projection.filter, r, { viewer, world }))
     : rows;
 
   const witnesses = (projection.witnesses || []).slice(0, 3); // top-3 fields для brevity
@@ -199,7 +190,7 @@ function voiceDetail(projection, world, viewer, routeParams) {
 function voiceFeed(projection, world, viewer) {
   const rows = findCollection(world, projection.mainEntity);
   const filtered = projection.filter
-    ? rows.filter(r => evalFilter(projection.filter, r, viewer))
+    ? rows.filter(r => evalFilter(projection.filter, r, { viewer, world }))
     : rows;
   const sorted = [...filtered].reverse(); // newest first (простая эвристика)
 

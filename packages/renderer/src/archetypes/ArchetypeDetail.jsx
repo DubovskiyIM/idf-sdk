@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback } from "react";
-import { resolveItemCompositions } from "@intent-driven/core";
+import { resolveItemCompositions, evalFilter } from "@intent-driven/core";
 import SlotRenderer from "../SlotRenderer.jsx";
 import OverlayManager, { useOverlayManager } from "../controls/OverlayManager.jsx";
 import SubCollectionSection from "./SubCollectionSection.jsx";
@@ -67,27 +67,25 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
     parentCtx.navigate(editEdge.to, resolvedParams);
   };
 
-  const target = useMemo(() => {
-    const mainEntity = projection?.mainEntity;
-    const idParam = projection?.idParam;
-    if (!mainEntity || !idParam) return null;
-    const collection = pluralize(mainEntity.toLowerCase());
-    const list = parentCtx.world?.[collection] || [];
-    const id = parentCtx.routeParams?.[idParam];
-    if (!id) return null;
-    const found = list.find(e => e.id === id) || null;
-    // R9: если artifact объявляет compositions, обогащаем target alias-полями.
-    // Spec: idf-manifest-v2.1/docs/design/rule-R9-cross-entity-spec.md
-    const compositions = parentCtx?.artifact?.compositions;
-    if (found && Array.isArray(compositions) && compositions.length > 0) {
-      return resolveItemCompositions(found, compositions, parentCtx.world);
-    }
-    return found;
-  }, [projection, parentCtx.world, parentCtx.routeParams, parentCtx?.artifact?.compositions]);
+  const target = useMemo(
+    () => resolveDetailTarget(projection, parentCtx),
+    [projection, parentCtx.world, parentCtx.routeParams, parentCtx.viewer, parentCtx?.artifact?.compositions]
+  );
 
   if (!target) {
-    const id = parentCtx.routeParams?.[projection?.idParam];
     const entityName = projection?.name || "Запись";
+    if (projection?.singleton) {
+      // Singleton detail (R3b): для viewer не нашлось записи — обычно
+      // первое посещение, сущность ещё не создана (Wallet, Settings, Profile).
+      return (
+        <EmptyState
+          icon="✨"
+          title={`${entityName} ещё не создан`}
+          hint="Создайте запись — она привяжется к вашему аккаунту."
+        />
+      );
+    }
+    const id = parentCtx.routeParams?.[projection?.idParam];
     if (!id) {
       return (
         <EmptyState
@@ -295,6 +293,45 @@ function pluralize(word) {
   if (word.endsWith("y")) return word.slice(0, -1) + "ies";
   if (word.endsWith("s")) return word + "es";
   return word + "s";
+}
+
+/**
+ * Резолвер target-сущности для detail-архетипа.
+ *
+ * Две стратегии:
+ *   (а) обычный detail — mainEntity + idParam + routeParams[idParam]
+ *   (б) R3b singleton — mainEntity + projection.filter + viewer; idParam
+ *       игнорируется, target ищется через evalFilter в коллекции
+ *
+ * R9 compositions применяются к найденной сущности, если artifact их объявляет.
+ *
+ * Экспорт отдельно — чтобы unit-тестировать без полного рендер-стека.
+ */
+export function resolveDetailTarget(projection, parentCtx) {
+  const mainEntity = projection?.mainEntity;
+  if (!mainEntity) return null;
+  const collection = pluralize(mainEntity.toLowerCase());
+  const list = parentCtx?.world?.[collection] || [];
+
+  let found;
+  if (projection.singleton) {
+    if (!projection.filter) return null;
+    found = list.find(e => evalFilter(projection.filter, e, {
+      viewer: parentCtx?.viewer, world: parentCtx?.world,
+    })) || null;
+  } else {
+    const idParam = projection?.idParam;
+    if (!idParam) return null;
+    const id = parentCtx?.routeParams?.[idParam];
+    if (!id) return null;
+    found = list.find(e => e.id === id) || null;
+  }
+
+  const compositions = parentCtx?.artifact?.compositions;
+  if (found && Array.isArray(compositions) && compositions.length > 0) {
+    return resolveItemCompositions(found, compositions, parentCtx.world);
+  }
+  return found;
 }
 
 /**

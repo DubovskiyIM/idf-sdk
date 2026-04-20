@@ -308,7 +308,7 @@ function isCreatorOfOther(intent, mainEntity) {
   return true;
 }
 
-function buildCatalogBody(projection, ONTOLOGY) {
+export function buildCatalogBody(projection, ONTOLOGY) {
   const mainEntity = projection.mainEntity;
   const source = mainEntity ? pluralizeLower(mainEntity) : "items";
 
