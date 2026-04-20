@@ -331,11 +331,20 @@ export function buildCatalogBody(projection, ONTOLOGY) {
     : fieldNames.includes("status") ? "status"
     : null;
 
+  // projection.emptyState — authored богатый empty-state (UI-gap #8).
+  // Legacy автор emitted `{ type: "text", content: "Пусто" }` автоматически;
+  // теперь можно декларативно положить title / hint / illustration / cta.
+  // Object спэдится в node с фиксированным type:"emptyState", чтобы
+  // SlotRenderer подхватил соответствующий primitive.
+  const emptyNode = projection.emptyState
+    ? { type: "emptyState", ...projection.emptyState }
+    : { type: "text", content: "Пусто", style: "muted" };
+
   const body = {
     type: "list",
     source,
     gap: 8,
-    empty: { type: "text", content: "Пусто", style: "muted" },
+    empty: emptyNode,
     item: {
       type: "card",
       children: [

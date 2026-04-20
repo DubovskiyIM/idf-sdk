@@ -183,4 +183,53 @@ describe("assignToSlotsCatalog", () => {
       expect(slots.body.shape).toBeUndefined();
     });
   });
+
+  describe("projection.emptyState (UI-gap #8)", () => {
+    const emptyINTENTS = {
+      add_task: {
+        name: "Создать задачу",
+        creates: "Task",
+        particles: { effects: [{ α: "add", target: "tasks" }] },
+      },
+    };
+    const emptyONTOLOGY = {
+      entities: {
+        Task: { fields: { id: { type: "text" }, title: { type: "text" } } },
+      },
+    };
+
+    it("без projection.emptyState → default text empty ('Пусто')", () => {
+      const projection = { kind: "catalog", mainEntity: "Task", entities: ["Task"] };
+      const slots = assignToSlotsCatalog(emptyINTENTS, projection, emptyONTOLOGY);
+      expect(slots.body.empty).toEqual({ type: "text", content: "Пусто", style: "muted" });
+    });
+
+    it("projection.emptyState = { title, hint } → body.empty as emptyState node", () => {
+      const projection = {
+        kind: "catalog", mainEntity: "Task", entities: ["Task"],
+        emptyState: {
+          title: "У вас пока нет заданий",
+          hint: "Ваши открытые задания появятся здесь",
+        },
+      };
+      const slots = assignToSlotsCatalog(emptyINTENTS, projection, emptyONTOLOGY);
+      expect(slots.body.empty.type).toBe("emptyState");
+      expect(slots.body.empty.title).toBe("У вас пока нет заданий");
+      expect(slots.body.empty.hint).toBe("Ваши открытые задания появятся здесь");
+    });
+
+    it("emptyState с cta и illustration → все поля в body.empty", () => {
+      const projection = {
+        kind: "catalog", mainEntity: "Task", entities: ["Task"],
+        emptyState: {
+          illustration: "/empty-tasks.svg",
+          title: "Нет задач",
+          cta: { label: "Создать", intentId: "add_task" },
+        },
+      };
+      const slots = assignToSlotsCatalog(emptyINTENTS, projection, emptyONTOLOGY);
+      expect(slots.body.empty.illustration).toBe("/empty-tasks.svg");
+      expect(slots.body.empty.cta).toEqual({ label: "Создать", intentId: "add_task" });
+    });
+  });
 });
