@@ -7,6 +7,7 @@ import EmptyState from "./EmptyState.jsx";
 import Carousel from "./Carousel.jsx";
 import GatingPanel from "./GatingPanel.jsx";
 import CriterionSummary from "./CriterionSummary.jsx";
+import RatingAggregate from "./RatingAggregate.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -42,4 +43,5 @@ export const PRIMITIVES = {
   carousel: Carousel,
   gatingPanel: GatingPanel,
   criterionSummary: CriterionSummary,
+  ratingAggregate: RatingAggregate,
 };
