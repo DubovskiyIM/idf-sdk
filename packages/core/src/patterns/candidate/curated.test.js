@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 6 паттернов (review-criterion-breakdown + response-cost-before-action promoted в stable)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(6);
+  it("в curated bank ровно 5 паттернов (rating-aggregate-hero + review-criterion-breakdown + response-cost-before-action promoted в stable)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(5);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -59,14 +59,14 @@ describe("curated candidate bank — registry integration", () => {
     const registry = createRegistry();
     loadStablePatterns(registry);
     loadCandidatePatterns(registry);
-    // Sanity: stable (30 — +review-criterion-breakdown +response-cost-before-action) + curated (6).
+    // Sanity: stable (31 — +3 B2 promotions) + curated (5).
     // Totals могут быть выше за счёт manifest-свалки (127+), но она
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(30);
-    // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
-    expect(candidateCount).toBeGreaterThanOrEqual(6);
+    expect(stableCount).toBe(31);
+    // Curated (5) прошли validatePattern; manifest-свалка может добавить >0.
+    expect(candidateCount).toBeGreaterThanOrEqual(5);
     // Проверка, что каждый curated действительно в registry.
     for (const pattern of CURATED_CANDIDATES) {
       expect(registry.getPattern(pattern.id)).toBeTruthy();
