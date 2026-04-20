@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 7 паттернов (profi+avito merged, review-criterion-breakdown promoted в stable)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(7);
+  it("в curated bank ровно 6 паттернов (review-criterion-breakdown + response-cost-before-action promoted в stable)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(6);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -59,14 +59,14 @@ describe("curated candidate bank — registry integration", () => {
     const registry = createRegistry();
     loadStablePatterns(registry);
     loadCandidatePatterns(registry);
-    // Sanity: все stable (29 — +review-criterion-breakdown B2) + все curated (7).
+    // Sanity: stable (30 — +review-criterion-breakdown +response-cost-before-action) + curated (6).
     // Totals могут быть выше за счёт manifest-свалки (127+), но она
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(29);
-    // Curated (7) прошли validatePattern; manifest-свалка может добавить >0.
-    expect(candidateCount).toBeGreaterThanOrEqual(7);
+    expect(stableCount).toBe(30);
+    // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
+    expect(candidateCount).toBeGreaterThanOrEqual(6);
     // Проверка, что каждый curated действительно в registry.
     for (const pattern of CURATED_CANDIDATES) {
       expect(registry.getPattern(pattern.id)).toBeTruthy();
@@ -82,10 +82,10 @@ describe("curated candidate bank — registry integration", () => {
     resetDefaultRegistry();
   });
 
-  it("curated archetypes распределены по catalog/detail/feed", () => {
+  it("curated archetypes распределены по catalog/detail (feed-паттерны promoted в stable)", () => {
     const archetypes = new Set(CURATED_CANDIDATES.map(p => p.archetype));
     expect(archetypes.has("catalog")).toBe(true);
     expect(archetypes.has("detail")).toBe(true);
-    expect(archetypes.has("feed")).toBe(true);
+    // feed-паттерны (response-cost-before-action) promoted в stable 2026-04-20.
   });
 });
