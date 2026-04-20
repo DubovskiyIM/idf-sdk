@@ -28,6 +28,39 @@ export default {
   structure: {
     slot: "shell",
     description: "Левая панель — древовидная навигация по цепочке foreignKey (entity → child → grandchild). Выбор узла открывает detail справа.",
+    /**
+     * Apply: обходит ontology по цепочке FK от mainEntity (BFS),
+     * строит tree metadata { root, levels } и prepend'ит treeNav-node
+     * в `slots.sidebar`. Renderer (TreeNav primitive) рендерит вложенные
+     * списки entities; runtime items подтягиваются через ctx.world.
+     *
+     * levels = [{ depth, entity, children: [entityName...] }, ...]
+     *
+     * Idempotent: если `slots.sidebar[0].type === "treeNav"` — no-op.
+     */
+    apply(slots, context) {
+      const { ontology, mainEntity } = context || {};
+      if (!mainEntity || !ontology?.entities) return slots;
+
+      const levels = buildHierarchyLevels(ontology, mainEntity);
+      // Минимум 2 уровня (parent → child) — trigger уже проверил 3+,
+      // но apply делает defensive check на случай вызова напрямую.
+      if (levels.length < 2) return slots;
+
+      const existing = slots?.sidebar || [];
+      if (existing[0]?.type === "treeNav") return slots;
+
+      const treeNode = {
+        type: "treeNav",
+        root: mainEntity,
+        levels,
+        source: "derived:hierarchy-tree-nav",
+      };
+      return {
+        ...slots,
+        sidebar: [treeNode, ...existing],
+      };
+    },
   },
   rationale: {
     hypothesis: "Когда сущности формируют цепочку владения ≥3 уровней, flat navigation теряет контекст пути. Tree визуализирует иерархию.",
@@ -58,4 +91,30 @@ function findChildEntities(ontology, parentName) {
     if (fkName in fields) children.push(name);
   }
   return children;
+}
+
+/**
+ * BFS по цепочке FK — строит массив уровней { depth, entity, children }.
+ * Ограничение глубины: 5 уровней (защита от циклов и избыточной навигации).
+ */
+function buildHierarchyLevels(ontology, rootEntity) {
+  const levels = [];
+  const seen = new Set();
+  let currentFrontier = [rootEntity];
+  let depth = 0;
+  const MAX_DEPTH = 5;
+
+  while (currentFrontier.length > 0 && depth < MAX_DEPTH) {
+    const nextFrontier = [];
+    for (const entity of currentFrontier) {
+      if (seen.has(entity)) continue;
+      seen.add(entity);
+      const children = findChildEntities(ontology, entity).filter(c => !seen.has(c));
+      levels.push({ depth, entity, children });
+      nextFrontier.push(...children);
+    }
+    currentFrontier = nextFrontier;
+    depth += 1;
+  }
+  return levels;
 }
