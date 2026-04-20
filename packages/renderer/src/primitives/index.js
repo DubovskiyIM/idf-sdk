@@ -5,6 +5,7 @@ import { Map } from "./map.jsx";
 import { IrreversibleBadge } from "./IrreversibleBadge.jsx";
 import EmptyState from "./EmptyState.jsx";
 import Carousel from "./Carousel.jsx";
+import GatingPanel from "./GatingPanel.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -13,6 +14,7 @@ export { Chart, Sparkline } from "./chart.jsx";
 export { IrreversibleBadge } from "./IrreversibleBadge.jsx";
 export { default as EmptyState } from "./EmptyState.jsx";
 export { default as Carousel } from "./Carousel.jsx";
+export { default as GatingPanel } from "./GatingPanel.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -37,4 +39,5 @@ export const PRIMITIVES = {
   irreversibleBadge: IrreversibleBadge,
   emptyState: EmptyState,
   carousel: Carousel,
+  gatingPanel: GatingPanel,
 };

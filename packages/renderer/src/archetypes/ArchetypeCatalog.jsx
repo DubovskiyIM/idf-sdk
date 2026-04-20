@@ -70,11 +70,14 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
             <SlotRenderer items={slots.sidebar} ctx={ctx} />
           </aside>
         )}
-        <div style={{ flex: 1, overflow: "auto", padding: 16, minWidth: 0 }}>
+        <div style={{ flex: 1, overflow: "auto", padding: 16, minWidth: 0, display: "flex", flexDirection: "column", gap: 16 }}>
           {slots.hero?.length > 0 && (
             <div>
               <SlotRenderer items={slots.hero} ctx={ctx} />
             </div>
+          )}
+          {slots.gating && (
+            <SlotRenderer item={slots.gating} ctx={ctx} />
           )}
           <SlotRenderer item={slots.body} ctx={ctx} />
         </div>
