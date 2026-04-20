@@ -30,6 +30,7 @@ import {
   witnessR7bMultiOwnerFilter,
   witnessR9Composite,
   witnessR10RoleScope,
+  witnessR11TemporalFeed,
 } from "./derivationWitnesses.js";
 
 /**
@@ -406,6 +407,32 @@ export function deriveProjections(intents, ontology) {
       filter: { field: ownerField, op: "=", value: "me.id" },
       singleton: true,
       derivedBy: [witnessR3bSingletonDetail(entityName, ownerField, mutatorIds, detailId)],
+    };
+  }
+
+  // R11: Temporal feed — entity.temporal:true → <entity>_feed с временной
+  // сортировкой. Применяется к event-like сущностям (Insight, Notification,
+  // Activity) — монотонно растущие append-only потоки.
+  // Spec: idf-manifest-v2.1/docs/design/rule-R11-temporal-feed-spec.md
+  for (const entityName of entityNames) {
+    const entityDef = ontology.entities[entityName];
+    if (!entityDef?.temporal) continue;
+    const lower = entityName.toLowerCase();
+    const catalogId = `${lower}_list`;
+    const detailId = `${lower}_detail`;
+    const baseProj = projections[catalogId] || projections[detailId];
+    if (!baseProj) continue;
+
+    const timestampField = entityDef.timestampField || "createdAt";
+    const baseSourceId = projections[catalogId] ? catalogId : detailId;
+
+    projections[`${lower}_feed`] = {
+      kind: "feed",
+      mainEntity: entityName,
+      entities: [entityName],
+      witnesses: baseProj.witnesses || [],
+      sort: `-${timestampField}`,
+      derivedBy: [witnessR11TemporalFeed(entityName, timestampField, baseSourceId)],
     };
   }
 

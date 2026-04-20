@@ -63,6 +63,34 @@ export function witnessR9Composite(mainEntity, joins, projectionId) {
 }
 
 /**
+ * R11: temporal feed — <entity>_feed с временной сортировкой.
+ * Применяется когда entity.temporal === true + R1 catalog существует.
+ * Spec: idf-manifest-v2.1/docs/design/rule-R11-temporal-feed-spec.md (draft)
+ *
+ * @param {string} entityName
+ * @param {string} timestampField — поле для сортировки (default "createdAt")
+ * @param {string} sourceBaseId
+ */
+export function witnessR11TemporalFeed(entityName, timestampField, sourceBaseId) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R11",
+    input: {
+      entity: entityName,
+      timestampField,
+      sourceBase: sourceBaseId,
+    },
+    output: {
+      kind: "feed",
+      mainEntity: entityName,
+      sort: `-${timestampField}`,
+    },
+    rationale: `${entityName}.temporal === true + base(${sourceBaseId}) → ${entityName}_feed с sort:"-${timestampField}" добавлен`,
+  };
+}
+
+/**
  * R10: scoped catalog выведен из role.scope (m2m-via через assignment).
  * Спецификация: idf-manifest-v2.1/docs/design/rule-R10-role-scope-spec.md
  *
