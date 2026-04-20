@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.23.0
+
+### Minor Changes
+
+- 2e02b73: Добавлен `computeSlotAttribution(intents, ontology, projection)` — карта `{ slotPath → { patternId, action } }` для X-ray режима PatternInspector и derivation-diff CLI. Прокатывает `applyStructuralPatterns` пошагово (с deep-clone snapshot между шагами, чтобы in-place мутации в apply-функциях не повреждали diff), фиксирует added/modified пути.
+
 ## 0.22.0
 
 ### Minor Changes

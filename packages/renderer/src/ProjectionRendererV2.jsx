@@ -43,6 +43,11 @@ export default function ProjectionRendererV2({
   artifact,
   artifactOverride,
   previewPatternId,
+  xrayMode = false,
+  slotAttribution = null,
+  xrayDomain = null,
+  onExpandPattern,
+  patternWitnesses = null,
   activeView,
   projection,
   world,
@@ -128,6 +133,11 @@ export default function ProjectionRendererV2({
     artifacts,
     allProjections,
     previewPatternId,
+    xrayMode,
+    slotAttribution,
+    xrayDomain,
+    onExpandPattern,
+    patternWitnesses,
   };
 
   return (

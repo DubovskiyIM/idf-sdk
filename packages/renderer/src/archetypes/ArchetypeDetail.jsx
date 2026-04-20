@@ -192,14 +192,64 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
               (source: "derived:…") и рендерер в preview-режиме
               (ctx.previewPatternId задан), оборачиваем в PatternPreviewOverlay
               — dashed-border + corner-badge с patternId. */}
-          {(slots.sections || []).map(section => {
+          {(slots.sections || []).map((section, idx) => {
+            const renderedSection = (
+              <SubCollectionSection section={section} target={target} ctx={ctx} />
+            );
+
+            // Preview-mode: один паттерн в фокусе, оборачиваем все derived sections.
             if (ctx.previewPatternId && section.source?.startsWith("derived:")) {
               return (
                 <PatternPreviewOverlay key={section.id} patternId={ctx.previewPatternId}>
-                  <SubCollectionSection section={section} target={target} ctx={ctx} />
+                  {renderedSection}
                 </PatternPreviewOverlay>
               );
             }
+
+            // X-ray mode: per-slot attribution. Ищем path этой section в attribution.
+            if (ctx.xrayMode && ctx.slotAttribution) {
+              const candidates = [
+                `sections[${idx}]`,
+                `sections[${idx}].id`,
+                `sections[${idx}].entity`,
+              ];
+              let attrEntry = null;
+              for (const p of candidates) {
+                if (ctx.slotAttribution[p]) {
+                  attrEntry = { path: p, ...ctx.slotAttribution[p] };
+                  break;
+                }
+              }
+              // Fallback: section.source = "derived:<patternId>" даёт прямой ID
+              if (!attrEntry && section.source?.startsWith("derived:")) {
+                attrEntry = {
+                  path: `sections[${idx}]`,
+                  patternId: section.source.slice("derived:".length),
+                  action: "added",
+                };
+              }
+              if (attrEntry) {
+                const witness = ctx.patternWitnesses?.find(w => w.pattern === attrEntry.patternId);
+                const projId = ctx.artifact?.projection || "";
+                const graphLink = ctx.xrayDomain
+                  ? `/studio#graph/focus?domain=${encodeURIComponent(ctx.xrayDomain)}&pattern=${encodeURIComponent(attrEntry.patternId)}&projection=${encodeURIComponent(projId)}`
+                  : null;
+                return (
+                  <PatternPreviewOverlay
+                    key={section.id}
+                    mode="xray"
+                    patternId={attrEntry.patternId}
+                    attribution={{ action: attrEntry.action, path: attrEntry.path }}
+                    witness={witness}
+                    graphLink={graphLink}
+                    onExpandInDrawer={ctx.onExpandPattern}
+                  >
+                    {renderedSection}
+                  </PatternPreviewOverlay>
+                );
+              }
+            }
+
             return (
               <SubCollectionSection
                 key={section.id}

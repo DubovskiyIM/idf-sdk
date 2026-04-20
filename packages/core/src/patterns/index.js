@@ -10,6 +10,7 @@ export { buildStrategy, DEFAULT_STRATEGY } from "./strategy.js";
 export { BUILT_IN_PATTERNS } from "./bank.js";
 export { createRegistry, getDefaultRegistry, loadStablePatterns } from "./registry.js";
 export { validatePattern, evaluateTrigger } from "./schema.js";
+export { computeSlotAttribution } from "./slotAttribution.js";
 
 import { classifyPattern } from "./classifier.js";
 import { buildStrategy } from "./strategy.js";
