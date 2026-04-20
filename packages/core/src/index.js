@@ -149,3 +149,11 @@ export {
   groupCandidatesByTheme,
   loadCandidatePatterns,
 } from "./patterns/candidate/index.js";
+
+// Role-aware projection filtering (backlog §4.9) — projection.forRoles
+// декларирует в каких активных ролях видим в ROOT-навигации.
+export {
+  filterProjectionsByRole,
+  isProjectionAvailableForRole,
+  partitionProjectionsByRole,
+} from "./filterProjectionsByRole.js";
