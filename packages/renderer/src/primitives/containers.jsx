@@ -465,10 +465,10 @@ export function List({ node, ctx }) {
     });
   }
 
-  if (items.length === 0 && node.empty) {
-    return <SlotRenderer item={node.empty} ctx={ctx} />;
-  }
-
+  // Rules-of-Hooks: все hooks вызываются ДО любого conditional
+  // early-return. items.length меняется между рендерами — early-return
+  // для пустого списка conditional. useRef/useEffect после него ломает
+  // hook-order при переходе пустой ↔ не-пустой.
   const bottomUp = node.direction === "bottom-up";
   const scrollRef = useRef(null);
   // Автопрокрутка к последнему элементу для bottom-up
@@ -477,6 +477,10 @@ export function List({ node, ctx }) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [items.length, bottomUp]);
+
+  if (items.length === 0 && node.empty) {
+    return <SlotRenderer item={node.empty} ctx={ctx} />;
+  }
 
   const onItemClick = node.onItemClick;
 
