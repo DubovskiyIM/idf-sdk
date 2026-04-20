@@ -13,9 +13,11 @@ import paidPromotionSlot from "./catalog/paid-promotion-slot.js";
 import mapFilterCatalog from "./catalog/map-filter-catalog.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import ratingAggregateHero from "./detail/rating-aggregate-hero.js";
-import reviewCriterionBreakdown from "./detail/review-criterion-breakdown.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 import responseCostBeforeAction from "./feed/response-cost-before-action.js";
+
+// review-criterion-breakdown promoted в stable (2026-04-20, B2 #2) — см.
+// packages/core/src/patterns/stable/detail/review-criterion-breakdown.js.
 
 export {
   categoryTreeWithCounter,
@@ -23,7 +25,6 @@ export {
   mapFilterCatalog,
   reputationLevelBadge,
   ratingAggregateHero,
-  reviewCriterionBreakdown,
   directInviteSidebar,
   responseCostBeforeAction,
 };
@@ -34,7 +35,6 @@ export const CURATED_CANDIDATES = [
   mapFilterCatalog,
   reputationLevelBadge,
   ratingAggregateHero,
-  reviewCriterionBreakdown,
   directInviteSidebar,
   responseCostBeforeAction,
 ];
