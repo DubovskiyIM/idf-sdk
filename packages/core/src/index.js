@@ -43,6 +43,9 @@ export { parseCondition, parseConditions } from "./conditionParser.js";
 export { crystallizeV2 } from "./crystallize_v2/index.js";
 export { deriveProjections } from "./crystallize_v2/deriveProjections.js";
 export { composeProjections } from "./crystallize_v2/composeProjections.js";
+export { explainCrystallize, explainAllCrystallize } from "./crystallize_v2/explainCrystallize.js";
+export { resolveCompositions, resolveItemCompositions, getAliasedField } from "./crystallize_v2/resolveCompositions.js";
+export { collectNearMissWitnesses, groupNearMissByRule } from "./crystallize_v2/nearMissWitnesses.js";
 export { validateArtifact } from "./crystallize_v2/validateArtifact.js";
 export { inferFieldRole } from "./crystallize_v2/ontologyHelpers.js";
 export {
