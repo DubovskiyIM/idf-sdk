@@ -413,6 +413,11 @@ export function deriveProjections(intents, ontology) {
   // R11: Temporal feed — entity.temporal:true → <entity>_feed с временной
   // сортировкой. Применяется к event-like сущностям (Insight, Notification,
   // Activity) — монотонно растущие append-only потоки.
+  //
+  // v2 (owner-scoped): если entity также имеет ownerField (string), генерируется
+  // ДОПОЛНИТЕЛЬНО my_<entity>_feed с owner-фильтром + тем же sort. Аналог
+  // отношения R1→R7 для временных лент.
+  //
   // Spec: idf-manifest-v2.1/docs/design/rule-R11-temporal-feed-spec.md
   for (const entityName of entityNames) {
     const entityDef = ontology.entities[entityName];
@@ -426,6 +431,7 @@ export function deriveProjections(intents, ontology) {
     const timestampField = entityDef.timestampField || "createdAt";
     const baseSourceId = projections[catalogId] ? catalogId : detailId;
 
+    // Public temporal feed
     projections[`${lower}_feed`] = {
       kind: "feed",
       mainEntity: entityName,
@@ -434,6 +440,21 @@ export function deriveProjections(intents, ontology) {
       sort: `-${timestampField}`,
       derivedBy: [witnessR11TemporalFeed(entityName, timestampField, baseSourceId)],
     };
+
+    // Owner-scoped temporal feed (R11 v2): entity.temporal + ownerField.
+    // Single-string owner только (disjunction-feed — future R11b если потребуется).
+    const ownerField = entityDef.ownerField;
+    if (typeof ownerField === "string") {
+      projections[`my_${lower}_feed`] = {
+        kind: "feed",
+        mainEntity: entityName,
+        entities: [entityName],
+        witnesses: baseProj.witnesses || [],
+        filter: { field: ownerField, op: "=", value: "me.id" },
+        sort: `-${timestampField}`,
+        derivedBy: [witnessR11TemporalFeed(entityName, timestampField, baseSourceId, { ownerField })],
+      };
+    }
   }
 
   // R10: Role-scope filtered catalog — для каждой роли с scope-объявлением,

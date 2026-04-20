@@ -64,14 +64,28 @@ export function witnessR9Composite(mainEntity, joins, projectionId) {
 
 /**
  * R11: temporal feed — <entity>_feed с временной сортировкой.
- * Применяется когда entity.temporal === true + R1 catalog существует.
- * Spec: idf-manifest-v2.1/docs/design/rule-R11-temporal-feed-spec.md (draft)
+ * v2: opts.ownerField включает owner-scoped вариант (my_<entity>_feed с filter).
+ * Spec: idf-manifest-v2.1/docs/design/rule-R11-temporal-feed-spec.md
  *
  * @param {string} entityName
  * @param {string} timestampField — поле для сортировки (default "createdAt")
  * @param {string} sourceBaseId
+ * @param {{ownerField?: string}} [opts]
  */
-export function witnessR11TemporalFeed(entityName, timestampField, sourceBaseId) {
+export function witnessR11TemporalFeed(entityName, timestampField, sourceBaseId, opts = {}) {
+  const isOwnerScoped = typeof opts.ownerField === "string";
+  const output = isOwnerScoped
+    ? {
+        kind: "feed",
+        mainEntity: entityName,
+        filter: { field: opts.ownerField, op: "=", value: "me.id" },
+        sort: `-${timestampField}`,
+      }
+    : {
+        kind: "feed",
+        mainEntity: entityName,
+        sort: `-${timestampField}`,
+      };
   return {
     basis: "crystallize-rule",
     reliability: "rule-based",
@@ -80,13 +94,13 @@ export function witnessR11TemporalFeed(entityName, timestampField, sourceBaseId)
       entity: entityName,
       timestampField,
       sourceBase: sourceBaseId,
+      ownerField: opts.ownerField || null,
+      ownerScoped: isOwnerScoped,
     },
-    output: {
-      kind: "feed",
-      mainEntity: entityName,
-      sort: `-${timestampField}`,
-    },
-    rationale: `${entityName}.temporal === true + base(${sourceBaseId}) → ${entityName}_feed с sort:"-${timestampField}" добавлен`,
+    output,
+    rationale: isOwnerScoped
+      ? `${entityName}.temporal === true + ownerField="${opts.ownerField}" + base(${sourceBaseId}) → my_${entityName.toLowerCase()}_feed с owner-filter + sort:"-${timestampField}"`
+      : `${entityName}.temporal === true + base(${sourceBaseId}) → ${entityName.toLowerCase()}_feed с sort:"-${timestampField}" добавлен`,
   };
 }
 

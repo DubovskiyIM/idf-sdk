@@ -636,6 +636,60 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.thing_feed).toBeUndefined();
   });
 
+  it("R11 v2: owner-scoped temporal feed → дополнительно my_<entity>_feed с filter", () => {
+    const INTENTS = {
+      add_insight: { creates: "Insight", particles: { effects: [{ α: "create", target: "insight" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Insight: {
+          temporal: true,
+          ownerField: "userId",
+          fields: {
+            userId: { type: "entityRef" },
+            title: { type: "text" },
+            createdAt: { type: "datetime" },
+          },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.insight_feed).toBeDefined();
+    expect(projections.insight_feed.filter).toBeUndefined();
+
+    expect(projections.my_insight_feed).toBeDefined();
+    expect(projections.my_insight_feed.kind).toBe("feed");
+    expect(projections.my_insight_feed.sort).toBe("-createdAt");
+    expect(projections.my_insight_feed.filter).toEqual({
+      field: "userId", op: "=", value: "me.id",
+    });
+
+    const r11 = projections.my_insight_feed.derivedBy.find(w => w.ruleId === "R11");
+    expect(r11.input.ownerScoped).toBe(true);
+    expect(r11.input.ownerField).toBe("userId");
+    expect(r11.rationale).toContain("owner-filter");
+  });
+
+  it("R11 v2: array ownerField (multi) → только public feed (R11 v2 single-string)", () => {
+    const INTENTS = {
+      add_shared: { creates: "Shared", particles: { effects: [{ α: "create", target: "shared" }] } },
+    };
+    const ONTOLOGY = {
+      entities: {
+        Shared: {
+          temporal: true,
+          ownerField: ["ownerA", "ownerB"],
+          fields: { ownerA: { type: "entityRef" }, ownerB: { type: "entityRef" }, createdAt: { type: "datetime" } },
+        },
+      },
+    };
+    const projections = deriveProjections(INTENTS, ONTOLOGY);
+
+    expect(projections.shared_feed).toBeDefined();
+    expect(projections.my_shared_feed).toBeUndefined();
+  });
+
   it("R11: fallback на R3 detail если нет R1 catalog", () => {
     const INTENTS = {
       edit_note: { particles: { effects: [{ α: "replace", target: "note.body" }] } },
