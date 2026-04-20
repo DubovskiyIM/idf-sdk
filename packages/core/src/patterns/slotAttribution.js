@@ -42,7 +42,9 @@ export function computeSlotAttribution(intents, ontology, projection) {
   const matched = Array.isArray(matchResult) ? matchResult : matchResult.matched;
 
   const attribution = {};
-  let prev = artifactBaseline.slots || {};
+  // Глубокий клон baseline, чтобы apply-функции, которые мутируют in-place,
+  // не повредили нашу копию для diff'а.
+  let prev = deepClone(artifactBaseline.slots || {});
 
   for (const entry of matched) {
     const pattern = Array.isArray(matchResult) ? entry : entry.pattern;
@@ -54,7 +56,10 @@ export function computeSlotAttribution(intents, ontology, projection) {
       intents: intentsArr,
       projection,
     };
-    const next = pattern.structure.apply(prev, applyContext);
+    // Важно: передаём свежий клон в apply, потом diff'им против сохранённого.
+    // Иначе in-place мутация даёт next === prev и diff пропускает изменения.
+    const snapshot = deepClone(prev);
+    const next = pattern.structure.apply(snapshot, applyContext);
     const changes = diffSlots(prev, next);
     for (const { path, action } of changes) {
       attribution[path] = { patternId: pattern.id, action };
@@ -63,6 +68,14 @@ export function computeSlotAttribution(intents, ontology, projection) {
   }
 
   return attribution;
+}
+
+function deepClone(v) {
+  if (v === null || typeof v !== "object") return v;
+  if (Array.isArray(v)) return v.map(deepClone);
+  const out = {};
+  for (const k of Object.keys(v)) out[k] = deepClone(v[k]);
+  return out;
 }
 
 function diffSlots(prev, next) {
