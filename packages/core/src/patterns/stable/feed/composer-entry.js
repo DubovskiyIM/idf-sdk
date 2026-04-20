@@ -9,7 +9,26 @@ export default {
       { kind: "intent-confirmation", confirmation: "enter" },
     ],
   },
-  structure: { slot: "composer", description: "Composer-поле внизу feed для быстрого создания mainEntity" },
+  structure: {
+    slot: "composer",
+    description: "Composer-поле внизу feed для быстрого создания mainEntity",
+    /**
+     * Apply: формализует SDK `composerEntry` archetype — маркирует
+     * `slots.composer` с `source: "derived:composer-entry"`. Если slot
+     * пуст (feed без composerEntry-intent), no-op.
+     *
+     * Idempotent.
+     */
+    apply(slots, context) {
+      const composer = slots?.composer;
+      if (!composer || typeof composer !== "object") return slots;
+      if (composer.source === "derived:composer-entry") return slots;
+      return {
+        ...slots,
+        composer: { ...composer, source: "derived:composer-entry" },
+      };
+    },
+  },
   rationale: {
     hypothesis: "Chat-style ввод оптимален для потоковых сущностей (сообщения, комментарии)",
     evidence: [
