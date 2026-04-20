@@ -340,11 +340,23 @@ export function buildCatalogBody(projection, ONTOLOGY) {
     ? { type: "emptyState", ...projection.emptyState }
     : { type: "text", content: "Пусто", style: "muted" };
 
+  // projection.tabs (UI-gap #1) — filter-views как табы над catalog body.
+  // Нормализуем массив, dropping entries без id. Renderer List применяет
+  // activeTab.filter поверх base filter (composition AND).
+  const tabs = Array.isArray(projection.tabs)
+    ? projection.tabs.filter(t => t && t.id).map(t => ({
+        id: t.id,
+        label: t.label,
+        filter: t.filter,
+      }))
+    : null;
+
   const body = {
     type: "list",
     source,
     gap: 8,
     empty: emptyNode,
+    ...(tabs && tabs.length > 0 ? { tabs, defaultTab: projection.defaultTab } : {}),
     item: {
       type: "card",
       children: [
