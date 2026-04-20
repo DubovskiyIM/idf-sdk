@@ -42,26 +42,34 @@ function matchesWhere(row, where) {
 function compilePredicate(inv) {
   if (typeof inv.predicate === "function") return inv.predicate;
   if (typeof inv.expression === "string") {
-    // Для авторской декларации: expression — JS-выражение над row.
+    // Для авторской декларации: expression — JS-выражение над row
+    // с доступом к world/viewer/context как явным именам. `with (row)`
+    // раскрывает поля row как bare identifiers (back-compat со старыми
+    // expression'ами вроде "minPrice <= maxPrice").
     // new Function — единственный способ без рантайм-AST (который требует
     // отдельного parser'а). Вход — trusted ontology.
-    return new Function("row", `with (row) { return (${inv.expression}); }`);
+    return new Function(
+      "row", "world", "viewer", "context",
+      `with (row) { return (${inv.expression}); }`,
+    );
   }
   throw new Error("expression invariant requires predicate or expression");
 }
 
-function handler(inv, world) {
+function handler(inv, world, _ontology, opts = {}) {
   if (!inv.entity) {
     throw new Error("expression invariant requires .entity");
   }
   const rows = (world[pluralize(inv.entity)] || []).filter(r => matchesWhere(r, inv.where));
   const predicate = compilePredicate(inv);
+  const viewer  = opts.viewer  ?? null;
+  const context = opts.context ?? null;
   const violations = [];
 
   for (const row of rows) {
     let ok;
     try {
-      ok = predicate(row);
+      ok = predicate(row, world, viewer, context);
     } catch (e) {
       // Ошибка внутри предиката трактуется как нарушение — чтобы автор
       // получил видимый сигнал, а не «тихо всё ок».
