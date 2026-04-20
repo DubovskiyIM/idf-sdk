@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.31.1
+
+### Patch Changes
+
+- 9a5388c: Salience declaration-order tiebreak расширен на `assignToSlotsCatalog` (catalog/feed projections). Ранее был только в `assignToSlotsDetail` — catalog-toolbar'ы продолжали falling back to alphabetical.
+
+  Теперь declarationOrder пробрасывается из `Object.entries(INTENTS)` index во все toolbar-push'ы catalog'а (creator, projection-level overlay, projection-level click, inlineSearch).
+
+  Zero-breaking: backward-compat через Infinity fallback при missing declarationOrder. Existing 895 тестов passing без regression.
+
+  Host impact: после bump → `sales/listing_feed` alphabetical-fallback witnesses (4 остаточных после host #70) должны упасть до 0.
+
 ## 0.31.0
 
 ### Minor Changes
@@ -30,14 +42,10 @@
   **core**
 
   - Новый shared helper `evalFilter(filter, row, { viewer, world })` —
-    единая surface для четырёх форматов, которые эмитят R-правила:
-    - `string` — legacy JS-выражение (back-compat для messenger buildBody и
-      authored viewState-фильтров);
-    - `{ field, op, value }` — простой predicate (R3b singleton, R11 v2 feed),
-      `value: "me.id"` резолвится через `viewer.id`;
-    - `{ kind: "disjunction", fields, op, value }` — OR across полей
-      (R7b multi-ownerField);
-    - `{ kind: "m2m-via", via, viewerField, joinField, localField,
+    единая surface для четырёх форматов, которые эмитят R-правила: - `string` — legacy JS-выражение (back-compat для messenger buildBody и
+    authored viewState-фильтров); - `{ field, op, value }` — простой predicate (R3b singleton, R11 v2 feed),
+    `value: "me.id"` резолвится через `viewer.id`; - `{ kind: "disjunction", fields, op, value }` — OR across полей
+    (R7b multi-ownerField); - `{ kind: "m2m-via", via, viewerField, joinField, localField,
 statusField?, statusAllowed? }` — bridge-lookup (R10 role.scope).
   - `documentMaterializer` и `voiceMaterializer` мигрированы на этот helper —
     теперь тоже корректно фильтруют structured-filter'ы (до этого упали бы
