@@ -262,6 +262,22 @@ describe("footer-inline-setter.structure.apply", () => {
     expect(result.footer).toHaveLength(0);
   });
 
+  it("respects author-override: projection.toolbar whitelist → intent остаётся в toolbar", () => {
+    const intent = makeSingleParamReplaceIntent("set_deadline");
+    const slots = {
+      toolbar: [makeToolbarItem("set_deadline")],
+      footer: [],
+    };
+    const result = footerInlineSetter.structure.apply(slots, {
+      projection: { mainEntity: "Poll", toolbar: ["set_deadline"] },
+      intents: [intent],
+      ontology,
+    });
+    expect(result.toolbar).toHaveLength(1);
+    expect(result.toolbar[0].intentId).toBe("set_deadline");
+    expect(result.footer).toHaveLength(0);
+  });
+
   it("backlog 4.3: intent с file-параметром остаётся в toolbar", () => {
     const fileIntent = {
       id: "attach_receipt",
