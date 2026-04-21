@@ -241,6 +241,16 @@ export function mapOntologyTypeToControl(ontologyType) {
     entityRef: "select", // ссылка на другую сущность — select
     id: "text", // id обычно не редактируется через форму
     boolean: "select",
+    // backlog §9.1 / Workzilla post-bump: native-format importers (Prisma /
+    // OpenAPI / Postgres) + manual scaffold авторы часто пишут `type: "string"`
+    // вместо canonical `"text"`. Маппим в text вместо fallback-отбрасывания.
+    string: "text",
+    int: "number",
+    integer: "number",
+    float: "number",
+    double: "number",
+    bigint: "number",
+    bool: "select",
   };
   return map[ontologyType] || "text";
 }

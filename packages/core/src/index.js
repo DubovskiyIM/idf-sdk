@@ -50,9 +50,17 @@ export { validateArtifact } from "./crystallize_v2/validateArtifact.js";
 export { inferFieldRole } from "./crystallize_v2/ontologyHelpers.js";
 export {
   generateEditProjections,
+  generateCreateProjections,
   findReplaceIntents,
   buildFormSpec,
+  buildCreateFormSpec,
 } from "./crystallize_v2/formGrouping.js";
+// backlog §9.1 / §9.7: expose для host'ов — нужно мапить нативные типы
+// при построении собственного formSpec (minimal useReducer-форма).
+export { mapOntologyTypeToControl } from "./crystallize_v2/ontologyHelpers.js";
+// backlog §8.1: normalize для host'ов, кто хочет применить bridge вне
+// crystallizeV2 (например, debug-inspect или custom pipeline).
+export { normalizeIntentNative, normalizeIntentsMap } from "./crystallize_v2/normalizeIntentNative.js";
 export {
   registerArchetype,
   prependArchetype,

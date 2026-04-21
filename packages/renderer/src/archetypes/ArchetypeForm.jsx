@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import ParameterControl from "../parameters/index.jsx";
 import EmptyState from "../primitives/EmptyState.jsx";
+import { getAdaptedComponent } from "../adapters/registry.js";
 
 /**
  * Form-архетип: редактирование одной сущности через композитную форму.
@@ -184,55 +185,92 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
     }
   };
 
-  return (
-    <div style={{
-      display: "flex", flexDirection: "column", height: "100%",
-      background: "var(--idf-surface, #f2f2f7)",
-      fontFamily: "var(--idf-font, -apple-system, system-ui, sans-serif)",
-    }}>
-      {/* Navigation bar — Apple HIG style */}
+  // backlog §9.4 / 9.5: header — adapter-aware. Если адаптер предоставил
+  // `shell.formHeader` — используем его; иначе neutral-fallback через
+  // CSS-vars. Название projection'а фоллбэкается на artifact.name
+  // (projection может быть не передана host'ом — §9.5 guard).
+  const AdaptedFormHeader = getAdaptedComponent("shell", "formHeader");
+  const AdaptedPrimary   = getAdaptedComponent("button", "primary");
+  const AdaptedSecondary = getAdaptedComponent("button", "secondary");
+  const saveLabel   = submitting ? "…" : (isCreateMode ? "Создать" : "Сохранить");
+  const cancelLabel = "Отмена";
+  const titleText   = projection?.name || parentCtx?.artifact?.name || "";
+  const canSave     = !submitting && dirtyFields.length > 0;
+
+  let header;
+  if (AdaptedFormHeader) {
+    header = (
+      <AdaptedFormHeader
+        title={titleText}
+        saveLabel={saveLabel}
+        cancelLabel={cancelLabel}
+        onSave={canSave ? onSave : undefined}
+        onCancel={goBack}
+        disabled={!canSave}
+      />
+    );
+  } else if (AdaptedPrimary && AdaptedSecondary) {
+    // Neutral adapter-rendered header (antd / mantine).
+    header = (
+      <div style={{
+        display: "flex", alignItems: "center", gap: 12,
+        padding: "12px 16px",
+        borderBottom: "1px solid var(--idf-border, #e5e7eb)",
+        background: "var(--idf-card, #fff)",
+      }}>
+        <AdaptedSecondary onClick={goBack}>← {cancelLabel}</AdaptedSecondary>
+        <h1 style={{ margin: 0, fontSize: 16, fontWeight: 600, flex: 1, textAlign: "center", color: "var(--idf-text, #1f2937)" }}>
+          {titleText}
+        </h1>
+        <AdaptedPrimary onClick={canSave ? onSave : undefined} disabled={!canSave}>
+          {saveLabel}
+        </AdaptedPrimary>
+      </div>
+    );
+  } else {
+    // Native fallback (без адаптера) — минимум стилей через CSS-vars.
+    header = (
       <div style={{
         display: "flex", alignItems: "center", gap: 12,
         padding: "10px 16px",
-        background: "var(--idf-card, rgba(255,255,255,0.94))",
-        backdropFilter: "blur(20px) saturate(180%)",
-        WebkitBackdropFilter: "blur(20px) saturate(180%)",
-        borderBottom: "0.5px solid var(--idf-border, rgba(60,60,67,0.12))",
+        borderBottom: "1px solid var(--idf-border, #e5e7eb)",
+        background: "var(--idf-card, #fff)",
       }}>
         <button onClick={goBack} style={{
-          padding: "6px 4px", border: "none",
-          background: "transparent", color: "var(--idf-primary, #007aff)",
-          cursor: "pointer", fontSize: 17, fontWeight: 400,
-          fontFamily: "inherit", letterSpacing: "-0.41px",
-          display: "inline-flex", alignItems: "center", gap: 4,
-        }}>
-          <span style={{ fontSize: 20 }}>‹</span> Отмена
-        </button>
+          padding: "6px 10px", border: "1px solid var(--idf-border, #d1d5db)",
+          borderRadius: 6, background: "transparent",
+          color: "var(--idf-text, #374151)", cursor: "pointer", fontSize: 13,
+        }}>← {cancelLabel}</button>
         <h1 style={{
-          margin: 0, fontSize: 17, fontWeight: 600, flex: 1,
-          textAlign: "center", letterSpacing: "-0.41px",
-          color: "var(--idf-text, #1c1c1e)",
+          margin: 0, fontSize: 16, fontWeight: 600, flex: 1,
+          textAlign: "center", color: "var(--idf-text, #1f2937)",
         }}>
-          {projection.name}
+          {titleText}
         </h1>
         <button
-          onClick={onSave}
-          disabled={submitting || dirtyFields.length === 0}
+          onClick={canSave ? onSave : undefined}
+          disabled={!canSave}
           style={{
-            padding: "6px 4px", border: "none",
-            background: "transparent",
-            color: dirtyFields.length > 0 && !submitting
-              ? "var(--idf-primary, #007aff)"
-              : "var(--idf-text-muted, #8e8e93)",
-            fontWeight: 600, fontSize: 17,
-            cursor: dirtyFields.length > 0 && !submitting ? "pointer" : "default",
-            opacity: submitting ? 0.6 : 1,
-            fontFamily: "inherit", letterSpacing: "-0.41px",
+            padding: "6px 14px", border: "none", borderRadius: 6,
+            background: canSave ? "var(--idf-primary, #2563eb)" : "var(--idf-muted, #d1d5db)",
+            color: "#fff", fontWeight: 600, fontSize: 13,
+            cursor: canSave ? "pointer" : "default",
+            opacity: submitting ? 0.7 : 1,
           }}
         >
-          {submitting ? "…" : (isCreateMode ? "Создать" : "Сохранить")}
+          {saveLabel}
         </button>
       </div>
+    );
+  }
+
+  return (
+    <div style={{
+      display: "flex", flexDirection: "column", height: "100%",
+      background: "var(--idf-surface, #f8f9fa)",
+      fontFamily: "var(--idf-font, system-ui, -apple-system, sans-serif)",
+    }}>
+      {header}
 
       {/* Form content — iOS grouped inset style */}
       <div style={{ flex: 1, overflow: "auto", padding: "20px 16px" }}>
