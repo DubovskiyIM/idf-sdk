@@ -12,10 +12,13 @@ import EmptyState from "../primitives/EmptyState.jsx";
  * (α:"batch", §11 манифеста).
  */
 export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
-  const body = slots.body; // { type: "formBody", mainEntity, fields, editIntents }
+  const body = slots.body; // { type: "formBody", mainEntity, fields, editIntents, mode, creatorIntent }
+  const isCreateMode = body?.mode === "create";
 
-  // Резолв target entity из route params (как в detail-архетипе)
+  // Резолв target entity из route params (как в detail-архетипе).
+  // В create-режиме target отсутствует — пропускаем lookup.
   const target = useMemo(() => {
+    if (isCreateMode) return null;
     const mainEntity = projection?.mainEntity;
     const idParam = projection?.idParam;
     if (!mainEntity || !idParam) return null;
@@ -24,14 +27,18 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
     const id = parentCtx.routeParams?.[idParam];
     if (!id) return null;
     return list.find(e => e.id === id) || null;
-  }, [projection, parentCtx.world, parentCtx.routeParams]);
+  }, [isCreateMode, projection, parentCtx.world, parentCtx.routeParams]);
 
-  // Initial values — берём из target
+  // Initial values — из target (edit) или пустые / field.default (create)
   const [values, setValues] = useState(() => {
     const initial = {};
     if (target) {
       for (const field of body.fields || []) {
         initial[field.name] = target[field.name] ?? "";
+      }
+    } else if (isCreateMode) {
+      for (const field of body.fields || []) {
+        initial[field.name] = field.default ?? "";
       }
     }
     return initial;
@@ -39,7 +46,9 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
 
-  if (!target) {
+  // В edit-режиме без target — показываем EmptyState-пояснение.
+  // Create-режим не нуждается в target (новая запись).
+  if (!target && !isCreateMode) {
     const id = parentCtx.routeParams?.[projection?.idParam];
     const entityName = projection?.name || "Запись";
     if (!id) {
@@ -60,11 +69,11 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
     );
   }
 
-  // Ownership check: если target не принадлежит viewer'у — показываем отказ.
-  // Проверяем несколько стандартных ownership-полей.
+  // Ownership check: только в edit-режиме (в create'е owner проставится
+  // сервером из viewer'а). Если target не принадлежит viewer'у — отказ.
   const viewerId = parentCtx.viewer?.id;
   const ownerFields = ["clientId", "organizerId", "userId", "authorId", "sellerId", "openedBy", "id"];
-  const isOwner = viewerId && ownerFields.some(f => target[f] === viewerId);
+  const isOwner = isCreateMode || (viewerId && target && ownerFields.some(f => target[f] === viewerId));
   if (!isOwner) {
     return (
       <div style={{
@@ -90,10 +99,15 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
     );
   }
 
-  // Какие поля изменены (editable + value !== target[field])
-  const dirtyFields = (body.fields || []).filter(
-    f => f.editable && values[f.name] !== target[f.name]
-  );
+  // Какие поля изменены (edit: value !== target[field]; create: value не пустой)
+  const dirtyFields = (body.fields || []).filter(f => {
+    if (!f.editable) return false;
+    if (isCreateMode) {
+      const v = values[f.name];
+      return v !== "" && v !== null && v !== undefined;
+    }
+    return values[f.name] !== target[f.name];
+  });
 
   const goBack = () => {
     if (parentCtx.navigate) {
@@ -129,9 +143,24 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
 
     setSubmitting(true);
     try {
-      // Группируем dirty-поля по intentId: один intent (update_profile)
-      // может покрывать несколько полей (name, bio, location) — отправляем
-      // их одним вызовом, чтобы generic handler получил все значения в ctx.
+      if (isCreateMode) {
+        // Create: один intent (creatorIntent), все dirty-поля как ctx.
+        const creatorIntentId = body.creatorIntent || projection?.creatorIntent;
+        if (!creatorIntentId) {
+          console.warn("[ArchetypeForm] create-mode без creatorIntent — skip save");
+          return;
+        }
+        const payload = {};
+        for (const f of dirtyFields) {
+          payload[f.name] = values[f.name];
+        }
+        await parentCtx.exec(creatorIntentId, payload);
+        goBack();
+        return;
+      }
+
+      // Edit: группируем dirty-поля по intentId (один intent может
+      // покрывать несколько полей — отправляем одним вызовом).
       const byIntent = {};
       for (const f of dirtyFields) {
         if (!byIntent[f.intentId]) byIntent[f.intentId] = {};
@@ -201,7 +230,7 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
             fontFamily: "inherit", letterSpacing: "-0.41px",
           }}
         >
-          {submitting ? "…" : "Сохранить"}
+          {submitting ? "…" : (isCreateMode ? "Создать" : "Сохранить")}
         </button>
       </div>
 

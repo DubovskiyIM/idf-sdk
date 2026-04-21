@@ -127,10 +127,21 @@ function inferConfirmation(intent, normalizedParameters) {
 
   const α = OP_TO_ALPHA[firstAlpha] || firstAlpha;
 
-  if (α === "add") return "enter";
+  const userVisible = (normalizedParameters || []).filter(p => p && p.name !== "id");
+  const TEXT_CONTROLS = new Set(["text", "email", "tel", "url", "string"]);
+
+  if (α === "add") {
+    // Zero user-params — plain click (rare, creator без ввода).
+    if (userVisible.length === 0) return "click";
+    // Single text-like param — composer / heroCreate friendly.
+    if (userVisible.length === 1 && TEXT_CONTROLS.has(userVisible[0].type || "text")) {
+      return "enter";
+    }
+    // Multi-param / non-text — formModal (catalog-creator-toolbar подхватит).
+    return "form";
+  }
   if (α === "remove") return "click";
   if (α === "replace") {
-    const userVisible = (normalizedParameters || []).filter(p => p && p.name !== "id");
     return userVisible.length > 0 ? "form" : "click";
   }
   return null;
