@@ -212,6 +212,9 @@ importers:
       '@intent-driven/core':
         specifier: workspace:*
         version: link:../core
+      '@intent-driven/enricher-claude':
+        specifier: workspace:*
+        version: link:../enricher-claude
       '@intent-driven/importer-postgres':
         specifier: workspace:*
         version: link:../importer-postgres
@@ -279,6 +282,19 @@ importers:
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
+      vitest:
+        specifier: ^4.1.0
+        version: 4.1.4(jsdom@25.0.1)(vite@8.0.8(esbuild@0.27.7))
+
+  packages/enricher-claude:
+    dependencies:
+      picocolors:
+        specifier: ^1.1.1
+        version: 1.1.1
+      prompts:
+        specifier: ^2.4.2
+        version: 2.4.2
+    devDependencies:
       vitest:
         specifier: ^4.1.0
         version: 4.1.4(jsdom@25.0.1)(vite@8.0.8(esbuild@0.27.7))
