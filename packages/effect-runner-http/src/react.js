@@ -16,8 +16,13 @@ export function useHttpEngine({
   ontology,
   apiUrl,
   getAuthToken,
+  authProvider,
   autoLoad = true,
 }) {
+  // Если передан authProvider — его getToken имеет приоритет над getAuthToken.
+  const resolvedGetAuthToken = authProvider?.getToken
+    ? () => authProvider.getToken()
+    : getAuthToken;
   const [world, setWorld] = useState({});
   const [loading, setLoading] = useState({});
   const [error, setError] = useState(null);
@@ -44,7 +49,7 @@ export function useHttpEngine({
         entity,
         params: {},
         apiUrl,
-        getAuthToken,
+        getAuthToken: resolvedGetAuthToken,
       });
       setLoading((s) => ({ ...s, [targetEntity]: false }));
 
@@ -54,7 +59,7 @@ export function useHttpEngine({
         setError(result.error);
       }
     },
-    [ontology, listIntentsByEntity, apiUrl, getAuthToken]
+    [ontology, listIntentsByEntity, apiUrl, resolvedGetAuthToken]
   );
 
   const reloadAll = useCallback(async () => {
@@ -66,6 +71,13 @@ export function useHttpEngine({
   useEffect(() => {
     if (autoLoad) reloadAll();
   }, [autoLoad, reloadAll]);
+
+  // Если authProvider имеет onChange — reload при sign-in/sign-out
+  useEffect(() => {
+    if (!authProvider?.onChange) return;
+    const unsubscribe = authProvider.onChange(() => { reloadAll(); });
+    return () => { unsubscribe?.(); };
+  }, [authProvider, reloadAll]);
 
   const run = useCallback(
     async (intentName, params) => {
@@ -80,7 +92,7 @@ export function useHttpEngine({
         entity,
         params,
         apiUrl,
-        getAuthToken,
+        getAuthToken: resolvedGetAuthToken,
       });
 
       if (!result.ok) {
@@ -95,7 +107,7 @@ export function useHttpEngine({
       setError(null);
       return result;
     },
-    [ontology, apiUrl, getAuthToken, reload]
+    [ontology, apiUrl, resolvedGetAuthToken, reload]
   );
 
   return { world, run, drafts: loading, error, reload };
