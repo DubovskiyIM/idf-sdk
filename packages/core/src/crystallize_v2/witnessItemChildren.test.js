@@ -62,14 +62,14 @@ describe("witnessToItemChild — role→primitive mapping", () => {
     expect(node).toEqual({ type: "text", bind: "budget", format: "currency", style: "money" });
   });
 
-  it("datetime deadline → timer (inline countdown)", () => {
+  it("datetime deadline → timer (inline countdown) + alignSelf:flex-start", () => {
     const node = witnessToItemChild("deadline", "Task", freelanceOntology);
-    expect(node).toEqual({ type: "timer", bind: "deadline" });
+    expect(node).toEqual({ type: "timer", bind: "deadline", sx: { alignSelf: "flex-start" } });
   });
 
-  it("enum status → badge", () => {
+  it("enum status → badge + alignSelf:flex-start (§9.12 anti-stretch)", () => {
     const node = witnessToItemChild("status", "Task", freelanceOntology);
-    expect(node).toEqual({ type: "badge", bind: "status" });
+    expect(node).toEqual({ type: "badge", bind: "status", sx: { alignSelf: "flex-start" } });
   });
 
   it("textarea description → text secondary", () => {

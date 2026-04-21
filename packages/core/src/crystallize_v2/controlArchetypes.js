@@ -286,12 +286,20 @@ function registerHeroCreate() {
       const mainEntity = context?.projection?.mainEntity;
       if (!mainEntity || creates !== mainEntity) return false;
       if (context?.projection?.kind !== "catalog") return false;
-      // confirmation:"form" с несколькими witnesses → formModal, не heroCreate.
-      // heroCreate подходит только для простых creator'ов (1 текстовое поле).
-      // Backlog 4.2: нормализуем top-level и particles.confirmation.
+      // Multi-field creator → formModal, не heroCreate. heroCreate
+      // подходит только для simplest creator'ов (1 param, обычно text).
+      //  - confirmation:"form" + >1 witnesses → formModal (backlog 4.2)
+      //  - parameters/particles.parameters >1 (помимо id) → formModal (§9.10)
       const c = getConfirmation(intent);
       const witnesses = intent.particles?.witnesses || [];
       if (c === "form" && witnesses.length > 1) return false;
+
+      const topParams = Array.isArray(intent.parameters) ? intent.parameters : [];
+      const partParams = Array.isArray(intent.particles?.parameters) ? intent.particles.parameters : [];
+      const rawParams = topParams.length ? topParams : partParams;
+      const userVisibleParams = rawParams.filter(p => p && p.name !== "id");
+      if (userVisibleParams.length > 1) return false;
+
       return true;
     },
     build: (intent, intentId, parameters) => {
