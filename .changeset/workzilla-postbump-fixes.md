@@ -55,6 +55,22 @@ import {
 
 Host может использовать для custom debug / inspector / form-derivation без повторного вызова `crystallizeV2`.
 
+### 9.10 — `heroCreate` match отсекает multi-param creator'ов
+
+Existing check учитывал только `witnesses.length > 1`. Multi-field creator (создать Task — title / description / budget / categoryId / deadline …) match'ился и рендерился как hero-input с одним полем без way открыть полную форму.
+
+- Добавлен check по `userVisibleParams.length > 1` (считая `intent.parameters` и `particles.parameters`, исключая `id`). Такие creator'ы уходят в formModal → catalog-creator-toolbar.
+
+### 9.11 — `Badge` primitive пропускает `sx` в AdaptedBadge
+
+Раньше `<AdaptedBadge color={tone}>` не получал `node.sx`. AntD Tag внутри flex-column-родителя (`align-items: stretch`) стретчился на всю ширину карточки — выглядит как полоса вместо тега.
+
+- Обёртка `<span style={{display: "inline-flex", ...node.sx}}>` — gives shrink-to-content + пропускает `alignSelf`/другие overrides к Tag'у.
+
+### 9.12 — `witnessItemChildren` эмитит `alignSelf` для compact primitives
+
+Badge / timer witness-дети автоматически получают `sx: {alignSelf: "flex-start"}`. Catalog-card layout перестаёт стретчить их на ширину карточки (дефолт `align-items: stretch` во flex-column).
+
 ---
 
 **Тесты:** 11 новых integration (`workzillaPostBump.test.js`). Core: 1170 → 1181.

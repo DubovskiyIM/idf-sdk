@@ -41,8 +41,10 @@ const workzillaIntents = {
       budget: { type: "number", required: true },
       deadline: { type: "datetime" },
     },
+    // confirmation опущен — normalizeIntentNative инферит "form" для
+    // multi-param insert intent'а. Явный "enter" был бы inconsistent
+    // для 3-полевого creator'а (§9.10).
     particles: {
-      confirmation: "enter",
       effects: [{ target: "Task", op: "insert" }],
     },
   },

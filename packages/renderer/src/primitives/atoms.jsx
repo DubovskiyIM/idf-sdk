@@ -128,10 +128,16 @@ export function Badge({ node, ctx, item }) {
     || (node.toneBind ? resolve(data, node.toneBind) : null)
     || null;
 
-  // Адаптер: Mantine/AntD Badge.
+  // Адаптер: Mantine/AntD Badge. Обёртываем в span с `display: inline-flex`
+  // и пробрасываем node.sx — иначе AdaptedBadge (антд Tag) в flex-column-
+  // родителе стретчится на всю ширину (align-items:stretch default).
   const AdaptedBadge = getAdaptedComponent("primitive", "badge");
   if (AdaptedBadge) {
-    return <AdaptedBadge color={tone}>{val}</AdaptedBadge>;
+    return (
+      <span style={{ display: "inline-flex", ...(node.sx || {}) }}>
+        <AdaptedBadge color={tone}>{val}</AdaptedBadge>
+      </span>
+    );
   }
 
   // Fallback: inline-span с mapping tone → colors.

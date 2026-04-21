@@ -94,12 +94,14 @@ export function witnessToItemChild(witness, mainEntity, ONTOLOGY) {
     case "money":
       return { type: "text", bind, format: "currency", style: "money" };
     case "badge":
-      return { type: "badge", bind };
+      // alignSelf:flex-start — защита от flex-col align-items:stretch
+      // parent'а, который иначе растягивает badge на всю ширину карточки.
+      return { type: "badge", bind, sx: { alignSelf: "flex-start" } };
     case "heroImage":
       return { type: "avatar", bind, size: 40 };
     case "timer":
     case "deadline":
-      return { type: "timer", bind };
+      return { type: "timer", bind, sx: { alignSelf: "flex-start" } };
     case "timestamp":
     case "scheduled":
     case "occurred":
