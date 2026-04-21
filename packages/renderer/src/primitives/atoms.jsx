@@ -10,6 +10,9 @@ const STYLE_PRESETS = {
   accent: { color: "#6366f1", fontWeight: 600 },
   danger: { color: "#ef4444" },
   success: { color: "#22c55e" },
+  // money — нейтральная моне-стилизация для price/budget. money-positive /
+  // money-negative (знаковые PnL/profit) — на 8.5 (style vocabulary ext).
+  money: { fontSize: 14, fontWeight: 600, color: "#0f766e" },
 };
 
 function getPresetStyle(name) {
@@ -29,6 +32,14 @@ function formatValue(raw, format) {
   if (format === "number") {
     const n = typeof raw === "number" ? raw : Number(raw);
     if (!isNaN(n)) return n.toLocaleString("ru");
+    return raw;
+  }
+  if (format === "currency") {
+    // ₽ как дефолт (контекст проекта — RU). Позже — через ontology.locale
+    // или node.currencySymbol. Пока единственный кейс использования —
+    // witnessToItemChild для money/price-роли.
+    const n = typeof raw === "number" ? raw : Number(raw);
+    if (!isNaN(n)) return n.toLocaleString("ru") + " ₽";
     return raw;
   }
   return raw;
@@ -94,25 +105,102 @@ export function Heading({ node, ctx, item }) {
   return <Tag style={style}>{text ?? ""}</Tag>;
 }
 
+/**
+ * Badge — status/enum-бейдж с автотоном (backlog §8.6 / Workzilla P1-3).
+ *
+ * Резолвит tone из трёх источников (приоритет):
+ *  1. explicit node.color — как раньше
+ *  2. node.toneMap: { enumValue: "success"|"warning"|..., ... } — lookup по rawVal
+ *  3. node.toneBind: "_tone" — resolve из item (client-side computed)
+ * Иначе — адаптерный fallback (нейтральный).
+ *
+ * Tone vocabulary: "default" | "success" | "warning" | "danger" | "info" |
+ * "neutral". Адаптер (Mantine/AntD) маппит в свой color-набор.
+ */
 export function Badge({ node, ctx, item }) {
   const data = item || ctx.world;
   const rawVal = node.bind ? resolve(data, node.bind) : node.content;
   if (!rawVal && rawVal !== 0) return null;
   const val = node.bind ? humanValue(node.bind, rawVal) : rawVal;
 
-  // Адаптер: Mantine Badge.
+  const tone = node.color
+    || (node.toneMap && typeof rawVal !== "object" ? node.toneMap[rawVal] : null)
+    || (node.toneBind ? resolve(data, node.toneBind) : null)
+    || null;
+
+  // Адаптер: Mantine/AntD Badge.
   const AdaptedBadge = getAdaptedComponent("primitive", "badge");
   if (AdaptedBadge) {
-    return <AdaptedBadge color={node.color}>{val}</AdaptedBadge>;
+    return <AdaptedBadge color={tone}>{val}</AdaptedBadge>;
   }
 
-  // Fallback: inline-span.
+  // Fallback: inline-span с mapping tone → colors.
+  const toneColors = {
+    success: { bg: "#dcfce7", fg: "#15803d" },
+    warning: { bg: "#fef3c7", fg: "#b45309" },
+    danger:  { bg: "#fee2e2", fg: "#b91c1c" },
+    info:    { bg: "#dbeafe", fg: "#1d4ed8" },
+    neutral: { bg: "#f3f4f6", fg: "#4b5563" },
+    default: { bg: "#eef2ff", fg: "#6366f1" },
+  };
+  const c = toneColors[tone] || toneColors.default;
   return (
     <span style={{
       fontSize: 10, fontWeight: 600, textTransform: "uppercase",
-      padding: "2px 8px", borderRadius: 4, background: "#eef2ff",
-      color: "#6366f1", ...(node.sx || {}),
+      padding: "2px 8px", borderRadius: 4, background: c.bg,
+      color: c.fg, ...(node.sx || {}),
     }}>{val}</span>
+  );
+}
+
+/**
+ * Statistic — крупный числовой primitive с опциональным title / prefix / suffix
+ * (backlog §8.4 / Workzilla P1-1). Назначение: KPI внутри catalog item-children
+ * (budget dashboard) или dashboard-виджет.
+ *
+ * Использует AdaptedComponent("primitive", "statistic") если адаптер
+ * предоставил (AntD Statistic); иначе SVG-friendly inline fallback.
+ */
+export function Statistic({ node, ctx, item }) {
+  const data = item || ctx.world;
+  const raw = node.bind ? resolve(data, node.bind) : node.value;
+  const formatted = raw == null || raw === ""
+    ? ""
+    : (typeof raw === "number" ? raw.toLocaleString("ru") : String(raw));
+
+  const AdaptedStat = getAdaptedComponent("primitive", "statistic");
+  if (AdaptedStat) {
+    return (
+      <AdaptedStat
+        title={node.title}
+        value={formatted}
+        prefix={node.prefix}
+        suffix={node.suffix}
+        precision={node.precision}
+      />
+    );
+  }
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2, ...(node.sx || {}) }}>
+      {node.title && (
+        <div style={{
+          fontSize: 11, fontWeight: 500,
+          color: "var(--idf-text-muted, #6b7280)",
+          textTransform: "uppercase", letterSpacing: "0.04em",
+        }}>{node.title}</div>
+      )}
+      <div style={{
+        fontSize: node.size === "small" ? 14 : 20,
+        fontWeight: 700,
+        color: "var(--idf-text, #1a1a2e)",
+        display: "flex", alignItems: "baseline", gap: 2,
+      }}>
+        {node.prefix && <span style={{ fontSize: "0.7em", opacity: 0.8 }}>{node.prefix}</span>}
+        <span>{formatted}</span>
+        {node.suffix && <span style={{ fontSize: "0.7em", opacity: 0.8 }}>{node.suffix}</span>}
+      </div>
+    </div>
   );
 }
 

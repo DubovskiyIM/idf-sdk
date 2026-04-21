@@ -1,5 +1,6 @@
 import { mapTable } from "./mapTable.js";
 import { buildRelations } from "./buildRelations.js";
+import { buildCompositions } from "./buildCompositions.js";
 import { buildIntents } from "./buildIntents.js";
 import { introspect } from "./introspect.js";
 import { serialize } from "./serialize.js";
@@ -17,18 +18,21 @@ export function buildOntology(dump, opts = {}) {
   }
 
   buildRelations(entities, tableToEntity, dump.foreign_keys);
+  const compositions = buildCompositions(entities);
 
   const intents = {};
   for (const entity of Object.values(entities)) {
     Object.assign(intents, buildIntents(entity));
   }
 
-  return {
+  const ontology = {
     name: opts.name ?? "default",
     entities,
     intents,
     roles: { owner: { base: "owner" } },
   };
+  if (Object.keys(compositions).length > 0) ontology.compositions = compositions;
+  return ontology;
 }
 
 export async function importPostgres({ connectionString, schema = "public" }) {

@@ -15,6 +15,7 @@ import { getIntentIcon } from "./getIntentIcon.js";
 import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
+import { buildWitnessChildren, findHeroImageWitness } from "./witnessItemChildren.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
   // projection.gating (UI-gap #6) — onboarding prerequisites: шаги к
@@ -374,6 +375,64 @@ export function buildCatalogBody(projection, ONTOLOGY) {
       }))
     : null;
 
+  // projection.witnesses (Workzilla dogfood findings P0-3 / backlog §8.3) —
+  // strict contract на flat-list layout'ах: если автор задал witnesses,
+  // item.children генерируются по этому списку через inferFieldRole (title,
+  // money, deadline, badge, heroImage → соответствующие primitive'ы). Для
+  // grid-layout'ов используется отдельный buildCardSpec (ниже), чтобы
+  // не ломать существующий grid-card-layout pattern.
+  const useWitnessChildren =
+    Array.isArray(projection.witnesses) &&
+    projection.witnesses.length > 0 &&
+    projection.layout !== "grid";
+
+  let itemChildren;
+  if (useWitnessChildren) {
+    const witnessNodes = buildWitnessChildren(projection.witnesses, mainEntity, ONTOLOGY);
+    const heroImage = findHeroImageWitness(projection.witnesses, mainEntity, ONTOLOGY);
+    if (heroImage) {
+      // Аватар (heroImage witness) в левой колонке, остальные witnesses —
+      // справа в column. Sybтitle/metric/badge стекаются вертикально.
+      const rightNodes = witnessNodes.filter(n => !(n.type === "avatar" && n.bind === heroImage.bind));
+      itemChildren = [
+        {
+          type: "row",
+          gap: 10,
+          children: [
+            { type: "avatar", bind: heroImage.bind, nameBind: titleField, size: 40 },
+            { type: "column", sx: { flex: 1 }, children: rightNodes },
+          ],
+        },
+      ];
+    } else {
+      // Нет heroImage в witness'ах — плоская column со всеми witness'ами.
+      itemChildren = [{ type: "column", gap: 6, children: witnessNodes }];
+    }
+  } else {
+    // Legacy fallback: avatar + title + subtitle (auto-derive).
+    itemChildren = [
+      {
+        type: "row",
+        gap: 10,
+        children: [
+          // Avatar: если item.avatar — data URL/URL, показывается картинка;
+          // иначе инициал берётся из nameBind (titleField).
+          { type: "avatar", bind: "avatar", nameBind: titleField, size: 40 },
+          {
+            type: "column",
+            sx: { flex: 1 },
+            children: [
+              { type: "text", bind: titleField, style: "heading" },
+              subtitleField
+                ? { type: "text", bind: subtitleField, style: "secondary" }
+                : null,
+            ].filter(Boolean),
+          },
+        ],
+      },
+    ];
+  }
+
   const body = {
     type: "list",
     source,
@@ -382,27 +441,7 @@ export function buildCatalogBody(projection, ONTOLOGY) {
     ...(tabs && tabs.length > 0 ? { tabs, defaultTab: projection.defaultTab } : {}),
     item: {
       type: "card",
-      children: [
-        {
-          type: "row",
-          gap: 10,
-          children: [
-            // Avatar: если item.avatar — data URL/URL, показывается картинка;
-            // иначе инициал берётся из nameBind (titleField).
-            { type: "avatar", bind: "avatar", nameBind: titleField, size: 40 },
-            {
-              type: "column",
-              sx: { flex: 1 },
-              children: [
-                { type: "text", bind: titleField, style: "heading" },
-                subtitleField
-                  ? { type: "text", bind: subtitleField, style: "secondary" }
-                  : null,
-              ].filter(Boolean),
-            },
-          ],
-        },
-      ],
+      children: itemChildren,
       intents: [],
     },
   };

@@ -16,7 +16,8 @@
 import { assignToSlots } from "./assignToSlots.js";
 import { hashInputs } from "./hash.js";
 import { deriveNavGraph } from "./navGraph.js";
-import { generateEditProjections, buildFormSpec } from "./formGrouping.js";
+import { generateEditProjections, generateCreateProjections, buildFormSpec, buildCreateFormSpec } from "./formGrouping.js";
+import { normalizeIntentsMap } from "./normalizeIntentNative.js";
 import { validateArtifact } from "./validateArtifact.js";
 import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
@@ -58,6 +59,13 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   INTENTS = sortKeys(INTENTS);
   PROJECTIONS = sortKeys(PROJECTIONS);
 
+  // Native-format bridge (backlog §8.1 / Workzilla findings P0-1).
+  // Scaffold-path + importer'ы (openapi/prisma/postgres) emit'ят intent'ы
+  // с top-level `target`/`alpha`, `parameters:{obj}`, `effects[].op` —
+  // crystallize_v2 downstream ожидает `particles.entities`, α, array-params.
+  // Normalize — additive-only, legacy-intent'ы проходят как no-op.
+  INTENTS = normalizeIntentsMap(INTENTS);
+
   // Anchoring gate (§15 zazor #1)
   const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;
   const anchoring = checkAnchoring(INTENTS, ONTOLOGY);
@@ -78,9 +86,11 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
 
   // Автогенерация edit-проекций (М3.4b)
   const editProjections = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
+  // Автогенерация create-проекций (backlog §8.2 / Workzilla P0-2).
+  const createProjections = generateCreateProjections(INTENTS, PROJECTIONS, ONTOLOGY);
   // R8: Hub-absorption — child-каталоги с FK абсорбируются в hub-detail.
   const allProjections = sortKeys(
-    absorbHubChildren({ ...PROJECTIONS, ...editProjections }, ONTOLOGY)
+    absorbHubChildren({ ...PROJECTIONS, ...editProjections, ...createProjections }, ONTOLOGY)
   );
 
   const inputsHash = hashInputs(INTENTS, allProjections, ONTOLOGY);
@@ -110,11 +120,15 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     if (archetype === "form") {
       // Form-архетип: не проходит через обычный assignToSlots.
       // body — formSpec (fields для ArchetypeForm), остальные слоты пустые.
-      const formSpec = buildFormSpec(proj, INTENTS, ONTOLOGY, "self");
+      // Create-mode (backlog §8.2): body строится из intent.parameters,
+      // без scan'а всех полей ontology (editable определяется creatorIntent'ом).
+      const formSpec = proj.mode === "create"
+        ? buildCreateFormSpec(proj, INTENTS, ONTOLOGY)
+        : buildFormSpec(proj, INTENTS, ONTOLOGY, "self");
       slots = {
         header: [],
         toolbar: [],
-        body: { type: "formBody", ...formSpec },
+        body: { type: "formBody", ...formSpec, mode: proj.mode || "edit" },
         context: [],
         fab: [],
         overlay: [],

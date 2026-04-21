@@ -42,5 +42,14 @@ describe("buildOntology", () => {
 
     expect(ontology.name).toBe("default");
     expect(ontology.roles.owner).toEqual({ base: "owner" });
+
+    // §8.7: compositions выведены из FK двусторонне
+    expect(ontology.compositions).toBeDefined();
+    expect(ontology.compositions.Task).toEqual([
+      { entity: "User", as: "user", via: "user_id", mode: "one" },
+    ]);
+    expect(ontology.compositions.User).toEqual([
+      { entity: "Task", as: "tasks", via: "user_id", mode: "many" },
+    ]);
   });
 });

@@ -16,6 +16,7 @@
  */
 
 import { getEntityFields, canRead, canWrite, inferFieldRole } from "./ontologyHelpers.js";
+import { normalizeCreates } from "./assignToSlotsShared.js";
 
 const SYSTEM_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt", "deletedFor",
@@ -192,5 +193,127 @@ export function buildFormSpec(editProjection, INTENTS, ONTOLOGY, viewerRole = "s
     fields,
     sections,
     editIntents: editIntentIds,
+  };
+}
+
+/**
+ * Сгенерировать create-проекции из insert-intent'ов (Workzilla P0-2,
+ * backlog §8.2).
+ *
+ * Для каждого intent с `creates: X` (или `α: "add"` + particles.entities
+ * ссылаются на X) создаём `{entityLower}_create` с `kind: "form"`,
+ * `mode: "create"`, `creatorIntent: intentId`.
+ *
+ * Один creator-projection на entity (первый insert-intent побеждает).
+ * Авторский override (`PROJECTIONS["x_create"]` уже существует) — no-op.
+ *
+ * В отличие от edit-projection'ов, create — не привязан к existing row;
+ * ArchetypeForm в create-mode пропускает target lookup и ownership check.
+ */
+export function generateCreateProjections(INTENTS, PROJECTIONS, ONTOLOGY) {
+  const createProjections = {};
+  const seenEntities = new Set();
+
+  for (const [id, intent] of Object.entries(INTENTS)) {
+    const createsRaw = intent.creates;
+    if (!createsRaw) continue;
+    const mainEntity = normalizeCreates(createsRaw);
+    if (!mainEntity) continue;
+
+    const entityDef = ONTOLOGY?.entities?.[mainEntity];
+    if (!entityDef) continue;
+
+    // Один creator-projection на entity (первый победитель)
+    if (seenEntities.has(mainEntity)) continue;
+
+    const entityLower = mainEntity[0].toLowerCase() + mainEntity.slice(1);
+    const projId = `${entityLower}_create`;
+
+    // Author-override
+    if (PROJECTIONS[projId]) {
+      seenEntities.add(mainEntity);
+      continue;
+    }
+
+    const label = entityDef.label || mainEntity;
+    createProjections[projId] = {
+      name: `Создать ${label}`,
+      kind: "form",
+      mode: "create",
+      mainEntity,
+      entities: [mainEntity],
+      creatorIntent: id,
+      // sourceProjection не задаём — navigation back идёт из catalog
+      // через стандартный back-button (history pop).
+    };
+    seenEntities.add(mainEntity);
+  }
+
+  return createProjections;
+}
+
+/**
+ * Построить formSpec для create-режима из intent.parameters + onто-дополнений.
+ *
+ * В отличие от `buildFormSpec` (edit-mode), здесь нет coverage через
+ * replace-эффекты — все параметры intent'а считаются editable. Дополнительно
+ * enrich'аем onto-метаданными (label, options for enum, required).
+ */
+export function buildCreateFormSpec(createProjection, INTENTS, ONTOLOGY) {
+  const mainEntity = createProjection.mainEntity;
+  const creatorIntentId = createProjection.creatorIntent;
+  const intent = INTENTS[creatorIntentId];
+  if (!intent) return { mainEntity, fields: [], sections: [], creatorIntent: creatorIntentId };
+
+  const entity = ONTOLOGY?.entities?.[mainEntity];
+  const ontologyFieldMap = entity?.fields && !Array.isArray(entity.fields) ? entity.fields : {};
+
+  const rawParams = Array.isArray(intent.parameters) ? intent.parameters : [];
+
+  const fields = [];
+  for (const p of rawParams) {
+    if (!p || typeof p !== "object") continue;
+    if (SYSTEM_FIELDS.has(p.name)) continue;
+
+    const ontoDef = ontologyFieldMap[p.name] || {};
+    const type = p.type || ontoDef.type || "text";
+
+    let options = null;
+    if (type === "enum" && Array.isArray(ontoDef.values)) {
+      const labels = ontoDef.valueLabels || {};
+      options = ontoDef.values.map(v => ({ value: v, label: labels[v] || v }));
+    }
+
+    fields.push({
+      name: p.name,
+      type,
+      editable: true,
+      required: Boolean(p.required ?? ontoDef.required),
+      label: p.label || ontoDef.label || p.name,
+      intentId: creatorIntentId,
+      options,
+    });
+  }
+
+  // Секционирование по ролям (как в buildFormSpec) — поддерживает один UX.
+  const sectionMap = new Map();
+  for (const f of fields) {
+    const role = inferFieldRole(f.name, { type: f.type })?.role ?? null;
+    const sec = getSectionForField(f.name, role);
+    if (!sectionMap.has(sec.id)) {
+      sectionMap.set(sec.id, { id: sec.id, title: sec.title, order: sec.order, fields: [] });
+    }
+    sectionMap.get(sec.id).fields.push(f);
+  }
+  const sections = [...sectionMap.values()]
+    .filter(s => s.fields.length > 0)
+    .sort((a, b) => a.order - b.order)
+    .map(({ id, title, fields: sFields }) => ({ id, title, fields: sFields }));
+
+  return {
+    mainEntity,
+    fields,
+    sections,
+    creatorIntent: creatorIntentId,
   };
 }
