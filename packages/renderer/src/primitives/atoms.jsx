@@ -10,6 +10,9 @@ const STYLE_PRESETS = {
   accent: { color: "#6366f1", fontWeight: 600 },
   danger: { color: "#ef4444" },
   success: { color: "#22c55e" },
+  // money — нейтральная моне-стилизация для price/budget. money-positive /
+  // money-negative (знаковые PnL/profit) — на 8.5 (style vocabulary ext).
+  money: { fontSize: 14, fontWeight: 600, color: "#0f766e" },
 };
 
 function getPresetStyle(name) {
@@ -29,6 +32,14 @@ function formatValue(raw, format) {
   if (format === "number") {
     const n = typeof raw === "number" ? raw : Number(raw);
     if (!isNaN(n)) return n.toLocaleString("ru");
+    return raw;
+  }
+  if (format === "currency") {
+    // ₽ как дефолт (контекст проекта — RU). Позже — через ontology.locale
+    // или node.currencySymbol. Пока единственный кейс использования —
+    // witnessToItemChild для money/price-роли.
+    const n = typeof raw === "number" ? raw : Number(raw);
+    if (!isNaN(n)) return n.toLocaleString("ru") + " ₽";
     return raw;
   }
   return raw;

@@ -184,6 +184,110 @@ describe("assignToSlotsCatalog", () => {
     });
   });
 
+  describe("projection.witnesses[] strict (backlog §8.3 / Workzilla P0-3)", () => {
+    const workzillaOntology = {
+      entities: {
+        Task: {
+          fields: {
+            id: { type: "text" },
+            title: { type: "text" },
+            description: { type: "textarea" },
+            budget: { type: "number", fieldRole: "money" },
+            deadline: { type: "datetime" },
+            status: { type: "enum", values: ["draft", "published", "in_progress"] },
+          },
+        },
+        Listing: {
+          fields: {
+            id: { type: "text" },
+            title: { type: "text" },
+            price: { type: "number" },
+            photos: { type: "multiImage" },
+          },
+        },
+      },
+    };
+    const dummyIntents = {};
+
+    it("witnesses без heroImage → column с 4 node'ами (title/budget/deadline/status)", () => {
+      const projection = {
+        kind: "catalog",
+        mainEntity: "Task",
+        entities: ["Task"],
+        witnesses: ["title", "budget", "deadline", "status"],
+      };
+      const slots = assignToSlotsCatalog(dummyIntents, projection, workzillaOntology);
+      expect(slots.body.item.children).toHaveLength(1);
+      const column = slots.body.item.children[0];
+      expect(column.type).toBe("column");
+      expect(column.children).toHaveLength(4);
+      expect(column.children[0]).toMatchObject({ type: "text", bind: "title", style: "heading" });
+      expect(column.children[1]).toMatchObject({ type: "text", bind: "budget", format: "currency" });
+      expect(column.children[2]).toMatchObject({ type: "timer", bind: "deadline" });
+      expect(column.children[3]).toMatchObject({ type: "badge", bind: "status" });
+    });
+
+    it("witnesses с heroImage (photos) → avatar слева, остальные справа в column", () => {
+      const projection = {
+        kind: "catalog",
+        mainEntity: "Listing",
+        entities: ["Listing"],
+        witnesses: ["photos", "title", "price"],
+      };
+      const slots = assignToSlotsCatalog(dummyIntents, projection, workzillaOntology);
+      const row = slots.body.item.children[0];
+      expect(row.type).toBe("row");
+      expect(row.children[0]).toMatchObject({ type: "avatar", bind: "photos" });
+      expect(row.children[1].type).toBe("column");
+      const rightChildren = row.children[1].children;
+      // avatar-witness исключается из правой колонки, остаётся title+price
+      expect(rightChildren).toHaveLength(2);
+      expect(rightChildren[0]).toMatchObject({ bind: "title", style: "heading" });
+      expect(rightChildren[1]).toMatchObject({ bind: "price", format: "currency" });
+    });
+
+    it("witnesses пустой → fallback на legacy avatar+title+subtitle", () => {
+      const projection = {
+        kind: "catalog",
+        mainEntity: "Task",
+        entities: ["Task"],
+        witnesses: [],
+      };
+      const slots = assignToSlotsCatalog(dummyIntents, projection, workzillaOntology);
+      const row = slots.body.item.children[0];
+      expect(row.type).toBe("row");
+      expect(row.children[0]).toMatchObject({ type: "avatar", bind: "avatar" });
+    });
+
+    it("witnesses не задан → legacy fallback", () => {
+      const projection = { kind: "catalog", mainEntity: "Task", entities: ["Task"] };
+      const slots = assignToSlotsCatalog(dummyIntents, projection, workzillaOntology);
+      const row = slots.body.item.children[0];
+      expect(row.type).toBe("row");
+      expect(row.children[0]).toMatchObject({ type: "avatar", bind: "avatar" });
+    });
+
+    it("layout=grid + witnesses → grid-path (cardSpec), НЕ witness-children", () => {
+      // Для grid мы не заменяем children — работает buildCardSpec + grid-card-layout
+      // pattern. Чтобы не сломать существующий grid-card-layout.
+      const projection = {
+        kind: "catalog",
+        mainEntity: "Listing",
+        entities: ["Listing"],
+        witnesses: ["photos", "title", "price"],
+        layout: "grid",
+      };
+      const slots = assignToSlotsCatalog(dummyIntents, projection, workzillaOntology);
+      // Legacy avatar-children остаются (для back-compat, хотя grid renderer
+      // использует cardSpec).
+      const row = slots.body.item.children[0];
+      expect(row.children[0]).toMatchObject({ type: "avatar", bind: "avatar" });
+      // cardSpec заполнен из witnesses.
+      expect(slots.body.cardSpec).toBeDefined();
+      expect(slots.body.cardSpec.image).toEqual({ bind: "photos" });
+    });
+  });
+
   describe("projection.emptyState (UI-gap #8)", () => {
     const emptyINTENTS = {
       add_task: {
