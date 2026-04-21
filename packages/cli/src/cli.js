@@ -24,8 +24,11 @@ ${pc.bold("USAGE")}
   idf init <domain-name> [options]
 
 ${pc.bold("COMMANDS")}
-  init <name>     Bootstrap нового домена через LLM-диалог.
-                  Создаёт каталог <name>/ с domain.js, seed.js, тестами.
+  init <name>              Bootstrap нового домена через LLM-диалог.
+                           Создаёт каталог <name>/ с domain.js, seed.js, тестами.
+  import postgres [opts]   Postgres schema → ontology.js.
+                           Флаги: --url <dsn>, --out <path>, --schema <name>.
+                           Можно через переменную DATABASE_URL.
 
 ${pc.bold("OPTIONS")}
   -m, --model     LLM-модель: haiku | sonnet | opus  (default: sonnet)
@@ -59,7 +62,15 @@ function parseArgs(argv) {
 }
 
 async function main() {
-  const args = parseArgs(process.argv.slice(2));
+  const raw = process.argv.slice(2);
+
+  // Subcommand "import" — отдельный dispatcher с собственным arg-parsing'ом
+  if (raw[0] === "import") {
+    const { runImport } = await import("./import.js");
+    return runImport(raw.slice(1));
+  }
+
+  const args = parseArgs(raw);
 
   if (!args.command || args.command === "help") { printHelp(); process.exit(0); }
   if (args.command === "version") { console.log(pkg.version); process.exit(0); }

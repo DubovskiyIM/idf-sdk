@@ -1,0 +1,34 @@
+{
+  "name": "@intent-driven/importer-postgres",
+  "version": "0.1.0",
+  "description": "Postgres schema → IDF ontology (для create-idf-app и CLI)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.js"
+  },
+  "files": ["src", "README.md", "LICENSE"],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "pg": "^8.20.0"
+  },
+  "devDependencies": {
+    "pg-mem": "^3.0.14",
+    "vitest": "^4.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/importer-postgres",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
+    "directory": "packages/importer-postgres"
+  },
+  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
+  "keywords": ["intent-driven", "postgres", "schema", "importer", "ontology"]
+}
