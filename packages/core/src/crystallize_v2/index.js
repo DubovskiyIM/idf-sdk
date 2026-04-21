@@ -231,13 +231,20 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     }
 
     // onItemClick: (1) явно объявленный автором в проекции, (2) выведенный из navGraph.
+    // backlog §9.3: если несколько item-click edges, предпочитаем detail,
+    // у которого mainEntity совпадает с from.mainEntity. Alphabetical first
+    // раньше уводил task_list в response_detail.
     if (slots.body?.type === "list") {
       if (proj.onItemClick) {
         slots.body.onItemClick = proj.onItemClick;
       } else {
         const outgoing = navGraph.edgesFrom(projId).filter(e => e.kind === "item-click");
         if (outgoing.length > 0) {
-          const edge = outgoing[0];
+          const sameEntityEdge = outgoing.find(e => {
+            const toProj = allProjections[e.to];
+            return toProj?.mainEntity === proj.mainEntity;
+          });
+          const edge = sameEntityEdge || outgoing[0];
           slots.body.onItemClick = {
             action: "navigate",
             to: edge.to,

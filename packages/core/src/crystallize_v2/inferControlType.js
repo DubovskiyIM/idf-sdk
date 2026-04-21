@@ -61,8 +61,10 @@ export function enrichWithOptions(param, ONTOLOGY) {
 }
 
 export function inferControlType(param, ONTOLOGY) {
-  // 1. Явный type в параметре
-  if (param.type) return param.type;
+  // 1. Явный type в параметре → прогоняем через mapOntologyTypeToControl,
+  // чтобы native-format типы (string / int / float) не просачивались
+  // в validateArtifact как unknown control type (backlog §9.1).
+  if (param.type) return mapOntologyTypeToControl(param.type);
 
   // 2. Массив → multiSelect
   if (param.isArray) return "multiSelect";

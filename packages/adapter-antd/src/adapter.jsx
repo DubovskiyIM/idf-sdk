@@ -583,6 +583,35 @@ function AntdModalShell({ onClose, children, title }) {
   );
 }
 
+/**
+ * Form header AntD-style (backlog §9.4): Cancel / Title / Save.
+ * Используется ArchetypeForm через getAdaptedComponent("shell","formHeader")
+ * когда адаптер зарегистрирован — даёт antd tonality вместо iOS-glass.
+ */
+function AntdFormHeader({ title, saveLabel, cancelLabel, onSave, onCancel, disabled }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 12,
+      padding: "12px 16px",
+      borderBottom: "1px solid rgba(5,5,5,0.06)",
+      background: "#fff",
+    }}>
+      <AntButton onClick={onCancel} size="middle">
+        ← {cancelLabel || "Отмена"}
+      </AntButton>
+      <h1 style={{
+        margin: 0, fontSize: 16, fontWeight: 600, flex: 1,
+        textAlign: "center", color: "rgba(0,0,0,0.88)",
+      }}>
+        {title}
+      </h1>
+      <AntButton type="primary" onClick={onSave} disabled={disabled} size="middle">
+        {saveLabel || "Сохранить"}
+      </AntButton>
+    </div>
+  );
+}
+
 function AntdTabs({ items, active, onSelect, extra }) {
   const tabItems = items.map((it) => ({ key: it.value, label: it.label }));
   return (
@@ -698,6 +727,7 @@ export const antdAdapter = {
   },
   shell: {
     modal: AntdModalShell,
+    formHeader: AntdFormHeader,
     tabs: AntdTabs,
     sidebar: AntdSidebar,
   },

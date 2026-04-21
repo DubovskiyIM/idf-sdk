@@ -302,6 +302,10 @@ export function deriveProjections(intents, ontology) {
         kind: "detail",
         mainEntity: entityName,
         entities: [entityName],
+        // backlog §9.2: detail needs explicit idParam, иначе
+        // ArchetypeDetail не резолвит target из routeParams. Convention:
+        // <entityLower>Id.
+        idParam: `${lower}Id`,
         witnesses,
         derivedBy: detailDerivedBy,
       };

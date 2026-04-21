@@ -3,6 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import os from "node:os";
 import { scaffold } from "../src/scaffold.js";
+import { buildVars } from "../src/ui-kit-vars.js";
 
 describe("integration: scaffold реального FS", () => {
   let tmp;
@@ -23,7 +24,7 @@ describe("integration: scaffold реального FS", () => {
     await scaffold({
       templateDir,
       targetDir,
-      vars: { PROJECT_NAME: "my-app", UI_KIT: "mantine" },
+      vars: buildVars({ projectName: "my-app", uiKit: "mantine" }),
       fs,
     });
 
@@ -61,7 +62,7 @@ describe("integration: scaffold реального FS", () => {
     await scaffold({
       templateDir,
       targetDir,
-      vars: { PROJECT_NAME: "my-app", UI_KIT: "mantine" },
+      vars: buildVars({ projectName: "my-app", uiKit: "mantine" }),
       fs,
     });
 
@@ -80,7 +81,7 @@ describe("integration: scaffold реального FS", () => {
     await scaffold({
       templateDir,
       targetDir,
-      vars: { PROJECT_NAME: "my-app", UI_KIT: "shadcn" },
+      vars: buildVars({ projectName: "my-app", uiKit: "shadcn" }),
       fs,
     });
 

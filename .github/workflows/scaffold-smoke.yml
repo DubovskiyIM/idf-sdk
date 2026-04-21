@@ -1,0 +1,105 @@
+name: Scaffold smoke
+
+# Проверяет, что `create-idf-app` производит работоспособный проект при
+# изменениях в SDK core / renderer / adapters / cli. Scaffold вызывается
+# через scaffold() напрямую (минуя auto-install в cli.js), затем SDK-deps
+# подменяются на локальные tarballs — тестируется монорепо-код, а не
+# published npm-версии.
+
+on:
+  pull_request:
+    paths:
+      - 'packages/create-idf-app/**'
+      - 'packages/cli/**'
+      - 'packages/core/**'
+      - 'packages/renderer/**'
+      - 'packages/server/**'
+      - 'packages/auth/**'
+      - 'packages/effect-runner-http/**'
+      - 'packages/adapter-mantine/**'
+      - 'packages/adapter-antd/**'
+      - 'packages/adapter-shadcn/**'
+      - 'packages/adapter-apple/**'
+      - '.github/workflows/scaffold-smoke.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'packages/create-idf-app/**'
+      - '.github/workflows/scaffold-smoke.yml'
+
+concurrency:
+  group: scaffold-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scaffold:
+    name: scaffold → wire tarballs → install → build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        ui-kit: [mantine, antd]
+      fail-fast: false
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install monorepo deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Build all packages
+        run: pnpm -r build
+
+      - name: Pack SDK tarballs
+        run: |
+          mkdir -p /tmp/tgz
+          for dir in packages/core packages/renderer packages/server packages/auth \
+                     packages/effect-runner-http packages/canvas-kit packages/cli \
+                     packages/adapter-mantine packages/adapter-antd \
+                     packages/adapter-shadcn packages/adapter-apple \
+                     packages/engine packages/importer-openapi packages/importer-postgres \
+                     packages/importer-prisma packages/enricher-claude \
+                     packages/create-idf-app; do
+            if [ -d "$dir" ]; then
+              (cd "$dir" && npm pack --pack-destination=/tmp/tgz --silent) || true
+            fi
+          done
+          echo "Packed $(ls /tmp/tgz/ | wc -l) tarballs:"
+          ls /tmp/tgz/
+
+      - name: Scaffold fresh app (${{ matrix.ui-kit }})
+        run: |
+          node .github/workflows/scripts/scaffold-direct.mjs \
+            /tmp/test-app-${{ matrix.ui-kit }} \
+            ${{ matrix.ui-kit }}
+
+      - name: Wire local SDK tarballs
+        run: |
+          node .github/workflows/scripts/wire-tarballs.mjs \
+            /tmp/test-app-${{ matrix.ui-kit }}
+
+      - name: Install + build test-app
+        run: |
+          cd /tmp/test-app-${{ matrix.ui-kit }}
+          npm install --no-audit --no-fund --loglevel=error
+          npm run build
+          test -d dist
+          echo "Built files:"
+          ls dist/
+
+      - name: Report
+        if: always()
+        run: |
+          echo "## Scaffolded app (${{ matrix.ui-kit }})" >> $GITHUB_STEP_SUMMARY
+          echo '```json' >> $GITHUB_STEP_SUMMARY
+          cat /tmp/test-app-${{ matrix.ui-kit }}/package.json | head -40 >> $GITHUB_STEP_SUMMARY || true
+          echo '```' >> $GITHUB_STEP_SUMMARY
