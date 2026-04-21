@@ -1,12 +1,16 @@
 {
   "name": "@intent-driven/importer-prisma",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Prisma schema (.prisma) → IDF ontology",
   "type": "module",
   "exports": {
     ".": "./src/index.js"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -28,6 +32,14 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/importer-prisma"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "prisma", "importer", "ontology", "orm"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "prisma",
+    "importer",
+    "ontology",
+    "orm"
+  ]
 }
