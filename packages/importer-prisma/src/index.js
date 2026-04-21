@@ -38,9 +38,28 @@ function buildSeedIntents(entities) {
     const updateParams = { id: { type: "string", required: true } };
     for (const [name, f] of writable) updateParams[name] = { type: f.type };
 
-    intents[`create${entity.name}`] = { target: entity.name, alpha: "insert", parameters: createParams };
-    intents[`update${entity.name}`] = { target: entity.name, alpha: "replace", parameters: updateParams };
-    intents[`remove${entity.name}`] = { target: entity.name, alpha: "remove", parameters: { id: { type: "string", required: true } } };
+    intents[`create${entity.name}`] = {
+      target: entity.name,
+      alpha: "insert",
+      creates: entity.name,
+      parameters: createParams,
+      particles: {
+        confirmation: "enter",
+        effects: [{ target: entity.name, op: "insert" }],
+      },
+    };
+    intents[`update${entity.name}`] = {
+      target: entity.name,
+      alpha: "replace",
+      parameters: updateParams,
+      particles: { effects: [{ target: entity.name, op: "replace" }] },
+    };
+    intents[`remove${entity.name}`] = {
+      target: entity.name,
+      alpha: "remove",
+      parameters: { id: { type: "string", required: true } },
+      particles: { effects: [{ target: entity.name, op: "remove" }] },
+    };
     intents[`list${entity.name}`] = { target: entity.name, parameters: {} };
     intents[`read${entity.name}`] = { target: entity.name, parameters: { id: { type: "string", required: true } } };
   }

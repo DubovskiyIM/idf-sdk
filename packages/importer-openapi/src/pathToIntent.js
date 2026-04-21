@@ -96,5 +96,20 @@ export function pathToIntent(method, path, operation) {
     name = operation.operationId;
   }
 
+  // Native IDF format — для deriveProjections совместимости.
+  // alpha:insert → creates + particles.confirmation:enter + effect:insert
+  // alpha:replace / remove → только particles.effects[op]
+  if (intent.alpha === "insert") {
+    intent.creates = entity;
+    intent.particles = {
+      confirmation: "enter",
+      effects: [{ target: entity, op: "insert" }],
+    };
+  } else if (intent.alpha === "replace" || intent.alpha === "remove") {
+    intent.particles = {
+      effects: [{ target: entity, op: intent.alpha }],
+    };
+  }
+
   return { name, intent };
 }
