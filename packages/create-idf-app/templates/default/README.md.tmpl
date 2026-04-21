@@ -1,0 +1,48 @@
+# __PROJECT_NAME__
+
+Scaffold на Intent-Driven Frontend. UI-kit: **__UI_KIT__**.
+
+## Быстрый старт
+
+```bash
+npm install
+npm run dev
+```
+
+Dev-сервер: <http://localhost:5173>
+
+## Структура
+
+```
+src/
+  main.jsx, app.jsx, config.js
+  domains/default/
+    ontology.js        # описание entities + intents
+    effects.js         # кастомные effect-handlers
+api/                   # Vercel serverless BFF
+  health.js
+  document/, voice/, agent/   # stubs, wired в следующих этапах
+```
+
+## Deploy на Vercel
+
+```bash
+npm i -g vercel
+vercel
+```
+
+## Environment
+
+Скопируй `.env.example` в `.env` и настрой:
+
+- `VITE_API_URL` — адрес твоего backend'а для CRUD-эффектов
+- `VITE_UI_KIT` — mantine / shadcn / apple / antd
+- `VITE_AUTH_PROVIDER` — none / supabase / jwt
+
+## Что дальше
+
+1. Отредактируй `src/domains/default/ontology.js` — добавь entities и intents.
+2. Подключи auth: установи `@intent-driven/auth-supabase` или `@intent-driven/auth-jwt` (доступны с Этапа 3).
+3. Импортируй схему из существующего Postgres: `idf import postgres --url ...` (доступен с Этапа 2).
+
+Документация: <https://github.com/DubovskiyIM/idf-sdk>
