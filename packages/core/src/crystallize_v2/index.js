@@ -17,6 +17,7 @@ import { assignToSlots } from "./assignToSlots.js";
 import { hashInputs } from "./hash.js";
 import { deriveNavGraph } from "./navGraph.js";
 import { generateEditProjections, buildFormSpec } from "./formGrouping.js";
+import { normalizeIntentsMap } from "./normalizeIntentNative.js";
 import { validateArtifact } from "./validateArtifact.js";
 import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
@@ -57,6 +58,13 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   // iteration (Object.entries, for..of) наследует стабильный порядок.
   INTENTS = sortKeys(INTENTS);
   PROJECTIONS = sortKeys(PROJECTIONS);
+
+  // Native-format bridge (backlog §8.1 / Workzilla findings P0-1).
+  // Scaffold-path + importer'ы (openapi/prisma/postgres) emit'ят intent'ы
+  // с top-level `target`/`alpha`, `parameters:{obj}`, `effects[].op` —
+  // crystallize_v2 downstream ожидает `particles.entities`, α, array-params.
+  // Normalize — additive-only, legacy-intent'ы проходят как no-op.
+  INTENTS = normalizeIntentsMap(INTENTS);
 
   // Anchoring gate (§15 zazor #1)
   const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;

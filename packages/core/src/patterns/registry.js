@@ -115,6 +115,8 @@ import undoToastWindow          from "./stable/cross/undo-toast-window.js";
 import reviewCriterionBreakdown from "./stable/detail/review-criterion-breakdown.js";
 import responseCostBeforeAction from "./stable/feed/response-cost-before-action.js";
 import ratingAggregateHero      from "./stable/detail/rating-aggregate-hero.js";
+// Workzilla dogfood (backlog §8.1)
+import catalogActionCta         from "./stable/catalog/catalog-action-cta.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -139,6 +141,8 @@ const STABLE_PATTERNS = [
   reviewCriterionBreakdown,
   responseCostBeforeAction,
   ratingAggregateHero,
+  // Workzilla dogfood (backlog §8.1)
+  catalogActionCta,
 ];
 
 export function loadStablePatterns(registry) {
