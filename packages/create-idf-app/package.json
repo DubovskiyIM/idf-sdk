@@ -1,12 +1,17 @@
 {
   "name": "@intent-driven/create-idf-app",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Scaffold-генератор для Intent-Driven Frontend: Vite+React+SDK проект за 20 секунд",
   "type": "module",
   "bin": {
     "create-idf-app": "./src/cli.js"
   },
-  "files": ["src", "templates", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -30,6 +35,14 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/create-idf-app"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "scaffold", "crud", "admin", "retool-alternative"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "scaffold",
+    "crud",
+    "admin",
+    "retool-alternative"
+  ]
 }
