@@ -4,6 +4,40 @@ Reusable npm packages для парадигмы Intent-Driven Frontend.
 
 ![IDF Studio — авторская среда](docs/screenshots/idf-studio.png)
 
+## Quick Start (для соло-фрилансеров, строящих CRUD-платформы)
+
+```bash
+npx create-idf-app my-crm
+cd my-crm
+```
+
+Выбери источник схемы (один из трёх):
+
+```bash
+# У тебя есть Postgres/Supabase
+DATABASE_URL="postgres://..." idf import postgres --enrich
+
+# У тебя есть OpenAPI spec
+idf import openapi --file openapi.yaml
+
+# У тебя есть Prisma schema
+idf import prisma --file prisma/schema.prisma
+```
+
+Настрой auth (JWT / Supabase / none) в `.env`, запусти:
+
+```bash
+npm install
+npm run dev    # localhost:5173 с useHttpEngine + sign-in UI
+vercel deploy  # production с serverless BFF
+```
+
+Подробности:
+- [docs/quickstart.md](docs/quickstart.md) — пошаговый walkthrough
+- [docs/importers.md](docs/importers.md) — 3 importer'а + conventions
+- [docs/auth.md](docs/auth.md) — JWT + Supabase setup
+- [docs/materializers.md](docs/materializers.md) — document / voice / agent BFF handlers
+
 ## Пакеты
 
 - **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2, materializers (pixels/voice/agent-API/document), invariants, baseRoles, preapprovalGuard, **Pattern Bank** (28 stable + 127 candidate), matching-score adapter resolution
@@ -13,6 +47,18 @@ Reusable npm packages для парадигмы Intent-Driven Frontend.
 - **@intent-driven/adapter-apple** — premium / visionOS-glass
 - **@intent-driven/adapter-antd** — enterprise-fintech / dashboard
 - **@intent-driven/canvas-kit** — SVG-утилиты для domain canvas
+
+### Пакеты для scaffold-пути (Этапы 1-3)
+
+- **@intent-driven/create-idf-app** — `npx create-idf-app my-app` scaffold
+- **@intent-driven/importer-postgres** — Postgres `information_schema` → ontology (CRUD + FK-relations + role-inference)
+- **@intent-driven/importer-openapi** — OpenAPI 3.x spec → ontology (`$ref` resolution, operationId override)
+- **@intent-driven/importer-prisma** — `.prisma` → ontology (через `@mrleebo/prisma-ast`)
+- **@intent-driven/enricher-claude** — AI-обогащение ontology через subprocess к локальному `claude` CLI (cache + suggestions apply)
+- **@intent-driven/effect-runner-http** — runtime HTTP CRUD для IDF intents (useHttpEngine React hook)
+- **@intent-driven/auth** — JWT + Supabase providers + useAuth hook
+- **@intent-driven/server** — BFF handlers (document / voice / agent) для Vercel-style serverless functions
+- **@intent-driven/cli** — `idf init` (LLM-генерация), `idf import postgres|openapi|prisma`, `idf enrich`
 
 ## IDF Studio
 
