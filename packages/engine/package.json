@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/engine",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Intent-Driven Frontend — engine: Φ-lifecycle, validator, ruleEngine, timeEngine (experimental)",
   "type": "module",
   "main": "./dist/index.cjs",
