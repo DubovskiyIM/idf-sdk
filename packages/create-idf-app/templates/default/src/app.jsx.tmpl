@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from "react";
-import { MantineProvider } from "@mantine/core";
+__UI_KIT_EXTRA_IMPORTS__
 import { ProjectionRendererV2, registerUIAdapter } from "@intent-driven/renderer";
-import { mantineAdapter } from "@intent-driven/adapter-mantine";
+import { __UI_KIT_ADAPTER_NAME__ } from "@intent-driven/adapter-__UI_KIT__";
 import { crystallizeV2 } from "@intent-driven/core";
 import { useHttpEngine } from "@intent-driven/effect-runner-http/react";
 import { useAuth } from "@intent-driven/auth/react";
 import { ontology } from "./domains/default/ontology.js";
 import { config } from "./config.js";
 import { createAuthProvider } from "./auth.js";
-import "@mantine/core/styles.css";
+__UI_KIT_CSS_IMPORT__
 
-registerUIAdapter("mantine", mantineAdapter);
+registerUIAdapter("__UI_KIT__", __UI_KIT_ADAPTER_NAME__);
 
 const artifacts = crystallizeV2(ontology);
 
@@ -30,7 +30,7 @@ export function App() {
   });
 
   return (
-    <MantineProvider>
+    __UI_KIT_PROVIDER_OPEN__
       <div style={{ padding: 16, fontFamily: "system-ui" }}>
         <header style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
           <h1>{config.projectName}</h1>
@@ -68,6 +68,6 @@ export function App() {
           onIntent={(intentName, params) => run(intentName, params)}
         />
       </div>
-    </MantineProvider>
+    __UI_KIT_PROVIDER_CLOSE__
   );
 }

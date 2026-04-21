@@ -7,6 +7,7 @@ import pc from "picocolors";
 import { parseArgs } from "./parse-args.js";
 import { scaffold } from "./scaffold.js";
 import { detectPackageManager } from "./detect-pm.js";
+import { buildVars } from "./ui-kit-vars.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = path.resolve(__dirname, "..");
@@ -50,7 +51,7 @@ async function main() {
   await scaffold({
     templateDir,
     targetDir: absTarget,
-    vars: { PROJECT_NAME: projectName, UI_KIT: uiKit },
+    vars: buildVars({ projectName, uiKit }),
     fs,
   });
 
