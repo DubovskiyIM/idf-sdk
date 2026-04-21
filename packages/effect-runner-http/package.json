@@ -1,13 +1,17 @@
 {
   "name": "@intent-driven/effect-runner-http",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generic HTTP effect-runner для IDF — выполняет CRUD-intents через REST API",
   "type": "module",
   "exports": {
     ".": "./src/index.js",
     "./react": "./src/react.js"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -16,7 +20,9 @@
     "react": ">=18"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true }
+    "react": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "vitest": "^4.1.0"
@@ -32,6 +38,14 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/effect-runner-http"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "http", "rest", "effect-runner", "crud"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "http",
+    "rest",
+    "effect-runner",
+    "crud"
+  ]
 }
