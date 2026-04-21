@@ -1,9 +1,11 @@
 /**
  * Reference in-memory реализация Persistence.
  * Используется для тестов и dev. Не thread-safe, не durable.
+ * @param {Object} [options]
+ * @param {() => number} [options.clock] — источник времени для fallback в updateStatus
  * @returns {import('./types.js').Persistence}
  */
-export function createInMemoryPersistence() {
+export function createInMemoryPersistence({ clock = () => Date.now() } = {}) {
   /** @type {Map<string, import('./types.js').Effect>} */
   const effects = new Map();
   /** @type {Map<string, import('./types.js').RuleState>} */
@@ -34,7 +36,7 @@ export function createInMemoryPersistence() {
       e.status = status;
       if (opts.reason != null) e.reason = opts.reason;
       if (opts.resolvedAt != null) e.resolved_at = opts.resolvedAt;
-      else e.resolved_at = Date.now();
+      else e.resolved_at = clock();
     },
 
     ruleState: {

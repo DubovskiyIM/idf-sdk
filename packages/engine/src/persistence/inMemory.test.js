@@ -78,4 +78,20 @@ describe("createInMemoryPersistence", () => {
     expect((await p.ruleState.get("r1", "u2")).counter).toBe(7);
     expect((await p.ruleState.get("r2", "u1")).counter).toBe(9);
   });
+
+  it("uses injected clock for updateStatus fallback resolved_at", async () => {
+    const p = createInMemoryPersistence({ clock: () => 42 });
+    await p.appendEffect(mkEffect("a"));
+    await p.updateStatus("a", "confirmed"); // без opts.resolvedAt → fallback
+    const [e] = await p.readEffects();
+    expect(e.resolved_at).toBe(42);
+  });
+
+  it("explicit opts.resolvedAt overrides injected clock", async () => {
+    const p = createInMemoryPersistence({ clock: () => 42 });
+    await p.appendEffect(mkEffect("a"));
+    await p.updateStatus("a", "confirmed", { resolvedAt: 999 });
+    const [e] = await p.readEffects();
+    expect(e.resolved_at).toBe(999);
+  });
 });
