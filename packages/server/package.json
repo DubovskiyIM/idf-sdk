@@ -1,12 +1,16 @@
 {
   "name": "@intent-driven/server",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "BFF-handlers для IDF: document / voice / agent materializers в serverless-функциях",
   "type": "module",
   "exports": {
     ".": "./src/index.js"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -29,6 +33,16 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/server"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "bff", "serverless", "materializer", "document", "voice", "agent"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "bff",
+    "serverless",
+    "materializer",
+    "document",
+    "voice",
+    "agent"
+  ]
 }
