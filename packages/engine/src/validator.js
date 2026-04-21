@@ -112,8 +112,14 @@ export function createValidator({
     for (const ef of effects) {
       // Persistence возвращает уже десериализованные объекты.
       // context и value могут быть строками (raw sqlite) или объектами (inMemory).
-      const ctx = typeof ef.context === "string" ? JSON.parse(ef.context) : (ef.context || {});
-      const val = typeof ef.value === "string" ? JSON.parse(ef.value) : (ef.value != null ? ef.value : null);
+      // Пустая строка — валидное JS-значение, но невалидный JSON: `JSON.parse("")` бросает.
+      // Трактуем пустую строку и null одинаково как «нет значения».
+      const ctx = typeof ef.context === "string" && ef.context !== ""
+        ? JSON.parse(ef.context)
+        : (typeof ef.context === "object" && ef.context != null ? ef.context : {});
+      const val = typeof ef.value === "string" && ef.value !== ""
+        ? JSON.parse(ef.value)
+        : (ef.value != null ? ef.value : null);
       applyEf(ef, ctx, val);
     }
 
