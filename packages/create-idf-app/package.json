@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/create-idf-app",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Scaffold-генератор для Intent-Driven Frontend: Vite+React+SDK проект за 20 секунд",
   "type": "module",
   "bin": {
