@@ -29,6 +29,8 @@ ${pc.bold("COMMANDS")}
   import postgres [opts]   Postgres schema → ontology.js.
                            Флаги: --url <dsn>, --out <path>, --schema <name>.
                            Можно через переменную DATABASE_URL.
+  import openapi [opts]    OpenAPI 3 spec (.yaml|.json) → ontology.js.
+                           Флаги: --file <path>, --out <path>.
   enrich [opts]            AI-обогащение ontology через claude CLI.
                            Флаги: --in <path>, --out <path>, --force, --no-review.
 

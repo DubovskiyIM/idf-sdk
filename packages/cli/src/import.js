@@ -1,7 +1,7 @@
 /**
  * `idf import <source> [options]` — импорт schema в IDF-ontology.
  *
- * Сейчас поддерживается только `postgres`. В будущем — `openapi`, `prisma`.
+ * Источники: postgres, openapi.
  */
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -19,10 +19,41 @@ export async function runImport(argv) {
   switch (source) {
     case "postgres":
       return runPostgres(flags);
+    case "openapi":
+      return runOpenApi(flags);
     default:
-      console.error(pc.red(`Unknown import source: ${source}. Поддерживается: postgres`));
+      console.error(pc.red(`Unknown import source: ${source}. Поддерживается: postgres, openapi`));
       process.exit(1);
   }
+}
+
+async function runOpenApi(flags) {
+  const file = flags.file;
+  if (!file) {
+    console.error(pc.red("--file <path> обязателен для openapi import"));
+    process.exit(1);
+  }
+  const out = flags.out ?? "src/domains/default/ontology.js";
+  const absFile = path.resolve(process.cwd(), file);
+
+  console.log(pc.cyan(`→ Reading OpenAPI spec from ${file}...`));
+  const source = await fs.readFile(absFile, "utf8");
+
+  const { importOpenApi, parseSpec } = await import("@intent-driven/importer-openapi");
+  const { serialize } = await import("@intent-driven/importer-postgres");
+
+  const spec = parseSpec(source);
+  const ontology = importOpenApi(spec);
+
+  const entityCount = Object.keys(ontology.entities).length;
+  const intentCount = Object.keys(ontology.intents).length;
+  console.log(pc.green(`✓ Ontology сгенерирована: ${entityCount} entities, ${intentCount} intents`));
+
+  const src = serialize(ontology, { header: true });
+  const absOut = path.resolve(process.cwd(), out);
+  await fs.mkdir(path.dirname(absOut), { recursive: true });
+  await fs.writeFile(absOut, src);
+  console.log(pc.cyan(`  → ${out}`));
 }
 
 async function runPostgres(flags) {
