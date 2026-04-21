@@ -35,7 +35,9 @@ function extractListArg(attr, key) {
     if (v && typeof v === "object" && v.type === "keyValue" && v.key === key) {
       const arr = v.value;
       if (arr && arr.type === "array") {
-        return (arr.args ?? []).map((a) => a.value);
+        // В реальной форме @mrleebo/prisma-ast args — это строки.
+        // В старой/альтернативной форме могли быть объекты с .value.
+        return (arr.args ?? []).map((a) => (typeof a === "string" ? a : a?.value));
       }
     }
   }
