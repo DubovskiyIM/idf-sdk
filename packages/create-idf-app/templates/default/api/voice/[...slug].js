@@ -1,10 +1,4 @@
-// BFF: voice-materialization reader.
-// POST /api/voice/:projection?format=json|ssml|plain → speech-script.
-// Wired в Этапе 3.
+import { createVoiceHandler } from "@intent-driven/server";
+import { ontology } from "../../src/domains/default/ontology.js";
 
-export default function handler(req, res) {
-  res.status(501).json({
-    error: "Not Implemented",
-    message: "Voice materializer будет подключён на Этапе 3",
-  });
-}
+export default createVoiceHandler({ ontology });
