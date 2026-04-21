@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/auth",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Auth-провайдеры для IDF (JWT, Supabase) + React hook useAuth",
   "type": "module",
   "exports": {
@@ -9,7 +9,11 @@
     "./supabase": "./src/providers/supabase.js",
     "./react": "./src/react.js"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -19,8 +23,12 @@
     "@supabase/supabase-js": ">=2"
   },
   "peerDependenciesMeta": {
-    "react": { "optional": true },
-    "@supabase/supabase-js": { "optional": true }
+    "react": {
+      "optional": true
+    },
+    "@supabase/supabase-js": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "vitest": "^4.1.0"
@@ -36,6 +44,13 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/auth"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "auth", "jwt", "supabase"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "auth",
+    "jwt",
+    "supabase"
+  ]
 }

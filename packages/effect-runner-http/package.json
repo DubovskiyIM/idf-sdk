@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/effect-runner-http",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Generic HTTP effect-runner для IDF — выполняет CRUD-intents через REST API",
   "type": "module",
   "exports": {
