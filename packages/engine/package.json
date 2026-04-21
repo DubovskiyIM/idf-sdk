@@ -1,0 +1,48 @@
+{
+  "name": "@intent-driven/engine",
+  "version": "0.1.0",
+  "description": "Intent-Driven Frontend — engine: Φ-lifecycle, validator, ruleEngine, timeEngine (experimental)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist", "README.md", "CHANGELOG.md", "LICENSE"],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev": "tsup --watch"
+  },
+  "peerDependencies": {
+    "@intent-driven/core": ">= 0.48.0"
+  },
+  "dependencies": {
+    "uuid": "^11.0.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0",
+    "fast-check": "^3.23.0",
+    "typescript": "^5.7.0",
+    "@intent-driven/core": "workspace:*"
+  },
+  "publishConfig": { "access": "public" },
+  "license": "BUSL-1.1",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/engine",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
+    "directory": "packages/engine"
+  },
+  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
+  "keywords": ["idf", "intent-driven", "engine", "fold", "rule-engine", "timer-queue"],
+  "sideEffects": false
+}
