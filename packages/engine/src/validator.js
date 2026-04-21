@@ -8,7 +8,7 @@
  * @module validator
  */
 
-import { causalSort, buildTypeMap, checkInvariants, checkAnchoring } from "@intent-driven/core";
+import { causalSort, buildTypeMap, checkInvariants } from "@intent-driven/core";
 
 /**
  * @param {Object} opts
@@ -209,65 +209,51 @@ export function createValidator({
   }
 
   /**
-   * Применить эффект к Φ: anchoring → intent conditions → irreversibility →
-   * existence → invariants (simulate) → append.
+   * Применить эффект к Φ: proposed → validated → confirmed|rejected.
    *
-   * Порядок проверок:
-   *   1. Anchoring — target entity анкерирован в онтологии
-   *   2. Domain-specific intent conditions
-   *   3. Irreversibility guard — α:"remove" заблокирован при past-high-irr
-   *   4. Existence check для replace/remove
-   *   5. Global invariants (simulate → check перед persistence)
-   *   6. Append + cascade-on-reject при invariant-violation
+   * Lifecycle:
+   *   1. Нормализуем статус → proposed, записываем в Φ через appendEffect.
+   *   2. Per-effect runtime guards (intent conditions / irreversibility /
+   *      existence / invariants).
+   *   3. updateStatus → confirmed или rejected + cascadeReject при отказе.
    *
-   * Отличие от host-validator: invariants проверяются ДО записи в persistence,
-   * поэтому cascade-rollback нужен только при inv-violation (не при early-reject).
+   * Per-effect порядок проверок:
+   *   1. Domain-specific intent conditions
+   *   2. Irreversibility guard — α:"remove" заблокирован при past-high-irr
+   *   3. Existence check для replace/remove
+   *   4. Global invariants через simulateApply
+   *
+   * checkAnchoring / checkIntegrity — design-time catalogue-level проверки,
+   * они вызываются один раз при engine init'е, не здесь.
    *
    * @param {Object} effect — Effect-объект (context/value уже могут быть объектами)
    * @param {{ viewer?: Object }} [opts]
    * @returns {Promise<{ status: "confirmed"|"rejected", reason?: string, cascaded?: string[] }>}
    */
   async function submit(effect, { viewer } = {}) {
+    // Normalize status → proposed (caller мог передать что угодно).
+    const normalized = { ...effect, status: "proposed" };
+    await persistence.appendEffect(normalized);
+
     const world = await foldWorld();
     const ctx = typeof effect.context === "string"
       ? JSON.parse(effect.context)
       : (effect.context || {});
+    const now = clock();
 
-    // 1. Anchoring — проверяем, что target эффекта анкерирован в онтологии.
-    // Создаём минимальный синтетический INTENTS с одним намерением, чтобы
-    // переиспользовать checkAnchoring из core. Проверяем только effect.target,
-    // игнорируем system-targets (drafts, _*).
-    if (
-      effect.target &&
-      !effect.target.startsWith("drafts") &&
-      !(effect.intent_id || "").startsWith("_")
-    ) {
-      const syntheticIntents = {
-        [effect.intent_id || "__submit__"]: {
-          particles: {
-            effects: [{ target: effect.target }],
-          },
-        },
-      };
-      const anchoringResult = checkAnchoring(syntheticIntents, ontology);
-      const anchoringErrors = anchoringResult.errors.filter(
-        (e) => e.rule === "anchoring_effect_target"
-      );
-      if (anchoringErrors.length > 0) {
-        return {
-          status: "rejected",
-          reason: `anchoring: ${anchoringErrors.map((e) => e.message).join("; ")}`,
-        };
-      }
+    async function reject(reason) {
+      await persistence.updateStatus(effect.id, "rejected", { reason, resolvedAt: now });
+      const cascaded = await cascadeReject(effect.id, reason);
+      return { status: "rejected", reason, cascaded };
     }
 
-    // 2. Domain-specific intent conditions
+    // 1. Domain-specific intent conditions
     const cond = validateIntentConditions(effect.intent_id, ctx, world);
     if (!cond.ok) {
-      return { status: "rejected", reason: cond.reason || "intent-condition-failed" };
+      return await reject(cond.reason || "intent-condition-failed");
     }
 
-    // 3. Irreversibility guard — α:"remove" заблокирован если в истории сущности
+    // 2. Irreversibility guard — α:"remove" заблокирован если в истории сущности
     // есть confirmed effect с __irr.point === "high" && __irr.at !== null.
     // Forward-correction через α:"replace" разрешён всегда (§23 манифеста).
     if (effect.alpha === "remove" && ctx.id && !effect.target.startsWith("drafts")) {
@@ -281,14 +267,11 @@ export function createValidator({
         );
       });
       if (hasIrreversiblePast) {
-        return {
-          status: "rejected",
-          reason: `irreversibility: сущность ${ctx.id} имеет эффект в истории с __irr.point=high`,
-        };
+        return await reject(`irreversibility: сущность ${ctx.id} имеет эффект в истории с __irr.point=high`);
       }
     }
 
-    // 4. Existence check для replace/remove.
+    // 3. Existence check для replace/remove.
     // Системные intent'ы scheduler'а пропускаем (schedule_timer/revoke_timer).
     if (
       (effect.alpha === "replace" || effect.alpha === "remove") &&
@@ -300,45 +283,21 @@ export function createValidator({
       const collType = getCollectionType(effect.target);
       const exists = (world[collType] || []).some((e) => e.id === ctx.id);
       if (!exists) {
-        return {
-          status: "rejected",
-          reason: `entity-not-found: ${ctx.id} в коллекции ${collType}`,
-        };
+        return await reject(`entity-not-found: ${ctx.id} в коллекции ${collType}`);
       }
     }
 
-    // 5. Global invariants (simulate → check перед persistence)
+    // 4. Global invariants (simulate → check)
     const simulatedWorld = await simulateApply(world, effect);
     const violations = checkInvariants(simulatedWorld, ontology, { viewer });
     const errors = (violations || []).filter((v) => v.severity === "error");
     if (errors.length > 0) {
       const reason = errors.map((v) => `${v.kind}: ${v.message}`).join("; ");
-
-      // При invariant-violation: записываем rejected effect + cascade детей.
-      // (При early-reject 1-4 эффект не записывается — он никогда не был proposed.)
-      const now = clock();
-      await persistence.appendEffect({
-        ...effect,
-        context: ctx,
-        status: "rejected",
-        resolved_at: now,
-      });
-      await persistence.updateStatus(effect.id, "rejected", {
-        reason: `invariant: ${reason}`,
-        resolvedAt: now,
-      });
-      const cascaded = await cascadeReject(effect.id, `invariant: ${reason}`);
-      return { status: "rejected", reason: `invariant: ${reason}`, cascaded };
+      return await reject(`invariant: ${reason}`);
     }
 
-    // 6. Всё прошло — фиксируем в Φ
-    await persistence.appendEffect({
-      ...effect,
-      context: ctx,
-      status: "confirmed",
-      resolved_at: clock(),
-    });
-
+    // 5. Всё прошло — фиксируем в Φ
+    await persistence.updateStatus(effect.id, "confirmed", { resolvedAt: now });
     return { status: "confirmed" };
   }
 
