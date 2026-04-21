@@ -1,12 +1,16 @@
 {
   "name": "@intent-driven/enricher-claude",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "AI-обогащение IDF ontology через subprocess к claude CLI",
   "type": "module",
   "exports": {
     ".": "./src/index.js"
   },
-  "files": ["src", "README.md", "LICENSE"],
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest"
@@ -29,6 +33,14 @@
     "url": "https://github.com/DubovskiyIM/idf-sdk.git",
     "directory": "packages/enricher-claude"
   },
-  "bugs": { "url": "https://github.com/DubovskiyIM/idf-sdk/issues" },
-  "keywords": ["intent-driven", "ontology", "claude", "enricher", "ai"]
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "ontology",
+    "claude",
+    "enricher",
+    "ai"
+  ]
 }
