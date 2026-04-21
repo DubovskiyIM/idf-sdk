@@ -294,9 +294,11 @@ export function createValidator({
     }
 
     // 4. Global invariants (simulate → check)
+    // checkInvariants из core возвращает { ok, violations } — деструктурируем.
     const simulatedWorld = await simulateApply(world, effect);
-    const violations = checkInvariants(simulatedWorld, ontology, { viewer });
-    const errors = (violations || []).filter((v) => v.severity === "error");
+    const result = checkInvariants(simulatedWorld, ontology, { viewer });
+    const violations = Array.isArray(result) ? result : (result?.violations || []);
+    const errors = violations.filter((v) => v.severity === "error");
     if (errors.length > 0) {
       const reason = errors.map((v) => `${v.kind}: ${v.message}`).join("; ");
       return await reject(`invariant: ${reason}`);
