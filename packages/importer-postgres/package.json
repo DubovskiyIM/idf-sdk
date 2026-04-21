@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/importer-postgres",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Postgres schema → IDF ontology (для create-idf-app и CLI)",
   "type": "module",
   "exports": {
