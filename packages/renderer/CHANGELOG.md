@@ -1,5 +1,88 @@
 # Changelog
 
+## 0.26.0
+
+### Minor Changes
+
+- 6e3942a: **Form-archetype синтезируется из insert-intent'ов** (Workzilla dogfood findings P0-2, backlog §8.2).
+
+  Раньше `generateEditProjections` создавал синтетические `*_edit` projection'ы только для replace-intent'ов (detail-based). Insert-intent'ы (`creates: X` / `α:"add"`) не получали form-проекции — автор/скаффолд был вынужден писать `{entity}_create` руками, иначе action-button «Создать задачу» в каталоге открывал пустоту.
+
+  **Core:** `generateCreateProjections(INTENTS, PROJECTIONS, ONTOLOGY)` — scan'ит INTENTS по `intent.creates`, для каждого entity (первый insert-intent побеждает) создаёт:
+
+  ```js
+  {
+    name: "Создать X",
+    kind: "form",
+    mode: "create",
+    mainEntity: X,
+    entities: [X],
+    creatorIntent: <intentId>,
+  }
+  ```
+
+  Author-override: если `PROJECTIONS["<entityLower>_create"]` уже существует — no-op. Вызывается в `crystallizeV2` entry рядом с `generateEditProjections`; результат мёржится в `allProjections` перед `absorbHubChildren`.
+
+  **`buildCreateFormSpec`** строит fields из `intent.parameters` (после native-bridge normalize parameters array). Enrich: onto-label / onto.valueLabels для enum / required. SYSTEM_FIELDS (id / createdAt) пропускаются. Секционирование по `inferFieldRole` — тот же UX, что в edit-форме.
+
+  **Renderer:** `ArchetypeForm` поддерживает `body.mode === "create"`:
+
+  - Пропускает target-lookup (new row, не existing).
+  - Initial values из `field.default` (или пустые).
+  - Пропускает ownership check (owner проставляется сервером из viewer).
+  - Save → `ctx.exec(creatorIntent, payload)` (вместо execBatch).
+  - Button label → «Создать» (вместо «Сохранить»).
+
+  Закрывает Workzilla acceptance: click по «Создать задачу» из catalog-creator-toolbar → переход на `task_create` → форма title/description/budget/categoryId/deadline.
+
+- 6e3942a: **Inline primitives `statistic` / `countdown` + `Badge` toneMap/toneBind** (Workzilla findings P1-1 / P1-3, backlog §8.4 / §8.6).
+
+  **8.4 — Inline primitives:**
+
+  - Новый primitive `Statistic` (atoms.jsx): `{title, prefix, suffix, bind, precision, size}`. Delegates в `getAdaptedComponent("primitive","statistic")` (AntD-адаптер уже предоставляет AntdStatistic); fallback — inline div с title/value/prefix/suffix/uppercase-label.
+  - Зарегистрирован в `PRIMITIVES.statistic` — теперь работает inline внутри `card.children` / `column.children`, раньше падал в "Unknown type".
+  - `PRIMITIVES.countdown = Timer` — alias для семантической ясности (`{type:"countdown", bind:"deadline"}` vs `{type:"timer"}`).
+
+  **8.6 — Badge toneMap/toneBind:**
+
+  `Badge` primitive расширен tone-резолвером:
+
+  ```js
+  { type: "badge", bind: "status", toneMap: { draft: "neutral", published: "success" } }
+  { type: "badge", bind: "status", toneBind: "_tone" } // tone берётся из item._tone
+  ```
+
+  Приоритет: `node.color` → `toneMap[rawVal]` → `toneBind`-resolve → адаптер-fallback.
+
+  Fallback-рендер (без адаптера) имеет mapping tone → colors: `success` (зелёный), `warning` (оранжевый), `danger` (красный), `info` (голубой), `neutral` (серый), `default` (индиго). AntD/Mantine Badge получает `color={tone}` и маппит в свои цветовые роли.
+
+  Закрывает: «все статусы в Workzilla показывают разные цвета без client-side augment'а».
+
+  Тесты: 10 новых unit (Badge toneMap/toneBind happy-path + explicit color priority + unknown value fallback; Statistic render с title/prefix/suffix). Renderer suite: 287 → 297.
+
+- 6e3942a: **catalog: `projection.witnesses[]` strict rendering на flat-list** (Workzilla dogfood findings P0-3, backlog §8.3).
+
+  Раньше `projection.witnesses` учитывался только в grid-layout'е (через `buildCardSpec` / `grid-card-layout` pattern). Для flat-list catalog'ов `item.children` были hardcoded в `buildCatalogBody`: avatar + title + subtitle — независимо от того, что автор задекларировал.
+
+  Теперь: если `projection.witnesses` непустой массив и `layout !== "grid"`, `item.children` генерируются из witnesses через `inferFieldRole`:
+
+  - `title` → `{ type: "text", style: "heading" }`
+  - `money`/`price` → `{ type: "text", format: "currency", style: "money" }`
+  - `badge` (status/enum/condition) → `{ type: "badge" }`
+  - `heroImage` → `{ type: "avatar", size: 40 }` (уходит в row-left)
+  - `timer`/`deadline` → `{ type: "timer" }` (inline countdown)
+  - `timestamp`/`scheduled`/`occurred` → `{ type: "text", format: "datetime" }`
+  - `metric` → `{ type: "text", format: "number" }`
+  - `description` → `{ type: "text", style: "secondary" }`
+  - `location`/`address`/`zone` → `{ type: "text", style: "secondary" }`
+  - fallback → `{ type: "text" }`
+
+  **Renderer:** `Text` primitive расширен: `format: "currency"` → `n.toLocaleString("ru") + " ₽"`. `STYLE_PRESETS` получил `money` (teal weight 600). Полное vocabulary (`money-positive`/`money-negative`/`badge-*`) — на 8.5.
+
+  **Back-compat:** `projection.witnesses` пустой или не задан → legacy avatar+title+subtitle fallback. Grid-layout по-прежнему идёт через `buildCardSpec` (не заменяется).
+
+  Закрывает Workzilla-clone acceptance «`task_list.witnesses = ["title","budget","deadline","status"]` → card показывает 4 поля корректным primitive'ом».
+
 ## 0.25.0
 
 ### Minor Changes

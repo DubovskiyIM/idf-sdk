@@ -1,5 +1,17 @@
 # @intent-driven/cli
 
+## 1.4.2
+
+### Patch Changes
+
+- Updated dependencies [6e3942a]
+- Updated dependencies [6e3942a]
+- Updated dependencies [6e3942a]
+- Updated dependencies [6e3942a]
+  - @intent-driven/core@0.50.0
+  - @intent-driven/importer-postgres@0.4.0
+  - @intent-driven/importer-prisma@0.4.0
+
 ## 1.4.1
 
 ### Patch Changes
