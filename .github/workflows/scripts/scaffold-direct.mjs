@@ -22,6 +22,9 @@ const repoRoot = path.resolve(__dirname, "../../..");
 const { scaffold } = await import(
   path.join(repoRoot, "packages/create-idf-app/src/scaffold.js")
 );
+const { buildVars } = await import(
+  path.join(repoRoot, "packages/create-idf-app/src/ui-kit-vars.js")
+);
 const templateDir = path.join(
   repoRoot,
   "packages/create-idf-app/templates/default"
@@ -31,7 +34,7 @@ const projectName = path.basename(path.resolve(targetDir));
 await scaffold({
   templateDir,
   targetDir: path.resolve(targetDir),
-  vars: { PROJECT_NAME: projectName, UI_KIT: uiKit },
+  vars: buildVars({ projectName, uiKit }),
   fs,
 });
 
