@@ -35,16 +35,27 @@ async function runPostgres(flags) {
 
   console.log(pc.cyan(`→ Reading schema from ${redactUrl(url)}...`));
   const { importPostgres, serialize } = await import("@intent-driven/importer-postgres");
-  const ontology = await importPostgres({ connectionString: url, schema: flags.schema });
+  let ontology = await importPostgres({ connectionString: url, schema: flags.schema });
+
+  const entityCount = Object.keys(ontology.entities).length;
+  const baseIntents = Object.keys(ontology.intents).length;
+  console.log(pc.green(`✓ Raw ontology: ${entityCount} entities, ${baseIntents} intents`));
+
+  if (flags.enrich !== undefined) {
+    console.log(pc.cyan("→ Запускаю enrich через claude CLI..."));
+    const { enrich, applySuggestions } = await import("@intent-driven/enricher-claude");
+    const { suggestions, cached } = await enrich(ontology);
+    if (cached) console.log(pc.dim("  (из cache)"));
+    ontology = applySuggestions(ontology, suggestions);
+    const delta = Object.keys(ontology.intents).length - baseIntents;
+    console.log(pc.green(`✓ Enriched: +${delta} intents`));
+  }
 
   const src = serialize(ontology, { header: true });
   const absOut = path.resolve(process.cwd(), out);
   await fs.mkdir(path.dirname(absOut), { recursive: true });
   await fs.writeFile(absOut, src);
 
-  const entityCount = Object.keys(ontology.entities).length;
-  const intentCount = Object.keys(ontology.intents).length;
-  console.log(pc.green(`✓ Ontology сгенерирована: ${entityCount} entities, ${intentCount} intents`));
   console.log(pc.cyan(`  → ${out}`));
 }
 

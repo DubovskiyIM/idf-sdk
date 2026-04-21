@@ -29,6 +29,8 @@ ${pc.bold("COMMANDS")}
   import postgres [opts]   Postgres schema → ontology.js.
                            Флаги: --url <dsn>, --out <path>, --schema <name>.
                            Можно через переменную DATABASE_URL.
+  enrich [opts]            AI-обогащение ontology через claude CLI.
+                           Флаги: --in <path>, --out <path>, --force, --no-review.
 
 ${pc.bold("OPTIONS")}
   -m, --model     LLM-модель: haiku | sonnet | opus  (default: sonnet)
@@ -68,6 +70,12 @@ async function main() {
   if (raw[0] === "import") {
     const { runImport } = await import("./import.js");
     return runImport(raw.slice(1));
+  }
+
+  // Subcommand "enrich" — AI-обогащение ontology через claude CLI
+  if (raw[0] === "enrich") {
+    const { runEnrich } = await import("./enrich.js");
+    return runEnrich(raw.slice(1));
   }
 
   const args = parseArgs(raw);
