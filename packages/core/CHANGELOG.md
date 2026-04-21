@@ -1,5 +1,104 @@
 # Changelog
 
+## 0.50.0
+
+### Minor Changes
+
+- 6e3942a: **Form-archetype синтезируется из insert-intent'ов** (Workzilla dogfood findings P0-2, backlog §8.2).
+
+  Раньше `generateEditProjections` создавал синтетические `*_edit` projection'ы только для replace-intent'ов (detail-based). Insert-intent'ы (`creates: X` / `α:"add"`) не получали form-проекции — автор/скаффолд был вынужден писать `{entity}_create` руками, иначе action-button «Создать задачу» в каталоге открывал пустоту.
+
+  **Core:** `generateCreateProjections(INTENTS, PROJECTIONS, ONTOLOGY)` — scan'ит INTENTS по `intent.creates`, для каждого entity (первый insert-intent побеждает) создаёт:
+
+  ```js
+  {
+    name: "Создать X",
+    kind: "form",
+    mode: "create",
+    mainEntity: X,
+    entities: [X],
+    creatorIntent: <intentId>,
+  }
+  ```
+
+  Author-override: если `PROJECTIONS["<entityLower>_create"]` уже существует — no-op. Вызывается в `crystallizeV2` entry рядом с `generateEditProjections`; результат мёржится в `allProjections` перед `absorbHubChildren`.
+
+  **`buildCreateFormSpec`** строит fields из `intent.parameters` (после native-bridge normalize parameters array). Enrich: onto-label / onto.valueLabels для enum / required. SYSTEM_FIELDS (id / createdAt) пропускаются. Секционирование по `inferFieldRole` — тот же UX, что в edit-форме.
+
+  **Renderer:** `ArchetypeForm` поддерживает `body.mode === "create"`:
+
+  - Пропускает target-lookup (new row, не existing).
+  - Initial values из `field.default` (или пустые).
+  - Пропускает ownership check (owner проставляется сервером из viewer).
+  - Save → `ctx.exec(creatorIntent, payload)` (вместо execBatch).
+  - Button label → «Создать» (вместо «Сохранить»).
+
+  Закрывает Workzilla acceptance: click по «Создать задачу» из catalog-creator-toolbar → переход на `task_create` → форма title/description/budget/categoryId/deadline.
+
+- 6e3942a: **Native-format → legacy bridge в crystallizeV2** + новый stable pattern `catalog-action-cta` (Workzilla dogfood findings P0-1, backlog §8.1).
+
+  Раньше native-format intent'ы (importer-postgres / -openapi / -prisma emit + scaffold-path авторы) не доходили до toolbar / item.intents в catalog и detail архетипах. Native-format:
+
+  ```js
+  {
+    target: "Task",
+    alpha: "replace",
+    permittedFor: ["customer"],
+    parameters: { id: { type: "string", required: true }, title: { type } },
+    particles: { effects: [{ target: "Task", op: "replace" }] },
+  }
+  ```
+
+  Crystallize_v2 читает `particles.entities`, `particles.effects[].α`, array-parameters — которых в native-format нет. Без них `appliesToProjection` проваливает intent как не-относящийся к mainEntity, `selectArchetype` возвращает null (нет `confirmation`), и UI-generation даёт пустой toolbar.
+
+  **Нормализация `normalizeIntentsMap`** (`crystallize_v2/normalizeIntentNative.js`) применяется сразу после `sortKeys` в crystallizeV2 entry:
+
+  1. `intent.target` → `particles.entities: ["<alias>: <Target>"]` (если пусто).
+  2. `particles.effects[i].op` → `α` + target нормализация:
+     - `op:"insert"` → `{α:"add", target: <plural lowercase>}`
+     - `op:"replace"|"update"` → `{α:"replace", target: <lowercase>}`
+     - `op:"remove"|"delete"` → `{α:"remove", target: <lowercase>}`
+  3. `parameters: {obj}` → `parameters: [array]`.
+  4. `particles.confirmation` инфер из α (только для native-intent'ов):
+     - `α:"add"` → `"enter"` (composer / heroCreate)
+     - `α:"replace"` → `"form"` если user-params > 0, иначе `"click"`
+     - `α:"remove"` → `"click"`
+
+  Normalization **additive-only**: legacy-intent'ы (с `particles.entities`, `effects[].α`) проходят через no-op. `normalizeIntentsMap` идемпотентно — повторный вызов возвращает тот же объект.
+
+  **Stable pattern `catalog-action-cta`** (`patterns/stable/catalog/`):
+
+  - Trigger: catalog с ≥1 replace-intent на mainEntity.
+  - Apply: тагирует `body.item.intents` с `source:"derived:catalog-action-cta"` (matching/metadata — routing уже сделан в `assignToSlotsCatalog::isPerItemIntent`).
+  - Назначение: формально фиксирует §8.1 acceptance + unlock Studio X-ray tracing.
+
+  Stable-count: 31 → 32.
+
+  **Интеграция-тесты:** `nativeScaffold.test.js` проверяет что Workzilla-like ontology (native-format intents) производит populated `item.intents` + `toolbar`. Закрывает Workzilla acceptance "editTask / publishTask видны customer'у в task_list".
+
+- 6e3942a: **catalog: `projection.witnesses[]` strict rendering на flat-list** (Workzilla dogfood findings P0-3, backlog §8.3).
+
+  Раньше `projection.witnesses` учитывался только в grid-layout'е (через `buildCardSpec` / `grid-card-layout` pattern). Для flat-list catalog'ов `item.children` были hardcoded в `buildCatalogBody`: avatar + title + subtitle — независимо от того, что автор задекларировал.
+
+  Теперь: если `projection.witnesses` непустой массив и `layout !== "grid"`, `item.children` генерируются из witnesses через `inferFieldRole`:
+
+  - `title` → `{ type: "text", style: "heading" }`
+  - `money`/`price` → `{ type: "text", format: "currency", style: "money" }`
+  - `badge` (status/enum/condition) → `{ type: "badge" }`
+  - `heroImage` → `{ type: "avatar", size: 40 }` (уходит в row-left)
+  - `timer`/`deadline` → `{ type: "timer" }` (inline countdown)
+  - `timestamp`/`scheduled`/`occurred` → `{ type: "text", format: "datetime" }`
+  - `metric` → `{ type: "text", format: "number" }`
+  - `description` → `{ type: "text", style: "secondary" }`
+  - `location`/`address`/`zone` → `{ type: "text", style: "secondary" }`
+  - fallback → `{ type: "text" }`
+
+  **Renderer:** `Text` primitive расширен: `format: "currency"` → `n.toLocaleString("ru") + " ₽"`. `STYLE_PRESETS` получил `money` (teal weight 600). Полное vocabulary (`money-positive`/`money-negative`/`badge-*`) — на 8.5.
+
+  **Back-compat:** `projection.witnesses` пустой или не задан → legacy avatar+title+subtitle fallback. Grid-layout по-прежнему идёт через `buildCardSpec` (не заменяется).
+
+  Закрывает Workzilla-clone acceptance «`task_list.witnesses = ["title","budget","deadline","status"]` → card показывает 4 поля корректным primitive'ом».
+
 ## 0.49.0
 
 ### Minor Changes
