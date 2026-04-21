@@ -19,9 +19,6 @@
     "react": { "optional": true }
   },
   "devDependencies": {
-    "react": "^19.0.0",
-    "@testing-library/react": "^16.1.0",
-    "jsdom": "^25.0.1",
     "vitest": "^4.1.0"
   },
   "publishConfig": {
