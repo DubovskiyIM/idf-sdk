@@ -8,9 +8,10 @@ import { spawn } from "node:child_process";
  * @returns {Promise<object>} — содержимое result-поля распарсенное как JSON
  */
 export async function callClaude({ systemPrompt, input, schema, claudeBin = "claude" }) {
+  // -p — non-interactive, без --bare чтобы работать через OAuth keychain
+  // (--bare требует ANTHROPIC_API_KEY; без bare — читает ~/.claude creds).
   const args = [
     "-p",
-    "--bare",
     "--output-format",
     "json",
     "--append-system-prompt",
@@ -48,11 +49,37 @@ export async function callClaude({ systemPrompt, input, schema, claudeBin = "cla
   }
 
   const innerText = wrapper.result ?? wrapper.content ?? stdout;
+  return extractJson(innerText);
+}
+
+/**
+ * Извлекает JSON-объект из текста Claude.
+ * Порядок попыток:
+ *   1. Прямой JSON.parse — если модель вернула чистый JSON.
+ *   2. Markdown code-fence ```json ... ```.
+ *   3. Поиск первого `{` и last `}` — fallback.
+ */
+export function extractJson(text) {
+  if (typeof text !== "string") return text;
+
   try {
-    return typeof innerText === "string" ? JSON.parse(innerText) : innerText;
-  } catch (err) {
-    throw new Error(`Structured response внутри claude result не JSON: ${String(innerText).slice(0, 200)}`);
+    return JSON.parse(text);
+  } catch {
+    /* fallthrough */
   }
+
+  const fence = text.match(/```(?:json)?\s*\n?([\s\S]*?)\n?\s*```/);
+  if (fence) {
+    try { return JSON.parse(fence[1]); } catch { /* fallthrough */ }
+  }
+
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  if (start !== -1 && end > start) {
+    try { return JSON.parse(text.slice(start, end + 1)); } catch { /* fallthrough */ }
+  }
+
+  throw new Error(`Structured response не JSON: ${text.slice(0, 200)}`);
 }
 
 function toBuf(c) {

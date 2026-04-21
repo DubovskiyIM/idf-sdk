@@ -40,7 +40,17 @@ const RULES = `Правила:
 - Возвращай только то, что нельзя получить heuristics из column-name.
 - Если для entity нет сигналов — оставляй пустой массив.
 - reason — одна-две фразы, без воды.
-- Не изобретай статусы, которых нет в fields.default или field.values.`;
+- Не изобретай статусы, которых нет в fields.default или field.values.
+
+КРИТИЧНО: Возвращай ТОЛЬКО валидный JSON-объект и ничего более. Никакого prose, markdown, объяснений до или после.
+Первый символ ответа — "{", последний — "}". Не оборачивай в code-fence. Структура:
+{
+  "namedIntents": [...],
+  "absorbHints": [...],
+  "additionalRoles": [...],
+  "baseRoles": [...]
+}
+Все четыре массива обязательны (возможно пустые).`;
 
 export function buildSystemPrompt(opts = {}) {
   const { includeExamples = true } = opts;

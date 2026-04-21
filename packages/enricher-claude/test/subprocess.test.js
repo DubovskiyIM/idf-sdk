@@ -65,10 +65,10 @@ describe("callClaude", () => {
 
     const args = spawn.mock.calls[0][1];
     expect(args).toContain("-p");
-    expect(args).toContain("--bare");
     expect(args).toContain("--output-format");
     expect(args).toContain("json");
     expect(args).toContain("--append-system-prompt");
+    expect(args).toContain("--json-schema");
   });
 
   it("non-zero exit → throw", async () => {
