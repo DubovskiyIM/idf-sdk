@@ -31,6 +31,8 @@ ${pc.bold("COMMANDS")}
                            Можно через переменную DATABASE_URL.
   import openapi [opts]    OpenAPI 3 spec (.yaml|.json) → ontology.js.
                            Флаги: --file <path>, --out <path>.
+  import prisma [opts]     Prisma schema (.prisma) → ontology.js.
+                           Флаги: --file <path>, --out <path>.
   enrich [opts]            AI-обогащение ontology через claude CLI.
                            Флаги: --in <path>, --out <path>, --force, --no-review.
 

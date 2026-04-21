@@ -221,6 +221,9 @@ importers:
       '@intent-driven/importer-postgres':
         specifier: workspace:*
         version: link:../importer-postgres
+      '@intent-driven/importer-prisma':
+        specifier: workspace:*
+        version: link:../importer-prisma
       picocolors:
         specifier: ^1.1.1
         version: 1.1.1

@@ -21,10 +21,40 @@ export async function runImport(argv) {
       return runPostgres(flags);
     case "openapi":
       return runOpenApi(flags);
+    case "prisma":
+      return runPrisma(flags);
     default:
-      console.error(pc.red(`Unknown import source: ${source}. Поддерживается: postgres, openapi`));
+      console.error(pc.red(`Unknown import source: ${source}. Поддерживается: postgres, openapi, prisma`));
       process.exit(1);
   }
+}
+
+async function runPrisma(flags) {
+  const file = flags.file;
+  if (!file) {
+    console.error(pc.red("--file <schema.prisma> обязателен"));
+    process.exit(1);
+  }
+  const out = flags.out ?? "src/domains/default/ontology.js";
+  const absFile = path.resolve(process.cwd(), file);
+
+  console.log(pc.cyan(`→ Reading Prisma schema from ${file}...`));
+  const source = await fs.readFile(absFile, "utf8");
+
+  const { importPrisma } = await import("@intent-driven/importer-prisma");
+  const { serialize } = await import("@intent-driven/importer-postgres");
+
+  const ontology = importPrisma(source);
+
+  const entityCount = Object.keys(ontology.entities).length;
+  const intentCount = Object.keys(ontology.intents).length;
+  console.log(pc.green(`✓ Ontology сгенерирована: ${entityCount} entities, ${intentCount} intents`));
+
+  const src = serialize(ontology, { header: true });
+  const absOut = path.resolve(process.cwd(), out);
+  await fs.mkdir(path.dirname(absOut), { recursive: true });
+  await fs.writeFile(absOut, src);
+  console.log(pc.cyan(`  → ${out}`));
 }
 
 async function runOpenApi(flags) {

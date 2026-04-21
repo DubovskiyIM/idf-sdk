@@ -20,6 +20,7 @@
     "@intent-driven/enricher-claude": "workspace:*",
     "@intent-driven/importer-openapi": "workspace:*",
     "@intent-driven/importer-postgres": "workspace:*",
+    "@intent-driven/importer-prisma": "workspace:*",
     "picocolors": "^1.1.1",
     "prompts": "^2.4.2"
   },
