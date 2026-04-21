@@ -21,7 +21,7 @@
  */
 
 import { v4 as uuid } from "uuid";
-import { resolveFiresAt } from "./scheduleV2.js";
+import { resolveFiresAt, parseDuration } from "./scheduleV2.js";
 
 export function matchTrigger(trigger, intentId) {
   if (Array.isArray(trigger)) {
@@ -323,6 +323,40 @@ export function createRuleEngine({
           triggerEventKey,
           revokeOnEvents: rule.revokeOn || [],
           guard: rule.guard || null,
+        },
+        created_at: nowMs,
+      });
+
+      // warnAt: вторичный timer за warnAt до основного firesAt. Тот же
+      // triggerEventKey — revokeOn снимет оба. Skip при невалидном parse,
+      // отрицательном offset или warnFiresAt <= nowMs (мало смысла
+      // предупреждать после момента триггера).
+      if (!rule.warnAt) continue;
+      const warnDelta = parseDuration(rule.warnAt);
+      if (warnDelta == null || warnDelta <= 0) continue;
+      const warnFiresAt = firesAt - warnDelta;
+      if (warnFiresAt <= nowMs) continue;
+      const warnParams = rule.warnParams
+        ? resolveParams(rule.warnParams, payload)
+        : fireParams;
+      out.push({
+        id: uuid(),
+        intent_id: "schedule_timer",
+        alpha: "add",
+        target: "ScheduledTimer",
+        value: null,
+        scope: "account",
+        parent_id: null,
+        status: "proposed",
+        context: {
+          id: uuid(),
+          firesAt: warnFiresAt,
+          fireIntent: rule.warnIntent || "__warn",
+          fireParams: warnParams,
+          triggerEventKey,
+          revokeOnEvents: rule.revokeOn || [],
+          guard: rule.guard || null,
+          warning: true,
         },
         created_at: nowMs,
       });

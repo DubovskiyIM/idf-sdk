@@ -288,6 +288,165 @@ describe("createRuleEngine — reactScheduleV2", () => {
   });
 });
 
+describe("createRuleEngine — reactScheduleV2 warnAt", () => {
+  const baseRule = {
+    id: "booking_ttl",
+    trigger: "book_appointment",
+    after: "24h",
+    fireIntent: "auto_cancel_booking",
+    params: { bookingId: "$.bookingId" },
+    revokeOn: ["confirm_booking"],
+  };
+
+  it("warnAt + after: emit 2 timers — primary + warning", () => {
+    const rule = {
+      ...baseRule,
+      warnAt: "2h",
+      warnIntent: "notify_booking_expiring",
+    };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 1_000_000 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects).toHaveLength(2);
+    const [primary, warning] = effects;
+    expect(primary.context.fireIntent).toBe("auto_cancel_booking");
+    expect(primary.context.firesAt).toBe(1_000_000 + 24 * 3_600_000);
+    expect(warning.context.fireIntent).toBe("notify_booking_expiring");
+    expect(warning.context.firesAt).toBe(primary.context.firesAt - 2 * 3_600_000);
+    expect(warning.context.warning).toBe(true);
+  });
+
+  it("warnAt + at: поддерживается absolute-path schedule", () => {
+    const rule = {
+      id: "deadline_warn",
+      trigger: "set_deadline",
+      at: "$.readyAt",
+      fireIntent: "mark_overdue",
+      warnAt: "30min",
+    };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 500 });
+    const readyAt = 10_000_000;
+    const effects = engine.reactScheduleV2({
+      intent_id: "set_deadline",
+      context: { readyAt },
+    });
+    expect(effects).toHaveLength(2);
+    expect(effects[0].context.firesAt).toBe(readyAt);
+    expect(effects[1].context.firesAt).toBe(readyAt - 30 * 60_000);
+    expect(effects[1].context.fireIntent).toBe("__warn");
+  });
+
+  it("warnIntent по умолчанию __warn", () => {
+    const rule = { ...baseRule, warnAt: "1h" };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 0 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects[1].context.fireIntent).toBe("__warn");
+  });
+
+  it("warnParams по умолчанию наследуются от params (resolved)", () => {
+    const rule = { ...baseRule, warnAt: "1h" };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 0 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects[0].context.fireParams).toEqual({ bookingId: "b1" });
+    expect(effects[1].context.fireParams).toEqual({ bookingId: "b1" });
+  });
+
+  it("warnParams — явный override с path-resolution", () => {
+    const rule = {
+      ...baseRule,
+      warnAt: "1h",
+      warnParams: { id: "$.bookingId", kind: "expiration" },
+    };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 0 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects[1].context.fireParams).toEqual({ id: "b1", kind: "expiration" });
+  });
+
+  it("warnAt >= duration: warning пропускается, primary остаётся", () => {
+    const rule = { ...baseRule, after: "2h", warnAt: "5h" };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 1_000_000 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects).toHaveLength(1);
+    expect(effects[0].context.fireIntent).toBe("auto_cancel_booking");
+  });
+
+  it("warnAt невалидный parse: warning skipped, primary остаётся", () => {
+    const rule = { ...baseRule, warnAt: "not-a-duration" };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 0 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    expect(effects).toHaveLength(1);
+    expect(effects[0].context.fireIntent).toBe("auto_cancel_booking");
+  });
+
+  it("warnAt без after/at: primary не эмитится, warning тоже", () => {
+    const rule = {
+      id: "orphan_warn",
+      trigger: "book_appointment",
+      fireIntent: "mark_overdue",
+      warnAt: "1h",
+    };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 0 });
+    const effects = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: {},
+    });
+    expect(effects).toHaveLength(0);
+  });
+
+  it("revokeOn cancels и primary, и warning — тот же triggerEventKey", () => {
+    const rule = { ...baseRule, warnAt: "2h" };
+    const { engine } = mkEngine({ rules: [rule], clock: () => 1_000_000 });
+    const scheduled = engine.reactScheduleV2({
+      intent_id: "book_appointment",
+      context: { bookingId: "b1" },
+    });
+    // Оба timer'а должны иметь одинаковый triggerEventKey
+    expect(scheduled[0].context.triggerEventKey).toBe(scheduled[1].context.triggerEventKey);
+
+    // Симулируем world с обоими активными timer'ами
+    const world = {
+      scheduledTimers: [
+        {
+          id: "primary-t",
+          active: true,
+          firedAt: null,
+          triggerEventKey: scheduled[0].context.triggerEventKey,
+        },
+        {
+          id: "warn-t",
+          active: true,
+          firedAt: null,
+          triggerEventKey: scheduled[1].context.triggerEventKey,
+        },
+      ],
+    };
+    const revokes = engine.reactScheduleV2(
+      { intent_id: "confirm_booking", context: {} },
+      world,
+    );
+    expect(revokes).toHaveLength(2);
+    expect(revokes.every(e => e.intent_id === "revoke_timer")).toBe(true);
+    expect(revokes.map(e => e.context.id).sort()).toEqual(["primary-t", "warn-t"]);
+  });
+});
+
 describe("createRuleEngine — determinism property", () => {
   it("same inputs produce same output (stripping uuids)", async () => {
     const rule = {
