@@ -1,8 +1,9 @@
 import { parsePrisma } from "./parsePrisma.js";
 import { modelToEntity } from "./modelToEntity.js";
 import { buildRelations } from "./buildRelations.js";
+import { buildCompositions } from "./buildCompositions.js";
 
-export { parsePrisma, modelToEntity, buildRelations };
+export { parsePrisma, modelToEntity, buildRelations, buildCompositions };
 
 /**
  * Prisma schema source → IDF ontology (с seed CRUD intents).
@@ -17,15 +18,18 @@ export function importPrisma(source, opts = {}) {
   }
 
   buildRelations(entities, models);
+  const compositions = buildCompositions(entities);
 
   const intents = buildSeedIntents(entities);
 
-  return {
+  const ontology = {
     name: opts.name ?? "default",
     entities,
     intents,
     roles: { owner: { base: "owner" } },
   };
+  if (Object.keys(compositions).length > 0) ontology.compositions = compositions;
+  return ontology;
 }
 
 function buildSeedIntents(entities) {
