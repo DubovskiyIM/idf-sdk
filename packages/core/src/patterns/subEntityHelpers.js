@@ -89,6 +89,12 @@ export function sectionIdFor(entity) {
  *   1. singular lowercase: "position" / "position.x" (canonical convention)
  *   2. camelCase plural (collection form): "transactions" / "marketSignals"
  *   3. explicit entity collection если объявлена в ontology.entities[E].collection
+ *
+ * Return shape совпадает с buildSubSection (crystallize_v2/assignToSlotsDetail.js)
+ * чтобы renderer'у не нужно было обрабатывать два разных формата sections.
+ * Поля title / itemEntity / itemView — ключевые для рендера (detail-body
+ * читает exactly эти имена). Author может override'ить через
+ * projection.subCollections (в этом случае apply не вмешивается вообще).
  */
 export function buildSection(entity, fkField, intents, ontology) {
   const entityDef = ontology?.entities?.[entity];
@@ -113,15 +119,70 @@ export function buildSection(entity, fkField, intents, ontology) {
     .map(i => i.id);
 
   const layout = entityDef?.kind === "assignment" ? "m2m" : "list";
+  const sectionId = sectionIdFor(entity);
+  const title = humanizeEntityName(entity);
+  const itemView = buildItemViewForEntity(entity, entityDef);
 
   return {
-    id: sectionIdFor(entity),
-    entity,
-    foreignKey: fkField,
-    layout,
-    intents: relevantIntents,
+    id: sectionId,
+    title,
     source: "derived:subcollections",
+    foreignKey: fkField,
+    itemEntity: entity,
+    itemView,
+    itemIntents: relevantIntents,
+    layout,
+    emptyLabel: "Пока пусто",
+    // Legacy compat: старый shape имел `entity` / `intents`. Renderer'ы
+    // читающие из slots.sections ожидают itemEntity / itemIntents; дубль
+    // убираем в следующем major-bump'е.
+    entity,
+    intents: relevantIntents,
   };
+}
+
+/**
+ * Humanize PascalCase entity → display title.
+ * "Catalog" → "Catalog" (single-word untouched).
+ * "OrderItem" → "Order item" (camelCase split, capitalize first).
+ * Применяется для section title. Для plural-form используется sectionIdFor().
+ */
+function humanizeEntityName(entity) {
+  if (!entity) return "";
+  // split on camelCase boundaries
+  const parts = entity.split(/(?=[A-Z])/).map(s => s.toLowerCase());
+  if (parts.length === 0) return entity;
+  const first = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+  return parts.length === 1 ? first : first + " " + parts.slice(1).join(" ");
+}
+
+/**
+ * Минимальный itemView для auto-derived section — единственный bind на
+ * primary-title поле. Приоритет (по выходу):
+ *   1. Поле с role === "primary-title" / fieldRole === "primary-title".
+ *   2. Поле с именем из PRIMARY_TITLE_NAMES (name / title / label).
+ *   3. Fallback "id".
+ * Author override через projection.subCollections[].itemView — этот path
+ * вообще не достигается.
+ */
+function buildItemViewForEntity(entity, entityDef) {
+  const fields = entityDef?.fields;
+  if (!fields || typeof fields !== "object" || Array.isArray(fields)) {
+    return { type: "text", bind: "id" };
+  }
+  // Поиск primary-title
+  for (const [name, def] of Object.entries(fields)) {
+    if (def?.role === "primary-title" || def?.fieldRole === "primary-title") {
+      return { type: "text", bind: name, style: { fontWeight: 600 } };
+    }
+  }
+  // Name/title/label fallback
+  const PRIMARY_TITLE_NAMES = ["name", "title", "label"];
+  for (const pref of PRIMARY_TITLE_NAMES) {
+    if (fields[pref]) return { type: "text", bind: pref, style: { fontWeight: 600 } };
+  }
+  // Ultimate fallback
+  return { type: "text", bind: "id" };
 }
 
 function stripCreatesArgs(creates) {
