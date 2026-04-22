@@ -40,12 +40,13 @@ vercel deploy  # production с serverless BFF
 
 ## Пакеты
 
-- **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2, materializers (pixels/voice/agent-API/document), invariants, baseRoles, preapprovalGuard, **Pattern Bank** (28 stable + 127 candidate), matching-score adapter resolution
-- **@intent-driven/renderer** — ProjectionRendererV2, 7 архетипов, primitives (atoms/containers/chart/map/IrreversibleBadge/Countdown/UndoToast/AuthForm), AdapterProvider (Context + hooks), `pickAdaptedComponent` со scoring
-- **@intent-driven/adapter-mantine** — corporate / data-dense
-- **@intent-driven/adapter-shadcn** — handcrafted / doodle
-- **@intent-driven/adapter-apple** — premium / visionOS-glass
-- **@intent-driven/adapter-antd** — enterprise-fintech / dashboard
+- **@intent-driven/core** — engine, fold, intentAlgebra, crystallize_v2, materializers (pixels/voice/agent-API/document/auditLog), invariants (6 kinds incl. expression), baseRoles, preapprovalGuard, **Pattern Bank** (32 stable — 30 с `structure.apply`, 2 matching-only; 49+ candidate в idf/pattern-bank/), matching-score adapter resolution, salience declaration-order ladder
+- **@intent-driven/renderer** — ProjectionRendererV2, 7 архетипов (incl. synthesized ArchetypeForm create/edit), primitives (atoms/containers/chart/map/IrreversibleBadge/PatternPreviewOverlay/TreeNav/KanbanBoard/SubCollectionSection/Countdown/UndoToast/AuthForm), AdapterProvider (Context + hooks), `pickAdaptedComponent` со scoring, xrayMode/slotAttribution props
+- **@intent-driven/engine** — Φ-lifecycle extraction (proposed/confirmed/rejected, fold, ruleEngine hooks, rule.warnAt secondary timers) — для headless-хостов
+- **@intent-driven/adapter-mantine** — corporate / data-dense + shell.sidebar
+- **@intent-driven/adapter-shadcn** — handcrafted / doodle + shell.sidebar
+- **@intent-driven/adapter-apple** — premium / visionOS-glass + shell.sidebar
+- **@intent-driven/adapter-antd** — enterprise-fintech / dashboard + shell.formHeader
 - **@intent-driven/canvas-kit** — SVG-утилиты для domain canvas
 
 ### Пакеты для scaffold-пути (Этапы 1-3)
@@ -93,10 +94,6 @@ Claude haiku/sonnet/opus через subprocess; system prompt со специф�
 Real-time статус 6-kind global invariants (role-capability / referential / transition / cardinality / aggregate / expression) + integrity-правил.
 
 ![Инварианты](docs/screenshots/idf-studio-integrity.png)
-
-## Дальше (отдельные spec'и)
-
-- `@intent-driven/server` — validator, ruleEngine, agent layer, timeEngine (Phase 3)
 
 ## Разработка
 
