@@ -137,6 +137,59 @@ describe("adapter affinity scoring (task #14)", () => {
   });
 });
 
+describe("AntdBreadcrumbs primitive", () => {
+  it("рендерит items как breadcrumb", () => {
+    const B = get("primitive", "breadcrumbs");
+    expect(B).toBeDefined();
+    render(
+      <B
+        node={{
+          type: "breadcrumbs",
+          items: [
+            { label: "Metalakes", projection: "metalake_list" },
+            { label: "prod", projection: "metalake_detail" },
+            { label: "Catalog" },
+          ],
+        }}
+      />
+    );
+    expect(screen.getByText("Metalakes")).toBeTruthy();
+    expect(screen.getByText("prod")).toBeTruthy();
+    expect(screen.getByText("Catalog")).toBeTruthy();
+  });
+
+  it("пустой items → null (не крэш)", () => {
+    const B = get("primitive", "breadcrumbs");
+    const { container } = render(<B node={{ type: "breadcrumbs", items: [] }} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  it("click на link вызывает ctx.navigate с projection+params", () => {
+    const B = get("primitive", "breadcrumbs");
+    const calls = [];
+    const ctx = { navigate: (...args) => calls.push(args) };
+    render(
+      <B
+        node={{
+          type: "breadcrumbs",
+          items: [
+            { label: "Root", projection: "root_list", params: { a: 1 } },
+            { label: "Current" },
+          ],
+        }}
+        ctx={ctx}
+      />
+    );
+    fireEvent.click(screen.getByText("Root"));
+    expect(calls[0]?.[0]).toBe("root_list");
+    expect(calls[0]?.[1]).toEqual({ a: 1 });
+  });
+
+  it("capability registered: adapter.capabilities.primitive.breadcrumbs === true", () => {
+    expect(antdAdapter.capabilities?.primitive?.breadcrumbs).toBe(true);
+  });
+});
+
 describe("AntdTextInput validation attrs (2.4)", () => {
   it("maxLength пробрасывается в input", () => {
     const T = get("parameter", "text");

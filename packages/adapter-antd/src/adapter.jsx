@@ -28,6 +28,7 @@ import {
   Dropdown,
   Statistic,
   Menu,
+  Breadcrumb as AntBreadcrumb,
 } from "antd";
 import {
   EditOutlined,
@@ -543,6 +544,50 @@ function AntdPaper({ children, padding, withBorder, style }) {
 }
 
 /**
+ * Breadcrumbs — делегация на AntD native <Breadcrumb>.
+ * Node-shape совпадает с renderer primitive (Breadcrumbs.jsx):
+ *   { type: "breadcrumbs", items: [{label, projection?, params?, current?}], separator? }
+ *
+ * AntD сам обрабатывает current (последний item без href = active, bold).
+ * Custom `current: true` на не-последнем — AntD не поддерживает нативно,
+ * реализуем через items.slice() + `active` flag на соответствующем item'е.
+ */
+function AntdBreadcrumbs({ node, ctx }) {
+  const items = Array.isArray(node?.items) ? node.items : [];
+  if (items.length === 0) return null;
+  const separator = node?.separator;
+
+  // Explicit current override — помечаем не-последний item как current,
+  // всё после него становится просто текстом (AntD их в item-hierarchy
+  // не отрендерит как активные). Backward-compat с primitive-behavior:
+  // если current === true указан mid-chain — остальные после current
+  // показываем как subtle-текст без навигации.
+  const explicitCurrentIdx = items.findIndex(it => it.current === true);
+  const currentIdx = explicitCurrentIdx >= 0 ? explicitCurrentIdx : items.length - 1;
+
+  const antdItems = items.map((item, i) => {
+    const isCurrent = i === currentIdx;
+    if (isCurrent) {
+      return { title: item.label };
+    }
+    if (i < currentIdx) {
+      return {
+        title: item.label,
+        onClick: (e) => {
+          e.preventDefault();
+          if (ctx?.navigate && item.projection) ctx.navigate(item.projection, item.params || {});
+        },
+        href: "#",
+      };
+    }
+    // post-current items — subtle (not active, not clickable)
+    return { title: item.label };
+  });
+
+  return <AntBreadcrumb items={antdItems} separator={separator} />;
+}
+
+/**
  * Statistic — финансовая метрика (value + prefix/suffix + trend).
  * Доменный код декларирует: { kind: "statistic", value, prefix, suffix, trend }
  * trend: "up" | "down" | null → зелёная/красная стрелка
@@ -704,6 +749,7 @@ export const antdAdapter = {
       sparkline: true,
       statistic: true,
       heading: true, text: true, badge: true, avatar: true, paper: true,
+      breadcrumbs: true,
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
@@ -740,6 +786,7 @@ export const antdAdapter = {
     statistic: AntdStatistic,
     chart: AntdChart,
     sparkline: AntdSparkline,
+    breadcrumbs: AntdBreadcrumbs,
   },
   icon: {
     resolve: resolveAntdIcon,
