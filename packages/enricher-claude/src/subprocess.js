@@ -41,11 +41,20 @@ export async function callClaude({ systemPrompt, input, schema, claudeBin = "cla
 
   // Claude CLI в --output-format=json возвращает wrapper { type, result, ... }
   // где result — строка с самим ответом (когда schema задана, строка = JSON).
+  //
+  // Начиная с Claude CLI 2.1.x (ориентировочно) при --json-schema structured
+  // ответ перемещён в `wrapper.structured_output` как pre-parsed object,
+  // а `wrapper.result` становится пустой строкой. Сначала пробуем новое поле
+  // (возвращаем как есть — оно уже object), fallback — legacy result-string.
   let wrapper;
   try {
     wrapper = JSON.parse(stdout);
   } catch (err) {
     throw new Error(`claude output не JSON: ${stdout.slice(0, 200)}`);
+  }
+
+  if (wrapper.structured_output && typeof wrapper.structured_output === "object") {
+    return wrapper.structured_output;
   }
 
   const innerText = wrapper.result ?? wrapper.content ?? stdout;
