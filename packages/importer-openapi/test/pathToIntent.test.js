@@ -79,3 +79,41 @@ describe("pathToIntent", () => {
     expect(it_.intent.endpoint.path).toBe("/tasks/:id");
   });
 });
+
+describe("pathToIntent / non-{id} path params", () => {
+  it("GET /villagers/{villager} → readVillager с parameters.villager", () => {
+    const it_ = pathToIntent("GET", "/villagers/{villager}", {});
+    expect(it_.name).toBe("readVillager");
+    expect(it_.intent.parameters.villager).toEqual({ type: "string", required: true });
+  });
+
+  it("DELETE /artworks/{artwork} → removeArtwork с alpha:remove + parameters.artwork", () => {
+    const it_ = pathToIntent("DELETE", "/artworks/{artwork}", {});
+    expect(it_.name).toBe("removeArtwork");
+    expect(it_.intent.alpha).toBe("remove");
+    expect(it_.intent.parameters.artwork).toEqual({ type: "string", required: true });
+  });
+
+  it("PATCH /fish/{fish} → updateFish с alpha:replace + parameters.fish", () => {
+    const it_ = pathToIntent("PATCH", "/fish/{fish}", {});
+    expect(it_.name).toBe("updateFish");
+    expect(it_.intent.alpha).toBe("replace");
+    expect(it_.intent.parameters.fish).toEqual({ type: "string", required: true });
+  });
+
+  it("вложенные path params /users/{userId}/posts/{postId} — все попадают в parameters", () => {
+    const it_ = pathToIntent("GET", "/users/{userId}/posts/{postId}", {});
+    expect(it_.intent.parameters.userId).toEqual({ type: "string", required: true });
+    expect(it_.intent.parameters.postId).toEqual({ type: "string", required: true });
+  });
+
+  it("native IDF format (Phase I): non-{id} DELETE сохраняет particles.effects[0].op=remove", () => {
+    const it_ = pathToIntent("DELETE", "/artworks/{artwork}", {});
+    expect(it_.intent.particles?.effects?.[0]).toEqual({ target: "Artwork", op: "remove" });
+  });
+
+  it("endpoint path конвертирует все {param} в :param", () => {
+    const it_ = pathToIntent("GET", "/users/{userId}/posts/{postId}", {});
+    expect(it_.intent.endpoint.path).toBe("/users/:userId/posts/:postId");
+  });
+});
