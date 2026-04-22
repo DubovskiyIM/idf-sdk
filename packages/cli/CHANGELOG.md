@@ -1,5 +1,12 @@
 # @intent-driven/cli
 
+## 1.4.6
+
+### Patch Changes
+
+- Updated dependencies [aec6c9f]
+  - @intent-driven/enricher-claude@0.2.1
+
 ## 1.4.5
 
 ### Patch Changes
