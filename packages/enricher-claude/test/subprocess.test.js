@@ -97,4 +97,73 @@ describe("callClaude", () => {
     });
     expect(result).toBeDefined();
   });
+
+  it("Claude CLI 2.1.x: structured_output имеет приоритет над пустым result", async () => {
+    // В Claude CLI 2.1.117 при --json-schema structured-ответ перемещён в
+    // wrapper.structured_output (уже parsed object), а wrapper.result = "".
+    // Gravitino dogfood 2026-04-22 поймал эту регрессию — см. §1.12 idf/docs/backlog.md.
+    const claudeResponse = JSON.stringify({
+      type: "result",
+      result: "",
+      structured_output: {
+        namedIntents: [{ name: "approve_order", target: "Order", reason: "via structured_output" }],
+        absorbHints: [],
+        additionalRoles: [],
+        baseRoles: [],
+      },
+    });
+    spawn.mockReturnValue(fakeChild({ stdout: claudeResponse }));
+
+    const result = await callClaude({
+      systemPrompt: "test",
+      input: { entities: {} },
+      schema: { type: "object" },
+    });
+
+    expect(result.namedIntents).toHaveLength(1);
+    expect(result.namedIntents[0].reason).toBe("via structured_output");
+  });
+
+  it("legacy format без structured_output продолжает работать (backward-compat)", async () => {
+    // Гарантия что fallback на wrapper.result сохранён, если CLI старой версии
+    // или в будущем CLI вернёт payload в result-поле.
+    const claudeResponse = JSON.stringify({
+      type: "result",
+      result: JSON.stringify({
+        namedIntents: [{ name: "legacy_intent", target: "X", reason: "via result" }],
+        absorbHints: [],
+        additionalRoles: [],
+        baseRoles: [],
+      }),
+      // структурированного поля нет
+    });
+    spawn.mockReturnValue(fakeChild({ stdout: claudeResponse }));
+
+    const result = await callClaude({
+      systemPrompt: "test",
+      input: {},
+      schema: { type: "object" },
+    });
+
+    expect(result.namedIntents[0].name).toBe("legacy_intent");
+  });
+
+  it("structured_output: null/string не блокирует fallback на result", async () => {
+    // Защита от edge-case'а если Claude CLI вернёт structured_output как
+    // не-object (null, строка и т.п.) — берём result как раньше.
+    const claudeResponse = JSON.stringify({
+      type: "result",
+      result: '{"namedIntents":[{"name":"x","target":"Y","reason":"r"}],"absorbHints":[],"additionalRoles":[],"baseRoles":[]}',
+      structured_output: null,
+    });
+    spawn.mockReturnValue(fakeChild({ stdout: claudeResponse }));
+
+    const result = await callClaude({
+      systemPrompt: "test",
+      input: {},
+      schema: { type: "object" },
+    });
+
+    expect(result.namedIntents[0].name).toBe("x");
+  });
 });
