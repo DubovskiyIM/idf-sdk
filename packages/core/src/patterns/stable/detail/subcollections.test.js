@@ -93,4 +93,57 @@ describe("subcollections.structure.apply", () => {
     });
     expect(result.sections).toHaveLength(2);
   });
+
+  it("section имеет title + itemEntity + itemView (render-ready shape, G14)", () => {
+    // До fix'а auto-derived section имел только {id, entity, foreignKey,
+    // layout, intents, source} — renderer читает slots.sections[].{title,
+    // itemEntity, itemView} и получал undefined → визуальный регресс на
+    // Gravitino (user_detail / role_detail / group_detail с пустыми
+    // заголовками). docs/gravitino-gaps.md G14.
+    const slots = {};
+    const result = subcollections.structure.apply(slots, {
+      ontology, mainEntity: "Portfolio", intents,
+    });
+    const positions = result.sections.find(s => s.id === "positions");
+    expect(positions.title).toBe("Position");
+    expect(positions.itemEntity).toBe("Position");
+    // Fallback itemView на 'id' (fixture Position не имеет primary-title
+    // или name/title/label поля, только ticker). Test ниже проверяет
+    // правильный path через name-fallback.
+    expect(positions.itemView.type).toBe("text");
+    expect(positions.itemIntents).toEqual(["add_position"]);
+    // Backward compat — legacy 'entity' / 'intents' также оставлены.
+    expect(positions.entity).toBe("Position");
+    expect(positions.intents).toEqual(["add_position"]);
+  });
+
+  it("itemView fallback на id если нет primary-title", () => {
+    const ontNoTitle = {
+      entities: {
+        Parent: { fields: { id: { type: "text", readOnly: true } } },
+        Child: { fields: { parentId: { type: "foreignKey", refs: "Parent" }, ts: { type: "datetime" } } },
+      },
+    };
+    const slots = {};
+    const result = subcollections.structure.apply(slots, {
+      ontology: ontNoTitle, mainEntity: "Parent", intents: [],
+    });
+    const child = result.sections.find(s => s.itemEntity === "Child");
+    expect(child.itemView.bind).toBe("id");
+  });
+
+  it("humanize multi-word entity name (OrderItem → 'Order item')", () => {
+    const ontMw = {
+      entities: {
+        Order: { fields: { id: { type: "text" } } },
+        OrderItem: { fields: { orderId: { type: "foreignKey", refs: "Order" }, label: { type: "text" } } },
+      },
+    };
+    const slots = {};
+    const result = subcollections.structure.apply(slots, {
+      ontology: ontMw, mainEntity: "Order", intents: [],
+    });
+    const oi = result.sections[0];
+    expect(oi.title).toBe("Order item");
+  });
 });
