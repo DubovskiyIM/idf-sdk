@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/enricher-claude",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "AI-обогащение IDF ontology через subprocess к claude CLI",
   "type": "module",
   "exports": {
