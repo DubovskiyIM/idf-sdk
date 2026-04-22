@@ -33,8 +33,17 @@ function openApiPathToIdf(path) {
   return path.replace(/\{(\w+)\}/g, ":$1");
 }
 
-function hasPathParam(path, param) {
-  return path.includes(`{${param}}`);
+function extractPathParams(path) {
+  return [...path.matchAll(/\{(\w+)\}/g)].map((m) => m[1]);
+}
+
+/**
+ * Заканчивается ли path на `/{...}` — это маркер row-id-семантики
+ * (read/update/remove одного ресурса), независимо от имени параметра.
+ * `/villagers/{villager}` → true, `/tasks/{id}/approve` → false.
+ */
+function endsWithPathParam(path) {
+  return /\/\{[^}]+\}\/?$/.test(path);
 }
 
 /**
@@ -52,7 +61,8 @@ function hasPathParam(path, param) {
 export function pathToIntent(method, path, operation) {
   const entity = entityNameFromPath(path);
   const methodUpper = method.toUpperCase();
-  const hasIdPath = hasPathParam(path, "id");
+  const pathParams = extractPathParams(path);
+  const hasTrailingParam = endsWithPathParam(path);
   const idfPath = openApiPathToIdf(path);
 
   const intent = {
@@ -60,22 +70,23 @@ export function pathToIntent(method, path, operation) {
     endpoint: { method: methodUpper, path: idfPath },
     parameters: {},
   };
-  if (hasIdPath) {
-    intent.parameters.id = { type: "string", required: true };
+  for (const p of pathParams) {
+    intent.parameters[p] = { type: "string", required: true };
   }
 
   let name;
   if (methodUpper === "POST") {
     // POST /tasks → create; POST /tasks/{id}/approve → approve
-    if (hasIdPath) {
-      const action = path.split("/").filter(Boolean).pop();
-      if (action.startsWith("{")) {
-        name = `create${entity}`;
-        intent.alpha = "insert";
-      } else {
-        name = `${action.replace(/-/g, "_")}${entity}`;
-        intent.alpha = "replace";
-      }
+    const segs = path.split("/").filter(Boolean);
+    const lastSeg = segs[segs.length - 1];
+    if (hasTrailingParam) {
+      // редкий, но валидный case: POST /tasks/{id} — трактуем как create
+      name = `create${entity}`;
+      intent.alpha = "insert";
+    } else if (pathParams.length > 0 && lastSeg && !lastSeg.startsWith("{")) {
+      // /tasks/{id}/approve — action поверх existing ресурса
+      name = `${lastSeg.replace(/-/g, "_")}${entity}`;
+      intent.alpha = "replace";
     } else {
       name = `create${entity}`;
       intent.alpha = "insert";
@@ -87,7 +98,7 @@ export function pathToIntent(method, path, operation) {
     name = `remove${entity}`;
     intent.alpha = "remove";
   } else if (methodUpper === "GET") {
-    name = hasIdPath ? `read${entity}` : `list${entity}`;
+    name = hasTrailingParam ? `read${entity}` : `list${entity}`;
   } else {
     name = `${methodUpper.toLowerCase()}${entity}`;
   }
