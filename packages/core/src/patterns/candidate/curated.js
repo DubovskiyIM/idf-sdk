@@ -11,6 +11,7 @@
 import categoryTreeWithCounter from "./catalog/category-tree-with-counter.js";
 import paidPromotionSlot from "./catalog/paid-promotion-slot.js";
 import mapFilterCatalog from "./catalog/map-filter-catalog.js";
+import catalogDefaultDatagrid from "./catalog/catalog-default-datagrid.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 
@@ -23,6 +24,7 @@ export {
   categoryTreeWithCounter,
   paidPromotionSlot,
   mapFilterCatalog,
+  catalogDefaultDatagrid,
   reputationLevelBadge,
   directInviteSidebar,
 };
@@ -31,6 +33,7 @@ export const CURATED_CANDIDATES = [
   categoryTreeWithCounter,
   paidPromotionSlot,
   mapFilterCatalog,
+  catalogDefaultDatagrid,
   reputationLevelBadge,
   directInviteSidebar,
 ];
