@@ -257,6 +257,121 @@ describe("DataGrid — action column (col.kind='actions')", () => {
   });
 });
 
+describe("DataGrid — action column display modes", () => {
+  const threeActions = {
+    key: "_actions",
+    label: "Actions",
+    kind: "actions",
+    actions: [
+      { intent: "edit", label: "Edit", params: {} },
+      { intent: "duplicate", label: "Duplicate", params: {} },
+      { intent: "remove", label: "Delete", params: {}, danger: true },
+    ],
+  };
+
+  it("display:'auto' + ≤2 actions → inline buttons", () => {
+    const twoActions = { ...threeActions, actions: threeActions.actions.slice(0, 2) };
+    const columns = [{ key: "name" }, twoActions];
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />);
+    // inline — видны labels без клика
+    expect(screen.getAllByText("Edit").length).toBe(sample.length);
+    expect(screen.getAllByText("Duplicate").length).toBe(sample.length);
+  });
+
+  it("display:'auto' + >2 actions → menu trigger (⋯)", () => {
+    const columns = [{ key: "name" }, threeActions];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />
+    );
+    // menu triggers — по одному на строку, label'ы скрыты до клика
+    const triggers = Array.from(container.querySelectorAll("button")).filter(b => b.textContent === "⋯");
+    expect(triggers.length).toBe(sample.length);
+    expect(screen.queryByText("Edit")).toBeNull();
+  });
+
+  it("display:'menu' + 2 actions → menu (force)", () => {
+    const twoActions = { ...threeActions, actions: threeActions.actions.slice(0, 2), display: "menu" };
+    const columns = [{ key: "name" }, twoActions];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />
+    );
+    const triggers = Array.from(container.querySelectorAll("button")).filter(b => b.textContent === "⋯");
+    expect(triggers.length).toBe(sample.length);
+  });
+
+  it("display:'inline' + 3 actions → inline (force)", () => {
+    const col = { ...threeActions, display: "inline" };
+    const columns = [{ key: "name" }, col];
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />);
+    expect(screen.getAllByText("Edit").length).toBe(sample.length);
+    expect(screen.getAllByText("Delete").length).toBe(sample.length);
+  });
+
+  it("menu trigger click → items visible", () => {
+    const columns = [{ key: "name" }, threeActions];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />
+    );
+    const trigger = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "⋯");
+    fireEvent.click(trigger);
+    expect(screen.getByRole("menu")).toBeTruthy();
+    expect(screen.getByText("Edit")).toBeTruthy();
+    expect(screen.getByText("Delete")).toBeTruthy();
+  });
+
+  it("menu item click → exec + закрытие menu", () => {
+    const exec = vi.fn();
+    const col = {
+      ...threeActions,
+      actions: [
+        { intent: "edit", label: "Edit", params: { id: "item.id" } },
+        { intent: "duplicate", label: "Duplicate", params: {} },
+        { intent: "remove", label: "Delete", params: {}, danger: true },
+      ],
+    };
+    const columns = [{ key: "name" }, col];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec }} />
+    );
+    const trigger = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "⋯");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByText("Edit"));
+    expect(exec).toHaveBeenCalledWith("edit", { id: 1 });
+    // После клика — menu закрывается
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("col.icon:'gear' → ⚙ trigger вместо ⋯", () => {
+    const col = { ...threeActions, icon: "gear", display: "menu" };
+    const columns = [{ key: "name" }, col];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />
+    );
+    const triggers = Array.from(container.querySelectorAll("button")).filter(b => b.textContent === "⚙");
+    expect(triggers.length).toBe(sample.length);
+  });
+
+  it("menu item disabled=true → disabled button", () => {
+    const col = {
+      ...threeActions,
+      actions: [
+        { intent: "edit", label: "Edit", params: {} },
+        { intent: "remove", label: "Delete", params: {}, disabled: () => true },
+        { intent: "dup", label: "Dup", params: {} },
+      ],
+      display: "menu",
+    };
+    const columns = [{ key: "name" }, col];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={{ exec: vi.fn() }} />
+    );
+    const trigger = Array.from(container.querySelectorAll("button")).find(b => b.textContent === "⋯");
+    fireEvent.click(trigger);
+    const deleteBtn = screen.getByText("Delete").closest("button");
+    expect(deleteBtn.disabled).toBe(true);
+  });
+});
+
 describe("DataGrid — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;

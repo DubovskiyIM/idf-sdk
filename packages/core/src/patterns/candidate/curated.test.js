@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 6 паттернов (+catalog-default-datagrid 2026-04-23 после Gravitino dogfood)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(6);
+  it("в curated bank ровно 7 паттернов (+row-contextual-actions-menu 2026-04-23 после Gravitino dogfood)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(7);
   });
 
   it("все id уникальны внутри curated bank", () => {

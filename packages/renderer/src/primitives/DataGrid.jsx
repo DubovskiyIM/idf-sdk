@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 /**
  * DataGrid — enhanced table primitive с sort / per-column filter /
@@ -262,21 +262,59 @@ function CellValue({ value, col }) {
 }
 
 /**
- * ActionCell — per-row buttons для `col.kind === "actions"`.
+ * Резолвит `params`-шаблон action'а против item + routeParams:
+ *   - "item.X"  → record[X]
+ *   - "route.Y" → ctx.routeParams[Y]
+ *   - всё остальное — literal
+ */
+function resolveActionParams(spec, item, ctx) {
+  const out = {};
+  for (const [k, v] of Object.entries(spec || {})) {
+    if (typeof v === "string" && v.startsWith("item.")) {
+      out[k] = item?.[v.slice(5)];
+    } else if (typeof v === "string" && v.startsWith("route.")) {
+      out[k] = ctx?.routeParams?.[v.slice(6)];
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/**
+ * ActionCell — per-row actions для `col.kind === "actions"`.
  *
  * Каждый action = `{ intent, label, params?, danger?, disabled? }`:
  *   - `intent` — intent ID для ctx.exec
- *   - `label` — текст кнопки
- *   - `params` — map где значения "item.X" резолвятся против record,
- *     "route.Y" — против ctx.routeParams, всё остальное — literal
+ *   - `label` — текст кнопки / menu-пункта
+ *   - `params` — map (см. resolveActionParams)
  *   - `danger: true` — visual-hint (красный), семантический для revoke/delete
  *   - `disabled: (item, ctx) => boolean` — опциональный predicate
  *
- * Click.stopPropagation — чтобы row-click не триггерился одновременно.
+ * Display modes (`col.display`):
+ *   - `"inline"` — все кнопки в ряд (legacy, дефолт для ≤2 actions)
+ *   - `"menu"` — kebab (⋯) icon → dropdown со всеми пунктами
+ *   - `"auto"` (default) — inline если ≤2 actions, иначе menu
+ *
+ * Menu mode хорошо скейлится для CRUD-admin таблиц: 3+ actions в
+ * строке создают визуальный шум, dropdown сохраняет плотность.
+ * Совпадает с AntD Pro ProTable / Stripe Dashboard / K8s Lens / GitHub
+ * row-level patterns.
+ *
+ * Click.stopPropagation — row-click не триггерится вместе с action.
  */
 function ActionCell({ item, col, ctx }) {
   const actions = Array.isArray(col.actions) ? col.actions : [];
   if (actions.length === 0) return <span style={mutedStyle}>—</span>;
+
+  const mode = col.display === "inline" || col.display === "menu"
+    ? col.display
+    : (actions.length <= 2 ? "inline" : "menu");
+
+  if (mode === "menu") {
+    return <ActionMenu item={item} col={col} ctx={ctx} actions={actions} />;
+  }
+
   return (
     <span style={actionRowStyle} onClick={(e) => e.stopPropagation()}>
       {actions.map((a, i) => {
@@ -288,17 +326,7 @@ function ActionCell({ item, col, ctx }) {
             disabled={disabled}
             onClick={() => {
               if (!ctx?.exec) return;
-              const resolved = {};
-              for (const [k, v] of Object.entries(a.params || {})) {
-                if (typeof v === "string" && v.startsWith("item.")) {
-                  resolved[k] = item?.[v.slice(5)];
-                } else if (typeof v === "string" && v.startsWith("route.")) {
-                  resolved[k] = ctx?.routeParams?.[v.slice(6)];
-                } else {
-                  resolved[k] = v;
-                }
-              }
-              ctx.exec(a.intent, resolved);
+              ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
             }}
             style={a.danger ? actionButtonDangerStyle : actionButtonStyle}
           >
@@ -306,6 +334,72 @@ function ActionCell({ item, col, ctx }) {
           </button>
         );
       })}
+    </span>
+  );
+}
+
+/**
+ * ActionMenu — kebab-icon (⋯) open'ит inline dropdown со списком
+ * actions. Чтобы не тащить portal-layer в primitive-fallback,
+ * использует absolute-positioned div под триггером.
+ * Click-outside закрывает меню через document listener.
+ */
+function ActionMenu({ item, col, ctx, actions }) {
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e) => {
+      if (triggerRef.current && !triggerRef.current.parentElement.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [open]);
+
+  const icon = col.icon === "gear" ? "⚙" : "⋯";
+
+  return (
+    <span
+      style={actionMenuWrapStyle}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button
+        ref={triggerRef}
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(o => !o)}
+        style={actionMenuTriggerStyle}
+        title={col.menuLabel || "Actions"}
+      >
+        {icon}
+      </button>
+      {open && (
+        <div role="menu" style={actionMenuDropdownStyle}>
+          {actions.map((a, i) => {
+            const disabled = typeof a.disabled === "function" ? a.disabled(item, ctx) : !!a.disabled;
+            return (
+              <button
+                key={a.intent || i}
+                type="button"
+                role="menuitem"
+                disabled={disabled}
+                onClick={() => {
+                  setOpen(false);
+                  if (!ctx?.exec) return;
+                  ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
+                }}
+                style={a.danger ? actionMenuItemDangerStyle : actionMenuItemStyle}
+              >
+                {a.label || a.intent}
+              </button>
+            );
+          })}
+        </div>
+      )}
     </span>
   );
 }
@@ -499,6 +593,52 @@ const actionButtonStyle = {
 const actionButtonDangerStyle = {
   ...actionButtonStyle,
   borderColor: "var(--idf-danger-border, #fca5a5)",
+  color: "var(--idf-danger, #b91c1c)",
+};
+
+const actionMenuWrapStyle = {
+  display: "inline-block",
+  position: "relative",
+};
+
+const actionMenuTriggerStyle = {
+  padding: "2px 8px",
+  border: "1px solid var(--idf-border, #d1d5db)",
+  borderRadius: 4,
+  background: "var(--idf-card, #fff)",
+  color: "var(--idf-text, #1a1a2e)",
+  fontSize: 14,
+  lineHeight: 1,
+  cursor: "pointer",
+};
+
+const actionMenuDropdownStyle = {
+  position: "absolute",
+  right: 0,
+  top: "calc(100% + 4px)",
+  background: "var(--idf-card, #fff)",
+  border: "1px solid var(--idf-border, #d1d5db)",
+  borderRadius: 4,
+  boxShadow: "0 6px 16px rgba(0,0,0,0.08)",
+  padding: "4px 0",
+  minWidth: 160,
+  zIndex: 20,
+  display: "flex",
+  flexDirection: "column",
+};
+
+const actionMenuItemStyle = {
+  padding: "6px 14px",
+  border: "none",
+  background: "transparent",
+  color: "var(--idf-text, #1a1a2e)",
+  fontSize: 13,
+  textAlign: "left",
+  cursor: "pointer",
+};
+
+const actionMenuItemDangerStyle = {
+  ...actionMenuItemStyle,
   color: "var(--idf-danger, #b91c1c)",
 };
 
