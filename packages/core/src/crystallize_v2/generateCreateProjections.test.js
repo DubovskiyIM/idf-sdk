@@ -206,3 +206,79 @@ describe("crystallizeV2 integration: create-projection появляется в a
     expect(artifacts.task_create.slots.body.type).toBe("formBody");
   });
 });
+
+describe("form-archetype bodyOverride (G23, Keycloak Stage 5)", () => {
+  const wizardSpec = {
+    type: "wizard",
+    steps: [
+      { id: "basic", title: "Basic info", fields: [{ name: "title", type: "string" }] },
+      { id: "money", title: "Budget", fields: [{ name: "budget", type: "number" }] },
+    ],
+    onSubmit: { intent: "createTask" },
+  };
+
+  it("authored form projection с bodyOverride заменяет derived formBody целиком", () => {
+    const projections = {
+      task_create: {
+        kind: "form",
+        mode: "create",
+        mainEntity: "Task",
+        creatorIntent: "createTask",
+        bodyOverride: wizardSpec,
+      },
+    };
+    const artifacts = crystallizeV2(workzillaIntents, projections, workzillaOntology, "workzilla");
+    const body = artifacts.task_create.slots.body;
+    expect(body.type).toBe("wizard");
+    expect(body.steps).toHaveLength(2);
+    expect(body.steps[0].id).toBe("basic");
+    expect(body.steps[1].id).toBe("money");
+    // formBody fields НЕ подмешиваются — bodyOverride это единственный источник body.
+    expect(body.fields).toBeUndefined();
+  });
+
+  it("без bodyOverride form-архетип рендерится как formBody (back-compat)", () => {
+    const projections = {
+      task_create: {
+        kind: "form",
+        mode: "create",
+        mainEntity: "Task",
+        creatorIntent: "createTask",
+      },
+    };
+    const artifacts = crystallizeV2(workzillaIntents, projections, workzillaOntology, "workzilla");
+    const body = artifacts.task_create.slots.body;
+    expect(body.type).toBe("formBody");
+    expect(body.mode).toBe("create");
+    expect(Array.isArray(body.fields)).toBe(true);
+  });
+
+  it("bodyOverride работает и для edit-mode (не только create)", () => {
+    const projections = {
+      task_edit: {
+        kind: "form",
+        mainEntity: "Task",
+        bodyOverride: {
+          type: "custom",
+          payload: { section: "advanced" },
+        },
+      },
+    };
+    const artifacts = crystallizeV2(workzillaIntents, projections, workzillaOntology, "workzilla");
+    expect(artifacts.task_edit.slots.body.type).toBe("custom");
+    expect(artifacts.task_edit.slots.body.payload.section).toBe("advanced");
+  });
+
+  it("пустые slots.header/toolbar/context/fab/overlay сохраняются при bodyOverride", () => {
+    const projections = {
+      task_create: { kind: "form", mode: "create", mainEntity: "Task", bodyOverride: wizardSpec },
+    };
+    const artifacts = crystallizeV2(workzillaIntents, projections, workzillaOntology, "workzilla");
+    const slots = artifacts.task_create.slots;
+    expect(slots.header).toEqual([]);
+    expect(slots.toolbar).toEqual([]);
+    expect(slots.context).toEqual([]);
+    expect(slots.fab).toEqual([]);
+    expect(slots.overlay).toEqual([]);
+  });
+});
