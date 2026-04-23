@@ -53,6 +53,7 @@ export default function ProjectionRendererV2({
   world,
   exec,
   execBatch,
+  testConnection,
   viewer,
   viewerContext,
   routeParams,
@@ -119,11 +120,22 @@ export default function ProjectionRendererV2({
         })))
     : undefined;
 
+  // Wizard step.testConnection (P-K-B Keycloak Stage 7): async handler,
+  // который runtime вызывает из wizard middle-step'а. Подписывает values +
+  // viewerContext для server-side probe (OAuth discovery, SAML metadata,
+  // LDAP bind test и т.п.). Host кладёт реальный fetch-probe; если не
+  // предоставлен — Wizard рендерит «ctx.testConnection не реализован».
+  const wrappedTestConnection = testConnection
+    ? (intentId, values = {}) =>
+        testConnection(intentId, { ...(viewerContext || {}), ...(routeParams || {}), ...values })
+    : undefined;
+
   const ctx = {
     world,
     viewer,
     exec: wrappedExec,
     execBatch: wrappedExecBatch,
+    testConnection: wrappedTestConnection,
     theme,
     artifact: effectiveArtifact,
     viewerContext,
