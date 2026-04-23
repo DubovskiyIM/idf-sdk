@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import ParameterControl from "../parameters/index.jsx";
 import EmptyState from "../primitives/EmptyState.jsx";
 import { getAdaptedComponent } from "../adapters/registry.js";
+import TabbedForm from "../primitives/TabbedForm.jsx";
 
 /**
  * Form-архетип: редактирование одной сущности через композитную форму.
@@ -13,7 +14,7 @@ import { getAdaptedComponent } from "../adapters/registry.js";
  * (α:"batch", §11 манифеста).
  */
 export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
-  const body = slots.body; // { type: "formBody", mainEntity, fields, editIntents, mode, creatorIntent }
+  const body = slots.body; // { type: "formBody"|"wizard"|"tabbedForm", ... }
   const isCreateMode = body?.mode === "create";
 
   // Резолв target entity из route params (как в detail-архетипе).
@@ -29,6 +30,13 @@ export default function ArchetypeForm({ slots, ctx: parentCtx, projection }) {
     if (!id) return null;
     return list.find(e => e.id === id) || null;
   }, [isCreateMode, projection, parentCtx.world, parentCtx.routeParams]);
+
+  // Authored bodyOverride для tabbed-form (P-K-A Keycloak Stage 6):
+  // projection.bodyOverride = { type: "tabbedForm", tabs: [...] } — body
+  // делегируется в TabbedForm primitive, target передаётся для initial values.
+  if (body?.type === "tabbedForm") {
+    return <TabbedForm node={body} target={target} ctx={parentCtx} />;
+  }
 
   // Initial values — из target (edit) или пустые / field.default (create)
   const [values, setValues] = useState(() => {
