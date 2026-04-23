@@ -756,9 +756,25 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}
       )
     : false;
 
-  // Группируем поля по семантическим ролям
-  const byRole = {};
+  // Declarative primitive hint: fields с `field.primitive` (e.g.
+  // "schemaEditor", "map") рендерятся как standalone atom с указанным
+  // type — перекрывает role-based grouping. Use-case: Table.columns
+  // (type:"json") показать SchemaEditor'ом вместо infoSection entry.
+  // Label прокидывается в primitive props; primitives которые label не
+  // знают — игнорируют безболезненно.
+  const primitiveHintFields = [];
+  const regularFields = [];
   for (const field of fields) {
+    if (typeof field.primitive === "string" && field.primitive) {
+      primitiveHintFields.push(field);
+    } else {
+      regularFields.push(field);
+    }
+  }
+
+  // Группируем обычные (не-primitive-hint) поля по семантическим ролям
+  const byRole = {};
+  for (const field of regularFields) {
     const role = inferFieldRole(field.name, field)?.role ?? null;
     if (!byRole[role]) byRole[role] = [];
     byRole[role].push(field);
@@ -871,6 +887,17 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}
     children.push({
       type: "infoSection", title: "Связи",
       fields: refFields.map(f => ({ bind: f.name, label: f.label || f.name })),
+    });
+  }
+
+  // 9. Declarative primitive-hint atoms (после всех role-based секций —
+  // чтобы SchemaEditor для Table.columns появлялся в конце detail-body,
+  // не конфликтовал с title/description).
+  for (const f of primitiveHintFields) {
+    children.push({
+      type: f.primitive,
+      bind: f.name,
+      label: f.label || f.name,
     });
   }
 
