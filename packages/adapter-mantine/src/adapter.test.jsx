@@ -38,4 +38,14 @@ describe("@intent-driven/adapter-mantine", () => {
     const best = pickBest("parameter", { type: "datetime", withTime: true, name: "deadline" }, mantineAdapter);
     expect(best).toBe(mantineAdapter.parameter.datetime);
   });
+
+  it("registers primitive.chipList + capability declared", () => {
+    registerUIAdapter(mantineAdapter);
+    expect(getAdaptedComponent("primitive", "chipList")).toBeDefined();
+    const cap = getCapability("primitive", "chipList");
+    expect(cap).toBeDefined();
+    expect(cap.variants).toContain("tag");
+    expect(cap.variants).toContain("policy");
+    expect(cap.variants).toContain("role");
+  });
 });

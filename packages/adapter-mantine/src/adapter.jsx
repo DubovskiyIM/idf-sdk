@@ -564,6 +564,62 @@ function MantineBadge({ children, color }) {
   );
 }
 
+/**
+ * MantineChipList — native Mantine Badge'и вместо built-in span'ов. Badge
+ * выбран вместо Chip т.к. он non-interactive-by-default; закрытие через
+ * handmade × (у Mantine Badge нет closable prop как у AntD Tag).
+ */
+function MantineChipList({ node }) {
+  const value = node?.value;
+  const items = Array.isArray(value) ? value : [];
+  const variant = node?.variant || "tag";
+  const maxVisible = node?.maxVisible ?? 5;
+  const emptyLabel = node?.emptyLabel ?? "Нет";
+  if (items.length === 0) {
+    return <Text size="xs" c="dimmed" fs="italic">{emptyLabel}</Text>;
+  }
+  const visible = items.slice(0, maxVisible);
+  const overflow = items.length - visible.length;
+  const color = variant === "policy" ? "orange" : variant === "role" ? "violet" : "gray";
+  return (
+    <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+      {visible.map((item, i) => {
+        const label = typeof item === "object" ? (item.label || item.name || JSON.stringify(item)) : String(item);
+        const itemColor = (typeof item === "object" && item.color) || color;
+        const onClick = node?.onItemClick ? () => node.onItemClick(item) : undefined;
+        const handleDetach = node?.onDetach ? (e) => { e.stopPropagation(); node.onDetach(item, i); } : null;
+        return (
+          <Badge
+            key={i}
+            color={itemColor}
+            variant="light"
+            size="sm"
+            radius="sm"
+            style={onClick ? { cursor: "pointer" } : undefined}
+            onClick={onClick}
+            rightSection={handleDetach ? (
+              <ActionIcon
+                size={14}
+                variant="transparent"
+                color={itemColor}
+                onClick={handleDetach}
+                aria-label={`Detach ${label}`}
+              >
+                <X size={10} />
+              </ActionIcon>
+            ) : undefined}
+          >
+            {label}
+          </Badge>
+        );
+      })}
+      {overflow > 0 && (
+        <Text size="xs" c="dimmed" fw={500}>+{overflow}</Text>
+      )}
+    </span>
+  );
+}
+
 function MantineAvatar({ src, name, size = 40 }) {
   // Mantine Avatar: если src пусто — показывает initials через name prop
   // (первые буквы). Если src — картинка. Mantine сам решает fallback.
@@ -737,6 +793,7 @@ export const mantineAdapter = {
       sparkline: { fallback: "svg" },
       statistic: false, // нет — используется chart-fallback или text-primitive
       heading: true, text: true, badge: true, avatar: true, paper: true,
+      chipList: { variants: ["tag", "policy", "role"] },
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
@@ -772,6 +829,7 @@ export const mantineAdapter = {
     badge: MantineBadge,
     avatar: MantineAvatar,
     paper: MantinePaper,
+    chipList: MantineChipList,
   },
   icon: {
     // resolve — функция (не компонент), используется <Icon> для lookup.
