@@ -95,6 +95,19 @@ function kebabToCamel(s) {
 }
 
 /**
+ * Сегмент представляет plural collection? Эвристика через `singularize`:
+ * если сингуляризация меняет форму — это был plural (`users` → `user` ✓,
+ * `login` → `login` ✗). Используется для G-K-8 — detect "POST на nested
+ * collection" shape, чтобы intent был create-over-child, а не legacy-action.
+ */
+function isPluralCollection(seg) {
+  if (!seg || seg.startsWith("{")) return false;
+  const lower = seg.toLowerCase();
+  const singular = singularize(lower);
+  return singular !== lower && singular.length > 0;
+}
+
+/**
  * /tasks → Task, /order-items → OrderItem, /api/v1/tasks → Task.
  * Берёт последний сегмент, который является collection-name (не {param}, не skip-prefix).
  */
@@ -152,11 +165,12 @@ function endsWithPathParam(path) {
  *
  * Если operation.operationId задан — используется как имя intent.
  */
-export function pathToIntent(method, path, operation) {
+export function pathToIntent(method, path, operation, opts = {}) {
   const methodUpper = method.toUpperCase();
   const pathParams = extractPathParams(path);
   const hasTrailingParam = endsWithPathParam(path);
   const idfPath = openApiPathToIdf(path);
+  const collectionPostAsCreate = opts.collectionPostAsCreate !== false;
 
   // G-K-2: action-endpoint shape — `/collection/{param}/action-verb`.
   // Intent.target = parent entity (не action-verb); intent.name =
@@ -188,10 +202,19 @@ export function pathToIntent(method, path, operation) {
       name = `create${entity}`;
       intent.alpha = "insert";
     } else if (pathParams.length > 0 && lastSeg && !lastSeg.startsWith("{")) {
-      // /tasks/{id}/approve — action поверх existing ресурса (legacy: не
-      // verb-list detected, но structure action-like)
-      name = `${lastSeg.replace(/-/g, "_")}${entity}`;
-      intent.alpha = "replace";
+      // G-K-8: если lastSeg — plural collection (`users`, `groups`,
+      // `role-mappings`), это POST на nested collection — create-over-child.
+      // Иначе legacy action (не-verb, не-plural segment после {param}).
+      if (collectionPostAsCreate && isPluralCollection(lastSeg)) {
+        // POST /realms/{realm}/users → createUser (α=insert, creates=User).
+        // Без этого R1 catalog-rule не срабатывал на nested collections.
+        name = `create${entity}`;
+        intent.alpha = "insert";
+      } else {
+        // legacy: /tasks/{id}/custom-endpoint (не verb, не plural) → replace
+        name = `${lastSeg.replace(/-/g, "_")}${entity}`;
+        intent.alpha = "replace";
+      }
     } else {
       name = `create${entity}`;
       intent.alpha = "insert";
