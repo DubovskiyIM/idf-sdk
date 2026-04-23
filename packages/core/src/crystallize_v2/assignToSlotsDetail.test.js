@@ -708,3 +708,84 @@ describe("projection.toolbar whitelist (author-override)", () => {
     expect(slots.primaryCTA.some(b => b.intentId === "close_task")).toBe(true);
   });
 });
+
+describe("field.primitive declarative hint", () => {
+  // Use-case: Gravitino Table.columns (type:"json") рендерится как
+  // SchemaEditor primitive вместо text-fallback. Gen-механизм для любого
+  // custom primitive на field-уровне (map → mapPrimitive, chart → и т.п.).
+
+  it("field.primitive 'schemaEditor' перекрывает type-heuristic json", () => {
+    const ont = {
+      entities: {
+        Table: {
+          fields: {
+            name: { type: "string", role: "primary-title" },
+            columns: { type: "json", primitive: "schemaEditor" },
+          },
+        },
+      },
+    };
+    const proj = {
+      name: "Table",
+      kind: "detail",
+      mainEntity: "Table",
+      entities: ["Table"],
+      idParam: "tableId",
+      witnesses: ["name", "columns"],
+    };
+    const slots = assignToSlotsDetail({}, proj, ont);
+    const bodyStr = JSON.stringify(slots.body);
+    expect(bodyStr).toContain('"type":"schemaEditor"');
+    expect(bodyStr).toContain('"bind":"columns"');
+  });
+
+  it("field без primitive-hint идёт через type-heuristic (backward compat)", () => {
+    const ont = {
+      entities: {
+        Task: {
+          fields: {
+            title: { type: "string", role: "primary-title" },
+            note: { type: "textarea" },
+          },
+        },
+      },
+    };
+    const proj = {
+      name: "Task",
+      kind: "detail",
+      mainEntity: "Task",
+      entities: ["Task"],
+      idParam: "taskId",
+      witnesses: ["title", "note"],
+    };
+    const slots = assignToSlotsDetail({}, proj, ont);
+    const bodyStr = JSON.stringify(slots.body);
+    // textarea → text atom (через existing heuristic), не 'schemaEditor'
+    expect(bodyStr).not.toContain("schemaEditor");
+    expect(bodyStr).toContain('"bind":"note"');
+  });
+
+  it("field.primitive произвольная строка → atom.type = primitive name", () => {
+    // Extensibility: any named primitive (map, chart, etc) работает через
+    // тот же механизм. Renderer PRIMITIVES map resolves name.
+    const ont = {
+      entities: {
+        Location: {
+          fields: {
+            coords: { type: "coordinate", primitive: "map" },
+          },
+        },
+      },
+    };
+    const proj = {
+      name: "Location",
+      kind: "detail",
+      mainEntity: "Location",
+      entities: ["Location"],
+      idParam: "locId",
+      witnesses: ["coords"],
+    };
+    const slots = assignToSlotsDetail({}, proj, ont);
+    expect(JSON.stringify(slots.body)).toContain('"type":"map"');
+  });
+});
