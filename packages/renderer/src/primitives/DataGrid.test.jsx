@@ -1,0 +1,188 @@
+// @vitest-environment jsdom
+import { describe, it, expect, afterEach, vi } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+import DataGrid from "./DataGrid.jsx";
+
+afterEach(cleanup);
+
+const sample = [
+  { id: 1, name: "prod_lake", type: "relational", provider: "hive" },
+  { id: 2, name: "dev_lake", type: "messaging", provider: "kafka" },
+  { id: 3, name: "analytics", type: "relational", provider: "iceberg" },
+];
+
+const columns = [
+  { key: "name", label: "Name", sortable: true, filterable: true },
+  { key: "type", label: "Type", sortable: true, filterable: true, filter: "enum", values: ["relational", "messaging"] },
+  { key: "provider", label: "Provider", sortable: true, filterable: true },
+];
+
+describe("DataGrid — rendering", () => {
+  it("рендерит items в table rows", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    expect(screen.getByText("prod_lake")).toBeTruthy();
+    expect(screen.getByText("dev_lake")).toBeTruthy();
+    expect(screen.getByText("analytics")).toBeTruthy();
+  });
+
+  it("рендерит column headers с labels", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    expect(screen.getByText("Name")).toBeTruthy();
+    expect(screen.getByText("Type")).toBeTruthy();
+    expect(screen.getByText("Provider")).toBeTruthy();
+  });
+
+  it("пустые items → empty-row label", () => {
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: [], columns, emptyLabel: "Нет метейлейков" }}
+      />
+    );
+    expect(screen.getByText("Нет метейлейков")).toBeTruthy();
+  });
+
+  it("array cell value → chip list", () => {
+    const withArrays = [{ id: 1, name: "user1", roles: ["admin", "viewer", "observer", "analyst"] }];
+    const cols = [{ key: "name" }, { key: "roles" }];
+    render(<DataGrid node={{ type: "dataGrid", items: withArrays, columns: cols }} />);
+    expect(screen.getByText("admin")).toBeTruthy();
+    expect(screen.getByText("viewer")).toBeTruthy();
+    // Ограничение на 3 — остальные как +N
+    expect(screen.getByText("+1")).toBeTruthy();
+  });
+});
+
+describe("DataGrid — sorting", () => {
+  it("click на sortable header → asc sort", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    fireEvent.click(screen.getByText(/^Name/));
+    const rows = screen.getAllByRole("row");
+    // row 0 = header, row 1 = filter row, row 2 = first data
+    // asc: analytics first, then dev_lake, then prod_lake
+    expect(rows[2].textContent).toContain("analytics");
+    expect(rows[3].textContent).toContain("dev_lake");
+    expect(rows[4].textContent).toContain("prod_lake");
+  });
+
+  it("второй click → desc", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    fireEvent.click(screen.getByText(/^Name/));
+    fireEvent.click(screen.getByText(/^Name/));
+    const rows = screen.getAllByRole("row");
+    expect(rows[2].textContent).toContain("prod_lake");
+  });
+
+  it("третий click → unsorted (оригинальный порядок)", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    const nameHeader = screen.getByText(/^Name/);
+    fireEvent.click(nameHeader);
+    fireEvent.click(nameHeader);
+    fireEvent.click(nameHeader);
+    const rows = screen.getAllByRole("row");
+    expect(rows[2].textContent).toContain("prod_lake"); // original first
+  });
+
+  it("aria-sort отражает состояние сортировки", () => {
+    const { container } = render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    const nameTh = container.querySelector("th[aria-sort]");
+    expect(nameTh.getAttribute("aria-sort")).toBe("none");
+    fireEvent.click(nameTh);
+    expect(nameTh.getAttribute("aria-sort")).toBe("ascending");
+  });
+});
+
+describe("DataGrid — filtering", () => {
+  it("text filter сужает rows (case-insensitive substring)", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    const inputs = screen.getAllByPlaceholderText("filter…");
+    // Первый input — для name column
+    fireEvent.change(inputs[0], { target: { value: "lake" } });
+    expect(screen.getByText("prod_lake")).toBeTruthy();
+    expect(screen.getByText("dev_lake")).toBeTruthy();
+    expect(screen.queryByText("analytics")).toBeNull();
+  });
+
+  it("enum filter — select с values", () => {
+    const { container } = render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    const selects = container.querySelectorAll("select");
+    expect(selects.length).toBe(1); // только type column — enum filter
+    fireEvent.change(selects[0], { target: { value: "messaging" } });
+    expect(screen.getByText("dev_lake")).toBeTruthy();
+    expect(screen.queryByText("prod_lake")).toBeNull();
+  });
+});
+
+describe("DataGrid — column visibility", () => {
+  it(">3 columns → появляется ColumnMenu", () => {
+    const cols4 = [...columns, { key: "extra", label: "Extra" }];
+    const items4 = sample.map(s => ({ ...s, extra: "x" }));
+    render(<DataGrid node={{ type: "dataGrid", items: items4, columns: cols4 }} />);
+    expect(screen.getByText(/Columns \(4\/4\)/)).toBeTruthy();
+  });
+
+  it("≤3 columns → ColumnMenu не показывается", () => {
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} />);
+    expect(screen.queryByText(/Columns \(/)).toBeNull();
+  });
+
+  it("toggle column visibility скрывает/показывает column", () => {
+    const cols4 = [...columns, { key: "extra", label: "Extra" }];
+    const items4 = sample.map(s => ({ ...s, extra: "x" }));
+    const { container } = render(<DataGrid node={{ type: "dataGrid", items: items4, columns: cols4 }} />);
+    // до toggle — header с Extra существует (`<th>Extra</th>`)
+    const headsBefore = Array.from(container.querySelectorAll("th")).map(t => t.textContent);
+    expect(headsBefore.some(t => t.includes("Extra"))).toBe(true);
+    // click menu button + toggle Extra off
+    fireEvent.click(screen.getByText(/Columns \(/));
+    const extraCheckbox = screen.getByLabelText(/Extra/);
+    fireEvent.click(extraCheckbox);
+    // после toggle — header'а нет в <th>; label в dropdown остался
+    const headsAfter = Array.from(container.querySelectorAll("th")).map(t => t.textContent);
+    expect(headsAfter.some(t => t.includes("Extra"))).toBe(false);
+  });
+});
+
+describe("DataGrid — row click navigation", () => {
+  it("onItemClick function — вызывается с item", () => {
+    const onItemClick = vi.fn();
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns, onItemClick }} />);
+    fireEvent.click(screen.getByText("prod_lake"));
+    expect(onItemClick).toHaveBeenCalledWith(sample[0]);
+  });
+
+  it("onItemClick declarative — navigate с bound params", () => {
+    const navigate = vi.fn();
+    const ctx = { navigate };
+    render(
+      <DataGrid
+        node={{
+          type: "dataGrid",
+          items: sample,
+          columns,
+          onItemClick: {
+            action: "navigate",
+            to: "metalake_detail",
+            params: { metalakeId: "item.id" },
+          },
+        }}
+        ctx={ctx}
+      />
+    );
+    fireEvent.click(screen.getByText("dev_lake"));
+    expect(navigate).toHaveBeenCalledWith("metalake_detail", { metalakeId: 2 });
+  });
+});
+
+describe("DataGrid — adapter delegation", () => {
+  it("использует adapter component если capability зарегистрирована", () => {
+    const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;
+    const ctx = {
+      adapter: {
+        getComponent: (kind, type) =>
+          kind === "primitive" && type === "dataGrid" ? AdapterGrid : null,
+      },
+    };
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns }} ctx={ctx} />);
+    expect(screen.getByTestId("adapter-grid").textContent).toBe("adapter:3");
+  });
+});
