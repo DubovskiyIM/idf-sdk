@@ -119,6 +119,9 @@ import ratingAggregateHero      from "./stable/detail/rating-aggregate-hero.js";
 import catalogActionCta         from "./stable/catalog/catalog-action-cta.js";
 // Gravitino dogfood (2026-04-23 promotion from candidate)
 import catalogDefaultDatagrid   from "./stable/catalog/catalog-default-datagrid.js";
+import lifecycleGatedDestructive from "./stable/detail/lifecycle-gated-destructive.js";
+import inlineChipAssociation     from "./stable/catalog/inline-chip-association.js";
+import reverseAssociationBrowser from "./stable/detail/reverse-association-browser.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -147,6 +150,9 @@ const STABLE_PATTERNS = [
   catalogActionCta,
   // Gravitino dogfood (2026-04-23)
   catalogDefaultDatagrid,
+  lifecycleGatedDestructive,
+  inlineChipAssociation,
+  reverseAssociationBrowser,
 ];
 
 export function loadStablePatterns(registry) {

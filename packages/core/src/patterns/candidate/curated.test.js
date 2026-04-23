@@ -59,12 +59,13 @@ describe("curated candidate bank — registry integration", () => {
     const registry = createRegistry();
     loadStablePatterns(registry);
     loadCandidatePatterns(registry);
-    // Sanity: stable (33 — +3 B2 promotions + catalog-action-cta §8.1 + catalog-default-datagrid Gravitino) + curated (6).
+    // Sanity: stable (36 — +3 B2 promotions + catalog-action-cta §8.1 + catalog-default-datagrid
+    // + 3 Gravitino WebUI v2 promotions 2026-04-23) + curated (6).
     // Totals могут быть выше за счёт manifest-свалки (127+), но она
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(33);
+    expect(stableCount).toBe(36);
     // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
     expect(candidateCount).toBeGreaterThanOrEqual(6);
     // Проверка, что каждый curated действительно в registry.
