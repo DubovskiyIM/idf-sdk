@@ -1,5 +1,12 @@
 # @intent-driven/cli
 
+## 1.4.18
+
+### Patch Changes
+
+- Updated dependencies [daf8b94]
+  - @intent-driven/core@0.58.0
+
 ## 1.4.17
 
 ### Patch Changes
