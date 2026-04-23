@@ -117,6 +117,8 @@ import responseCostBeforeAction from "./stable/feed/response-cost-before-action.
 import ratingAggregateHero      from "./stable/detail/rating-aggregate-hero.js";
 // Workzilla dogfood (backlog §8.1)
 import catalogActionCta         from "./stable/catalog/catalog-action-cta.js";
+// Gravitino dogfood (2026-04-23 promotion from candidate)
+import catalogDefaultDatagrid   from "./stable/catalog/catalog-default-datagrid.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -143,6 +145,8 @@ const STABLE_PATTERNS = [
   ratingAggregateHero,
   // Workzilla dogfood (backlog §8.1)
   catalogActionCta,
+  // Gravitino dogfood (2026-04-23)
+  catalogDefaultDatagrid,
 ];
 
 export function loadStablePatterns(registry) {

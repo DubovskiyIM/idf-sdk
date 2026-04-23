@@ -11,7 +11,6 @@
 import categoryTreeWithCounter from "./catalog/category-tree-with-counter.js";
 import paidPromotionSlot from "./catalog/paid-promotion-slot.js";
 import mapFilterCatalog from "./catalog/map-filter-catalog.js";
-import catalogDefaultDatagrid from "./catalog/catalog-default-datagrid.js";
 import rowContextualActionsMenu from "./catalog/row-contextual-actions-menu.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
@@ -20,12 +19,13 @@ import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 //   rating-aggregate-hero       → stable/detail/
 //   review-criterion-breakdown  → stable/detail/
 //   response-cost-before-action → stable/feed/
+// Promoted в stable (2026-04-23, Gravitino dogfood):
+//   catalog-default-datagrid    → stable/catalog/ (with structure.apply)
 
 export {
   categoryTreeWithCounter,
   paidPromotionSlot,
   mapFilterCatalog,
-  catalogDefaultDatagrid,
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,
@@ -35,7 +35,6 @@ export const CURATED_CANDIDATES = [
   categoryTreeWithCounter,
   paidPromotionSlot,
   mapFilterCatalog,
-  catalogDefaultDatagrid,
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,

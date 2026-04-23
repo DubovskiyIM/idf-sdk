@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("32 stable patterns loaded (+3 B2 + catalog-action-cta §8.1 Workzilla)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(32);
+  it("33 stable patterns loaded (+catalog-default-datagrid Gravitino dogfood 2026-04-23)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(33);
   });
 
   // ─── hero-create ───
