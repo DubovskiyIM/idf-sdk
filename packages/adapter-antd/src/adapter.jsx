@@ -597,13 +597,68 @@ function AntdBreadcrumbs({ node, ctx }) {
  * virtualized scrolling при pagination/scroll.y.
  */
 /**
- * AntdActionCell — per-row buttons для `col.kind === "actions"`.
- * См. renderer DataGrid.ActionCell — adapter-antd делает то же, используя
- * AntButton для нативного look'a + stopPropagation от onRow click.
+ * Резолв params-шаблона (см. renderer/src/primitives/DataGrid.jsx).
+ * Duplicate чтобы не тащить cross-package import в runtime-bundle.
+ */
+function resolveActionParams(spec, item, ctx) {
+  const out = {};
+  for (const [k, v] of Object.entries(spec || {})) {
+    if (typeof v === "string" && v.startsWith("item.")) {
+      out[k] = item?.[v.slice(5)];
+    } else if (typeof v === "string" && v.startsWith("route.")) {
+      out[k] = ctx?.routeParams?.[v.slice(6)];
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
+/**
+ * AntdActionCell — per-row actions для `col.kind === "actions"`.
+ *
+ * Display modes (col.display):
+ *   - "inline" — все кнопки в ряд
+ *   - "menu"   — ⋯ / ⚙ trigger → AntD Dropdown
+ *   - "auto"   — inline если ≤2 actions, иначе menu
+ *
+ * Icon (col.icon): "gear" → ⚙ (SettingOutlined), иначе ⋯ (MoreOutlined).
  */
 function AntdActionCell({ item, col, ctx }) {
   const actions = Array.isArray(col.actions) ? col.actions : [];
   if (actions.length === 0) return <span style={{ color: "#9ca3af" }}>—</span>;
+
+  const mode = col.display === "inline" || col.display === "menu"
+    ? col.display
+    : (actions.length <= 2 ? "inline" : "menu");
+
+  if (mode === "menu") {
+    const TriggerIcon = col.icon === "gear" ? SettingOutlined : MoreOutlined;
+    const menuItems = actions.map((a, i) => {
+      const disabled = typeof a.disabled === "function" ? a.disabled(item, ctx) : !!a.disabled;
+      return {
+        key: a.intent || `action-${i}`,
+        label: a.label || a.intent,
+        danger: !!a.danger,
+        disabled,
+      };
+    });
+    const onMenuClick = ({ key }) => {
+      const a = actions.find(x => (x.intent || `action-${actions.indexOf(x)}`) === key);
+      if (!a || !ctx?.exec) return;
+      ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
+    };
+    return (
+      <span onClick={(e) => e.stopPropagation()}>
+        <Dropdown menu={{ items: menuItems, onClick: onMenuClick }} trigger={["click"]}>
+          <AntButton size="small" type="text" aria-label={col.menuLabel || "Actions"}>
+            <TriggerIcon />
+          </AntButton>
+        </Dropdown>
+      </span>
+    );
+  }
+
   return (
     <span
       style={{ display: "inline-flex", gap: 6 }}
@@ -620,17 +675,7 @@ function AntdActionCell({ item, col, ctx }) {
             disabled={disabled}
             onClick={() => {
               if (!ctx?.exec) return;
-              const resolved = {};
-              for (const [k, v] of Object.entries(a.params || {})) {
-                if (typeof v === "string" && v.startsWith("item.")) {
-                  resolved[k] = item?.[v.slice(5)];
-                } else if (typeof v === "string" && v.startsWith("route.")) {
-                  resolved[k] = ctx?.routeParams?.[v.slice(6)];
-                } else {
-                  resolved[k] = v;
-                }
-              }
-              ctx.exec(a.intent, resolved);
+              ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
             }}
           >
             {a.label || a.intent}
