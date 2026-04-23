@@ -597,7 +597,11 @@ function AntdBreadcrumbs({ node, ctx }) {
  * virtualized scrolling при pagination/scroll.y.
  */
 function AntdDataGrid({ node, ctx }) {
-  const items = Array.isArray(node?.items) ? node.items : [];
+  // items: node.items приоритетнее, fallback на ctx.world[node.source].
+  // Это позволяет projection.bodyOverride declarе catalog collection
+  // через source convention, без runtime-filling от host (catalog-архетип
+  // uses source='catalogs' / 'users' / etc).
+  const items = resolveDataGridItems(node, ctx);
   const columns = Array.isArray(node?.columns) ? node.columns : [];
   const emptyLabel = node?.emptyLabel ?? "Нет данных";
 
@@ -656,6 +660,21 @@ function AntdDataGrid({ node, ctx }) {
       onRow={handleRow}
     />
   );
+}
+
+/**
+ * Resolve items для AntdDataGrid: node.items > ctx.world[node.source] > [].
+ * Совпадает с logic'ой resolveItems в renderer DataGrid.jsx primitive.
+ */
+function resolveDataGridItems(node, ctx) {
+  if (Array.isArray(node?.items) && node.items.length > 0) {
+    return node.items;
+  }
+  if (node?.source && typeof node.source === "string" && ctx?.world) {
+    const collection = ctx.world[node.source];
+    if (Array.isArray(collection)) return collection;
+  }
+  return Array.isArray(node?.items) ? node.items : [];
 }
 
 function renderCellValue(value, col) {

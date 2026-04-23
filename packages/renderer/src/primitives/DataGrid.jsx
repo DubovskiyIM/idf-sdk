@@ -35,7 +35,12 @@ export default function DataGrid({ node, ctx }) {
     return <Adapted node={node} ctx={ctx} />;
   }
 
-  const items = Array.isArray(node?.items) ? node.items : [];
+  // items: либо node.items напрямую, либо resolved из ctx.world[source].
+  // Это позволяет использовать DataGrid как authored-body в catalog
+  // проекции (projection.bodyOverride) без ручного runtime-filling —
+  // SDK сам подтянет коллекцию из world по convention (same как list /
+  // card-list source).
+  const items = resolveItems(node, ctx);
   const columns = Array.isArray(node?.columns) ? node.columns : [];
   const emptyLabel = node?.emptyLabel ?? "Нет данных";
 
@@ -422,3 +427,28 @@ const menuItemStyle = {
   fontSize: 13,
   cursor: "pointer",
 };
+
+/**
+ * Resolve items — приоритет node.items над ctx.world[source].
+ * Behaviour:
+ *   - node.items (array) указан + non-empty → используем
+ *   - node.items (array) пустой + node.source → ctx.world[source]
+ *   - node.items (array) пустой + source не указан → []
+ *   - node.items не array → [] (защита от невалидных форм)
+ *
+ * Source — имя коллекции в world (e.g. "catalogs", "users", "tables").
+ * Совпадает с convention catalog-архетипа (buildCatalogBody.source).
+ */
+function resolveItems(node, ctx) {
+  if (Array.isArray(node?.items) && node.items.length > 0) {
+    return node.items;
+  }
+  if (node?.source && typeof node.source === "string" && ctx?.world) {
+    const collection = ctx.world[node.source];
+    if (Array.isArray(collection)) return collection;
+  }
+  return Array.isArray(node?.items) ? node.items : [];
+}
+
+// Export для testing
+export { resolveItems };
