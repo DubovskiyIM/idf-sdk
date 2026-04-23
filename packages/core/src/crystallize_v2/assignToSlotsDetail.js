@@ -129,7 +129,7 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
       continue;
     }
 
-    const wrapped = wrapByConfirmation(intent, id, parameters, { projection });
+    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
     if (wrapped === null) continue;
     if (wrapped.type === "composerEntry") continue;
 

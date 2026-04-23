@@ -12,6 +12,63 @@
 import { getIntentIcon } from "./getIntentIcon.js";
 import { normalizeCreates } from "./assignToSlotsShared.js";
 
+const SYSTEM_FIELDS = new Set(["id", "createdAt", "updatedAt", "deletedAt"]);
+
+/**
+ * G-K-20: для α=replace intents formModal должен включать entity.fields
+ * (editable parameters сущности) в дополнение к path-params. Без этого
+ * update-form показывает только {entityId, parentId} и не редактирует
+ * настоящие поля (name, description, etc).
+ *
+ * @param {object} intent — intent definition
+ * @param {Array} parameters — массив path-params {name, type, ...}
+ * @param {object} context — { ontology, projection }
+ * @returns {Array} merged parameters [...pathParams, ...entityFields]
+ */
+function mergeEntityFieldsForReplace(intent, parameters, context) {
+  const isReplace = intent?.alpha === "replace"
+    || (intent?.particles?.effects || []).some(e => e?.α === "replace");
+  if (!isReplace) return parameters;
+
+  const ontology = context?.ontology;
+  if (!ontology?.entities) return parameters;
+
+  // Resolve mainEntity: intent.target → particles.entities[0] → first
+  let mainEntity = intent.target;
+  if (!mainEntity || !ontology.entities[mainEntity]) {
+    const e0 = (intent.particles?.entities || [])[0];
+    if (typeof e0 === "string") {
+      const parts = e0.split(":");
+      mainEntity = (parts[1] || parts[0]).trim();
+    }
+  }
+  const entity = ontology.entities[mainEntity];
+  if (!entity?.fields || typeof entity.fields !== "object") return parameters;
+
+  const existingNames = new Set(parameters.map(p => p.name));
+  const fieldParams = [];
+  for (const [fieldName, fieldDef] of Object.entries(entity.fields)) {
+    if (SYSTEM_FIELDS.has(fieldName)) continue;
+    if (existingNames.has(fieldName)) continue;
+
+    fieldParams.push({
+      name: fieldName,
+      label: fieldDef.label || fieldName,
+      type: fieldDef.type || "text",
+      required: fieldDef.required || false,
+      editable: true,
+      default: fieldDef.default ?? undefined,
+      ...(Array.isArray(fieldDef.values)
+        ? { control: "select", options: fieldDef.values.map(v => ({ value: v, label: (fieldDef.valueLabels || {})[v] || String(v) })) }
+        : fieldDef.type === "boolean" ? { control: "checkbox" }
+        : fieldDef.type === "datetime" || fieldDef.type === "date" ? { control: "datetime" }
+        : fieldDef.type === "textarea" ? { control: "textarea" }
+        : {}),
+    });
+  }
+  return [...parameters, ...fieldParams];
+}
+
 // Встроенные архетипы (порядок определяет приоритет правил)
 const ARCHETYPES = [];
 
@@ -167,7 +224,7 @@ function registerBuiltins() {
   registerArchetype({
     id: "formModal",
     match: (intent) => getConfirmation(intent) === "form",
-    build: (intent, intentId, parameters) => {
+    build: (intent, intentId, parameters, context) => {
       const key = `overlay_${intentId}`;
       const baseButton = {
         type: "intentButton",
@@ -176,6 +233,11 @@ function registerBuiltins() {
         icon: getIntentIcon(intentId, intent),
       };
       if (intent.antagonist) baseButton.antagonist = intent.antagonist;
+
+      // G-K-20: для α=replace intents merge entity.fields (editable
+      // парамерты сущности) к path-params, чтобы update-form редактировал
+      // реальные поля, а не только идентификаторы.
+      const mergedParameters = mergeEntityFieldsForReplace(intent, parameters, context);
 
       return {
         trigger: { ...baseButton, opens: "overlay", overlayKey: key },
@@ -187,7 +249,7 @@ function registerBuiltins() {
           witnessPanel: (intent.particles.witnesses || [])
             .filter(w => typeof w === "string" && w.includes("."))
             .map(w => ({ type: "text", bind: w })),
-          parameters,
+          parameters: mergedParameters,
         },
         antagonist: intent.antagonist,
       };

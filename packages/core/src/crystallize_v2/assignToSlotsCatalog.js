@@ -96,7 +96,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
       control: inferControlType(p, ONTOLOGY),
     })).map(p => enrichWithOptions(p, ONTOLOGY));
 
-    let wrapped = wrapByConfirmation(intent, id, parameters, { projection });
+    let wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
     if (wrapped === null) continue;
 
     // Strategy: override control type
