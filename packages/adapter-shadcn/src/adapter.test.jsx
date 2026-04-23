@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { shadcnAdapter } from "./adapter.jsx";
-import { registerUIAdapter, getAdaptedComponent, pickBest } from "@intent-driven/renderer";
+import { registerUIAdapter, getAdaptedComponent, getCapability, pickBest } from "@intent-driven/renderer";
 
 describe("@intent-driven/adapter-shadcn", () => {
   it("adapter has name 'shadcn'", () => {
@@ -13,5 +13,13 @@ describe("@intent-driven/adapter-shadcn", () => {
   it("affinity: fieldRole=\"price\" → Number компонент", () => {
     const best = pickBest("parameter", { type: "text", fieldRole: "price", name: "fee" }, shadcnAdapter);
     expect(best).toBe(shadcnAdapter.parameter.number);
+  });
+
+  it("registers primitive.chipList + capability declared", () => {
+    registerUIAdapter(shadcnAdapter);
+    expect(getAdaptedComponent("primitive", "chipList")).toBeDefined();
+    const cap = getCapability("primitive", "chipList");
+    expect(cap).toBeDefined();
+    expect(cap.variants).toContain("tag");
   });
 });

@@ -472,6 +472,81 @@ function ShadcnBadge({ children, color, ...props }) {
   );
 }
 
+/**
+ * ShadcnChipList — doodle-style chip'ы с hand-drawn границами, используют тот
+ * же variant-цвет (tag / policy / role) + custom × для detach.
+ */
+function ShadcnChipList({ node }) {
+  const value = node?.value;
+  const items = Array.isArray(value) ? value : [];
+  const variant = node?.variant || "tag";
+  const maxVisible = node?.maxVisible ?? 5;
+  const emptyLabel = node?.emptyLabel ?? "Нет";
+  if (items.length === 0) {
+    return (
+      <span style={{ color: "var(--color-doodle-muted, #92919b)", fontSize: 12, fontStyle: "italic", fontFamily: "var(--font-doodle)" }}>
+        {emptyLabel}
+      </span>
+    );
+  }
+  const visible = items.slice(0, maxVisible);
+  const overflow = items.length - visible.length;
+  const variantColor = variant === "policy"
+    ? { border: "#b45309", bg: "#fef3c7", fg: "#92400e" }
+    : variant === "role"
+    ? { border: "#6d28d9", bg: "#ede9fe", fg: "#5b21b6" }
+    : { border: "var(--color-doodle-border)", bg: "var(--color-doodle-highlight)", fg: "var(--color-doodle-ink)" };
+  return (
+    <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      {visible.map((item, i) => {
+        const label = typeof item === "object" ? (item.label || item.name || JSON.stringify(item)) : String(item);
+        const itemColor = (typeof item === "object" && item.color) || variantColor.bg;
+        const onClick = node?.onItemClick ? () => node.onItemClick(item) : undefined;
+        const handleDetach = node?.onDetach ? (e) => { e.stopPropagation(); node.onDetach(item, i); } : null;
+        return (
+          <span
+            key={i}
+            onClick={onClick}
+            role={onClick ? "button" : undefined}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "2px 8px",
+              borderRadius: 20,
+              border: `2px solid ${variantColor.border}`,
+              background: itemColor === variantColor.bg ? variantColor.bg : itemColor,
+              color: variantColor.fg,
+              fontSize: 12, fontWeight: 700, fontFamily: "var(--font-doodle)",
+              cursor: onClick ? "pointer" : undefined,
+            }}
+          >
+            {typeof item === "object" && item.icon && <span>{item.icon}</span>}
+            <span>{label}</span>
+            {handleDetach && (
+              <button
+                type="button"
+                onClick={handleDetach}
+                aria-label={`Detach ${label}`}
+                style={{
+                  background: "transparent", border: "none", padding: 0, marginLeft: 2,
+                  cursor: "pointer", fontSize: 13, lineHeight: 1, color: variantColor.fg,
+                  fontFamily: "var(--font-doodle)",
+                }}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span style={{ color: "var(--color-doodle-muted, #6b7280)", fontSize: 12, fontWeight: 700, fontFamily: "var(--font-doodle)" }}>
+          +{overflow}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function ShadcnAvatar({ src, name, size = 32, ...props }) {
   const initials = (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   return (
@@ -612,6 +687,9 @@ ShadcnDateTime.affinity = {
 export const shadcnAdapter = {
   name: "shadcn",
   capabilities: {
+    primitive: {
+      chipList: { variants: ["tag", "policy", "role"] },
+    },
     shell: { modal: true, tabs: true, sidebar: true },
   },
   parameter: {
@@ -642,6 +720,7 @@ export const shadcnAdapter = {
     badge: ShadcnBadge,
     avatar: ShadcnAvatar,
     paper: ShadcnPaper,
+    chipList: ShadcnChipList,
   },
   icon: {
     resolve: resolveLucide,

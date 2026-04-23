@@ -513,6 +513,81 @@ function AppleBadge({ children, color, ...props }) {
   );
 }
 
+/**
+ * AppleChipList — glass-morphism chip'ы в Apple-стилистике: pill-shape,
+ * semi-transparent fill по variant, subtle backdrop-blur border.
+ */
+function AppleChipList({ node }) {
+  const value = node?.value;
+  const items = Array.isArray(value) ? value : [];
+  const variant = node?.variant || "tag";
+  const maxVisible = node?.maxVisible ?? 5;
+  const emptyLabel = node?.emptyLabel ?? "Нет";
+  if (items.length === 0) {
+    return (
+      <span style={{ color: "rgba(255,255,255,0.5)", fontSize: 12, fontStyle: "italic", fontFamily: "var(--font-apple)" }}>
+        {emptyLabel}
+      </span>
+    );
+  }
+  const visible = items.slice(0, maxVisible);
+  const overflow = items.length - visible.length;
+  const tone = variant === "policy"
+    ? { bg: "rgba(255, 159, 10, 0.18)", fg: "#ff9f0a", border: "rgba(255, 159, 10, 0.3)" }
+    : variant === "role"
+    ? { bg: "rgba(175, 82, 222, 0.18)", fg: "#af52de", border: "rgba(175, 82, 222, 0.3)" }
+    : { bg: "rgba(0, 122, 255, 0.12)", fg: "var(--color-apple-accent)", border: "rgba(0, 122, 255, 0.25)" };
+  return (
+    <span style={{ display: "inline-flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+      {visible.map((item, i) => {
+        const label = typeof item === "object" ? (item.label || item.name || JSON.stringify(item)) : String(item);
+        const onClick = node?.onItemClick ? () => node.onItemClick(item) : undefined;
+        const handleDetach = node?.onDetach ? (e) => { e.stopPropagation(); node.onDetach(item, i); } : null;
+        return (
+          <span
+            key={i}
+            onClick={onClick}
+            role={onClick ? "button" : undefined}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 4,
+              padding: "3px 10px",
+              borderRadius: 999,
+              border: `1px solid ${tone.border}`,
+              background: tone.bg,
+              color: tone.fg,
+              fontSize: 12, fontWeight: 600, fontFamily: "var(--font-apple)",
+              backdropFilter: "blur(8px)",
+              cursor: onClick ? "pointer" : undefined,
+            }}
+          >
+            {typeof item === "object" && item.icon && <span>{item.icon}</span>}
+            <span>{label}</span>
+            {handleDetach && (
+              <button
+                type="button"
+                onClick={handleDetach}
+                aria-label={`Detach ${label}`}
+                style={{
+                  background: "transparent", border: "none", padding: 0, marginLeft: 2,
+                  cursor: "pointer", fontSize: 13, lineHeight: 1, color: tone.fg,
+                  opacity: 0.7,
+                }}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        );
+      })}
+      {overflow > 0 && (
+        <span style={{ color: "rgba(255,255,255,0.6)", fontSize: 12, fontWeight: 600, fontFamily: "var(--font-apple)" }}>
+          +{overflow}
+        </span>
+      )}
+    </span>
+  );
+}
+
 function AppleAvatar({ src, name, size = 32, ...props }) {
   const initials = (name || "?").split(" ").map(w => w[0]).join("").slice(0, 2).toUpperCase();
   return (
@@ -657,6 +732,9 @@ function AppleSidebar({ sections, active, onSelect, projectionNames }) {
 export const appleAdapter = {
   name: "apple",
   capabilities: {
+    primitive: {
+      chipList: { variants: ["tag", "policy", "role"] },
+    },
     shell: { modal: true, tabs: true, sidebar: true },
   },
   parameter: {
@@ -688,6 +766,7 @@ export const appleAdapter = {
     badge: AppleBadge,
     avatar: AppleAvatar,
     paper: ApplePaper,
+    chipList: AppleChipList,
   },
   icon: {
     resolve: resolveLucide,

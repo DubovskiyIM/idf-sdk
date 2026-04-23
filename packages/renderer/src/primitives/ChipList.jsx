@@ -1,3 +1,5 @@
+import { getAdaptedComponent } from "../adapters/registry.js";
+
 /**
  * ChipList — отображение array-значений как коллекция chip'ов.
  * Use-case: Gravitino Tags on entity / Policies / User.roles, AWS tags,
@@ -25,9 +27,28 @@ export default function ChipList({
   emptyLabel = "Нет",
   ctx,
 }) {
-  const Adapted = ctx?.adapter?.getComponent?.("primitive", "chipList");
+  // Adapter delegation: сначала ctx.adapter (позволяет тестам stub'ить), затем
+  // глобальный registry через getAdaptedComponent — именно так подключаются
+  // адаптеры на runtime (adapter-antd/mantine/etc через registerUIAdapter).
+  const Adapted = ctx?.adapter?.getComponent?.("primitive", "chipList")
+    || getAdaptedComponent("primitive", "chipList");
   if (Adapted) {
-    return <Adapted value={value} variant={variant} maxVisible={maxVisible} onDetach={onDetach} onItemClick={onItemClick} emptyLabel={emptyLabel} ctx={ctx} />;
+    // Двойная сигнатура: исторически адаптеры (AntdChipList) принимают
+    // `{ node, ctx }`, передаём spec через node — плюс flat props для
+    // новых адаптеров. Адаптер читает то, что ему нужно.
+    const node = { value, variant, maxVisible, onDetach, onItemClick, emptyLabel };
+    return (
+      <Adapted
+        node={node}
+        value={value}
+        variant={variant}
+        maxVisible={maxVisible}
+        onDetach={onDetach}
+        onItemClick={onItemClick}
+        emptyLabel={emptyLabel}
+        ctx={ctx}
+      />
+    );
   }
 
   const items = Array.isArray(value) ? value : [];
