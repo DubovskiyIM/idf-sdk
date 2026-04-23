@@ -154,6 +154,18 @@ export function detectForeignKeys(ontology) {
       // Typed format: { fieldName: { type, ... } }
       for (const [fieldName, fieldDef] of Object.entries(fields)) {
         if (fieldName === "id") continue;
+        // Explicit FK-marker от importer'ов: { kind: "foreignKey", references: "Entity" }.
+        // OpenAPI-importer кладёт type:"string" + kind:"foreignKey" + references —
+        // это приоритетная форма, т.к. referenced entity задана явно, без name-matching.
+        if (fieldDef.kind === "foreignKey" && typeof fieldDef.references === "string") {
+          const referenced = entityNames.includes(fieldDef.references)
+            ? fieldDef.references
+            : entityNames.find(e => e.toLowerCase() === fieldDef.references.toLowerCase());
+          if (referenced) {
+            fks.push({ field: fieldName, references: referenced });
+            continue;
+          }
+        }
         if (fieldDef.type === "entityRef") {
           // Ищем referenced entity: сначала точное совпадение refName→entityName,
           // потом через ownerField-паттерны (bidderId → User через Bid.ownerField)

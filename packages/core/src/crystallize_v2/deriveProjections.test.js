@@ -125,6 +125,98 @@ describe("detectForeignKeys", () => {
     const fks = detectForeignKeys(ontology);
     expect(fks.User || []).toEqual([]);
   });
+
+  it("распознаёт kind:'foreignKey' + references (OpenAPI-importer shape)", () => {
+    // importer-openapi кладёт type:"string" + kind:"foreignKey" + references
+    // — именно так Keycloak G-K-9 заставлял R8 hub-absorption молчать.
+    const ontology = {
+      entities: {
+        Realm: { fields: { id: { type: "text" } } },
+        User: {
+          fields: {
+            id: { type: "text" },
+            realmId: {
+              type: "string",
+              kind: "foreignKey",
+              references: "Realm",
+              synthetic: "openapi-path",
+            },
+          },
+        },
+      },
+    };
+    const fks = detectForeignKeys(ontology);
+    expect(fks.User).toEqual([
+      { field: "realmId", references: "Realm" },
+    ]);
+  });
+
+  it("references с нестандартным case-ом резолвится case-insensitive", () => {
+    const ontology = {
+      entities: {
+        IdentityProvider: { fields: { id: { type: "text" } } },
+        Client: {
+          fields: {
+            id: { type: "text" },
+            idpRef: {
+              type: "string",
+              kind: "foreignKey",
+              references: "identityprovider", // lowercase в importer output
+            },
+          },
+        },
+      },
+    };
+    const fks = detectForeignKeys(ontology);
+    expect(fks.Client).toEqual([
+      { field: "idpRef", references: "IdentityProvider" },
+    ]);
+  });
+
+  it("kind:'foreignKey' без references — игнорируется, fallback на entityRef-ветку", () => {
+    const ontology = {
+      entities: {
+        User: { fields: { id: { type: "text" } } },
+        Order: {
+          fields: {
+            id: { type: "text" },
+            userId: {
+              type: "string",
+              kind: "foreignKey",
+              // references пропущен — fallback на name-matching
+            },
+          },
+        },
+      },
+    };
+    const fks = detectForeignKeys(ontology);
+    // kind:"foreignKey" без references — broken hint, не должен падать
+    expect(fks.Order).toBeUndefined();
+  });
+
+  it("dual-marker: kind:'foreignKey' + type:'entityRef' — explicit references побеждает", () => {
+    const ontology = {
+      entities: {
+        Parent: { fields: { id: { type: "text" } } },
+        ActualRef: { fields: { id: { type: "text" } } },
+        Child: {
+          fields: {
+            id: { type: "text" },
+            // fieldName не совпадает с Parent, но explicit references=Parent должно победить
+            someLink: {
+              type: "entityRef",
+              kind: "foreignKey",
+              references: "Parent",
+            },
+          },
+        },
+      },
+    };
+    const fks = detectForeignKeys(ontology);
+    expect(fks.Child).toEqual([
+      { field: "someLink", references: "Parent" },
+    ]);
+  });
 });
 
 describe("deriveProjections", () => {
