@@ -3,12 +3,20 @@ import { flattenSchema } from "./flattenSchema.js";
 import { schemaToEntity, propertyToField } from "./schemaToEntity.js";
 import { pathToIntent, entityNameFromPath } from "./pathToIntent.js";
 import { extractParentChain, extractCollectionChain, synthesizeFkField } from "./extractParentChain.js";
+import {
+  mergeRepresentationDuplicates,
+  rewriteReferencesByAliases,
+  rewriteIntentTargetsByAliases,
+} from "./mergeRepresentationDuplicates.js";
 import { parse as parseYaml } from "yaml";
 
 export {
   resolveRef, flattenSchema,
   schemaToEntity, propertyToField, pathToIntent, entityNameFromPath,
   extractParentChain, extractCollectionChain, synthesizeFkField,
+  mergeRepresentationDuplicates,
+  rewriteReferencesByAliases,
+  rewriteIntentTargetsByAliases,
 };
 
 export function parseSpec(source) {
@@ -69,10 +77,25 @@ export function importOpenApi(spec, opts = {}) {
     synthesizeFkField(entities[entity], parent);
   }
 
+  // 4) dedup X / XRepresentation пар (Keycloak G-K-1 / Gravitino G2).
+  //    Schema-derived `XRepresentation` содержит полный fields-набор;
+  //    path-derived `X` — короткое имя с minimal fields. Мерджим первое
+  //    во второе, удаляем XRepresentation. Aliases тянут downstream
+  //    rewrite для FK.references и intent.target/creates, если long имя
+  //    где-то утекло. Opt-out: opts.dedupRepresentations = false.
+  let finalEntities = entities;
+  let finalIntents = intents;
+  if (opts.dedupRepresentations !== false) {
+    const suffix = opts.representationSuffix ?? "Representation";
+    const { entities: mergedEntities, aliases } = mergeRepresentationDuplicates(entities, { suffix });
+    finalEntities = rewriteReferencesByAliases(mergedEntities, aliases);
+    finalIntents = rewriteIntentTargetsByAliases(intents, aliases);
+  }
+
   return {
     name: opts.name ?? "default",
-    entities,
-    intents,
+    entities: finalEntities,
+    intents: finalIntents,
     roles: { owner: { base: "owner" } },
   };
 }
