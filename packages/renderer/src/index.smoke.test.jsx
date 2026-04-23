@@ -16,6 +16,14 @@ describe("@intent-driven/renderer public API", () => {
     expect(typeof ProjectionRendererV2).toBe("function");
   });
 
+  it("ProjectionRendererV2 принимает prop testConnection (P-K-B Stage 7)", () => {
+    // testConnection — async handler для Wizard step.testConnection. Host
+    // передаёт implementation, renderer оборачивает + пробрасывает в ctx.
+    // Smoke-check: prop-name присутствует в function body (не destructured
+    // → не попадёт в ctx). Wizard.test.jsx покрывает сам flow.
+    expect(ProjectionRendererV2.toString()).toContain("testConnection");
+  });
+
   it("exports adapter registry functions", () => {
     expect(typeof registerUIAdapter).toBe("function");
     expect(typeof getAdaptedComponent).toBe("function");
