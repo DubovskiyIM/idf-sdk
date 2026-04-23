@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.57.0
+
+### Minor Changes
+
+- c3b3621: Промоция 3 stable-паттернов из Gravitino candidate bank (PR #229):
+
+  - `detail/lifecycle-gated-destructive` — two-phase delete (disable → remove). Apply кладёт gate в `slots.actionGates` с `blockedWhen`-expression. Trigger: enum-status с ≥2 опций ИЛИ boolean-lifecycle поле, + парные disable/remove intents.
+  - `catalog/inline-chip-association` — m2m chip+X inline в catalog row. Apply добавляет запись в `slots.rowAssociations` per junction (assignment-kind + парные attach/detach intents).
+  - `detail/reverse-association-browser` — на detail reference-entity секция «кто ссылается». Apply добавляет `sections` `kind: "reverseM2mBrowse"` с автоматическим `groupBy` для polymorphic junctions (`objectType` / `entityType` / `kind`).
+
+  Stable count: 33 → 36.
+
+### Patch Changes
+
+- c3b3621: pattern-bank: 11 candidate'ов из Apache Gravitino WebUI v2 (detail / catalog паттерны: lifecycle-gated-destructive, inline-chip-association, reverse-association-browser, cascading-dropdown-multiadd, composite-type-input-builder, multi-step-create-wizard, discriminator-filter-toolbar, readonly-system-managed-projection, template-instantiation-split-panel, properties-popover-on-count, inline-verification-action). Регенерирован candidate/manifest.js (PR #226).
+- c3b3621: Рендер-интеграция 3 Gravitino-паттернов (PR #230):
+
+  - `ArchetypeDetail` прокидывает `slots.actionGates` в ctx; `IntentButton` читает gate'ы по `spec.intentId`, eval'ит `blockedWhen` против target → disabled + tooltip. Click по disabled — no-op.
+  - `ArchetypeCatalog` прокидывает `slots.rowAssociations` в ctx; `DataGrid` автоматически инжектит chip-column per association (перед actions), `ChipCell` резолвит junction-records + других entity + рендер через `ChipList` с attach/detach.
+  - `SubCollectionSection` получает fallback для `source: "derived:<id>"` — collection-key берётся из `section.collection` или pluralized `section.itemEntity`. Pattern `reverse-association-browser` теперь корректно отображает referrer-items на reference-entity detail.
+
+  Core (patch): у `reverse-association-browser` section дополнительно выставляется `itemEntity` и `collection` (pluralized, с учётом `entity.collection` override'а).
+
 ## 0.56.0
 
 ### Minor Changes
