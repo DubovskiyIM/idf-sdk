@@ -104,6 +104,11 @@ export default function SubCollectionSection({ section, target, ctx }) {
     terminalStatus,
     hideTerminal: hideTerminalFlag,
     toggleTerminalLabel,
+    // Group-by (pattern reverse-association-browser / polymorphic junctions):
+    // если задано, items группируются по значению поля, рендерятся как sub-buckets
+    // с подзаголовком + count. NullLabel — для items, где значение отсутствует.
+    groupBy,
+    groupNullLabel,
   } = section;
 
   // Pattern-derived section'ы могут держать `source` как witness ("derived:<id>")
@@ -232,22 +237,101 @@ export default function SubCollectionSection({ section, target, ctx }) {
 
       {items.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: canAdd ? 12 : 0 }}>
-          {items.map(item => (
-            <SubCollectionItem
-              key={item.id}
-              item={item}
+          {groupBy ? (
+            <GroupedItems
+              items={items}
+              groupBy={groupBy}
+              nullLabel={groupNullLabel}
               itemView={itemView}
               itemIntents={itemIntents || []}
+              editableFields={editableFields}
               ctx={ctx}
               target={target}
-              editableFields={editableFields}
             />
-          ))}
+          ) : (
+            items.map(item => (
+              <SubCollectionItem
+                key={item.id}
+                item={item}
+                itemView={itemView}
+                itemIntents={itemIntents || []}
+                ctx={ctx}
+                target={target}
+                editableFields={editableFields}
+              />
+            ))
+          )}
         </div>
       )}
     </Wrapper>
   );
 }
+
+/**
+ * GroupedItems — рендерит items сгруппированными по `groupBy`-полю. Порядок
+ * групп: сначала те, что встречаются в исходном массиве (стабильность);
+ * null/undefined значения идут в отдельный bucket с `nullLabel` (по
+ * умолчанию «Без значения»).
+ *
+ * Каждый bucket — subheader (label + count) + items под ним. Используется
+ * reverse-association-browser для polymorphic junctions (`objectType`).
+ */
+function GroupedItems({ items, groupBy, nullLabel, itemView, itemIntents, editableFields, ctx, target }) {
+  const groups = useMemo(() => {
+    const buckets = new Map();
+    const order = [];
+    const NULL_KEY = "__null__";
+    for (const item of items) {
+      let key = item?.[groupBy];
+      if (key == null || key === "") key = NULL_KEY;
+      if (!buckets.has(key)) {
+        buckets.set(key, []);
+        order.push(key);
+      }
+      buckets.get(key).push(item);
+    }
+    return order.map(key => ({
+      key,
+      label: key === NULL_KEY ? (nullLabel || "Без значения") : String(key),
+      items: buckets.get(key),
+    }));
+  }, [items, groupBy, nullLabel]);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {groups.map(group => (
+        <div key={group.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={groupHeaderStyle}>
+            {group.label} ({group.items.length})
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {group.items.map(item => (
+              <SubCollectionItem
+                key={item.id}
+                item={item}
+                itemView={itemView}
+                itemIntents={itemIntents}
+                ctx={ctx}
+                target={target}
+                editableFields={editableFields}
+              />
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const groupHeaderStyle = {
+  fontSize: 10,
+  fontWeight: 600,
+  textTransform: "uppercase",
+  letterSpacing: "0.06em",
+  color: "var(--idf-text-muted, #6b7280)",
+  padding: "2px 0",
+  borderBottom: "1px solid var(--idf-border, #e5e7eb)",
+};
 
 // Fallback когда адаптер не задан
 function FallbackPaper({ children }) {
