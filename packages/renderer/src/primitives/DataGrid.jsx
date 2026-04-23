@@ -1,5 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import RowAssociationChips, { pluralizeAsLabel } from "./RowAssociationChips.jsx";
+import { evalFilter } from "@intent-driven/core";
+import { evalCondition } from "../eval.js";
 
 /**
  * DataGrid — enhanced table primitive с sort / per-column filter /
@@ -338,6 +340,38 @@ function resolveActionParams(spec, item, ctx) {
  *
  * Click.stopPropagation — row-click не триггерится вместе с action.
  */
+/**
+ * G-K-24 fix: для intents с confirmation:"form" — открыть overlay
+ * вместо exec. Иначе update/edit-flow ломается (button рендерится,
+ * но click пустой effect, modal не открывается).
+ *
+ * Priority resolution:
+ *   1. action.opens === "overlay" — explicit override (highest)
+ *   2. ctx.intents[action.intent].confirmation === "form" + ctx.openOverlay
+ *      → auto-open overlay с key `overlay_${intent}` (default convention)
+ *   3. fallback — ctx.exec (backward-compat для click-confirmation intents)
+ */
+function triggerAction(a, item, ctx) {
+  if (!a?.intent) return;
+  // Explicit override
+  if (a.opens === "overlay" && ctx?.openOverlay) {
+    const key = a.overlayKey || `overlay_${a.intent}`;
+    ctx.openOverlay(key, { item });
+    return;
+  }
+  // Auto-detect form-confirmation
+  const intentDef = ctx?.intents?.[a.intent];
+  const confirmation = intentDef?.confirmation || intentDef?.particles?.confirmation;
+  if (confirmation === "form" && ctx?.openOverlay) {
+    ctx.openOverlay(`overlay_${a.intent}`, { item });
+    return;
+  }
+  // Fallback — direct exec
+  if (ctx?.exec) {
+    ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
+  }
+}
+
 function ActionCell({ item, col, ctx }) {
   const actions = Array.isArray(col.actions) ? col.actions : [];
   if (actions.length === 0) return <span style={mutedStyle}>—</span>;
@@ -359,10 +393,7 @@ function ActionCell({ item, col, ctx }) {
             key={a.intent || i}
             type="button"
             disabled={disabled}
-            onClick={() => {
-              if (!ctx?.exec) return;
-              ctx.exec(a.intent, resolveActionParams(a.params, item, ctx));
-            }}
+            onClick={() => triggerAction(a, item, ctx)}
             style={a.danger ? actionButtonDangerStyle : actionButtonStyle}
           >
             {a.label || a.intent}
@@ -700,15 +731,34 @@ const actionMenuItemDangerStyle = {
  * Source — имя коллекции в world (e.g. "catalogs", "users", "tables").
  * Совпадает с convention catalog-архетипа (buildCatalogBody.source).
  */
+/**
+ * G-K-25 fix: resolveItems учитывает node.filter (string или object).
+ * String filter — через evalCondition (с world/viewer/viewState +
+ * row keys spread). Object filter — через evalFilter (simple/disjunction/
+ * m2m-via). Семантически совпадает с List::applyFilter в containers.jsx.
+ *
+ * Применяется к items array OR collection из ctx.world[source].
+ */
 function resolveItems(node, ctx) {
+  let items = [];
   if (Array.isArray(node?.items) && node.items.length > 0) {
-    return node.items;
-  }
-  if (node?.source && typeof node.source === "string" && ctx?.world) {
+    items = node.items;
+  } else if (node?.source && typeof node.source === "string" && ctx?.world) {
     const collection = ctx.world[node.source];
-    if (Array.isArray(collection)) return collection;
+    if (Array.isArray(collection)) items = collection;
   }
-  return Array.isArray(node?.items) ? node.items : [];
+  if (!node?.filter || items.length === 0) return items;
+  const filter = node.filter;
+  if (typeof filter === "object") {
+    return items.filter(it => evalFilter(filter, it, {
+      viewer: ctx?.viewer, world: ctx?.world,
+    }));
+  }
+  return items.filter(it => evalCondition(filter, {
+    ...it, item: it,
+    viewer: ctx?.viewer, world: ctx?.world,
+    viewState: ctx?.viewState || {},
+  }));
 }
 
 // Export для testing
