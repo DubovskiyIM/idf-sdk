@@ -9,6 +9,7 @@ import {
   rewriteIntentTargetsByAliases,
 } from "./mergeRepresentationDuplicates.js";
 import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
+import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -20,6 +21,8 @@ export {
   rewriteReferencesByAliases,
   rewriteIntentTargetsByAliases,
   markEmbeddedTypes,
+  inferFieldRole,
+  inferFieldRolesForEntities,
 };
 
 export function parseSpec(source) {
@@ -102,6 +105,14 @@ export function importOpenApi(spec, opts = {}) {
   //    Opt-out: opts.markEmbedded = false.
   if (opts.markEmbedded !== false) {
     finalEntities = markEmbeddedTypes(finalEntities, finalIntents);
+  }
+
+  // 6) inferFieldRoles (Keycloak G-K-7): name-pattern эвристика назначает
+  //    fieldRole для secret / datetime / email / url полей. Pattern-bank
+  //    primitives требуют hint для корректного рендера.
+  //    Opt-out: opts.inferFieldRoles = false.
+  if (opts.inferFieldRoles !== false) {
+    finalEntities = inferFieldRolesForEntities(finalEntities);
   }
 
   return {
