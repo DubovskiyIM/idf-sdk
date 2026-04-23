@@ -10,6 +10,7 @@ import CriterionSummary from "./CriterionSummary.jsx";
 import RatingAggregate from "./RatingAggregate.jsx";
 import TreeNav from "./TreeNav.jsx";
 import Breadcrumbs from "./Breadcrumbs.jsx";
+import SchemaEditor from "./SchemaEditor.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -21,6 +22,7 @@ export { default as Carousel } from "./Carousel.jsx";
 export { default as GatingPanel } from "./GatingPanel.jsx";
 export { default as TreeNav } from "./TreeNav.jsx";
 export { default as Breadcrumbs } from "./Breadcrumbs.jsx";
+export { default as SchemaEditor } from "./SchemaEditor.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -54,4 +56,5 @@ export const PRIMITIVES = {
   ratingAggregate: RatingAggregate,
   treeNav: TreeNav,
   breadcrumbs: Breadcrumbs,
+  schemaEditor: SchemaEditor,
 };
