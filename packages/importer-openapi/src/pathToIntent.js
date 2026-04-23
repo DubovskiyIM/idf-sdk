@@ -1,6 +1,100 @@
 const SKIPPED_PREFIXES = new Set(["api", "v1", "v2", "v3"]);
 
 /**
+ * Explicit action-verb list. Path ending `/{param}/X`, где X начинается с
+ * любого из этих verbs (optionally followed by `-suffix`), трактуется как
+ * action над идентифицированным parent-ресурсом, а не как sub-collection.
+ * Intent.target = parent entity, intent.name = camelCase(actionSegment)+parent.
+ *
+ * Closes G-K-2 (Keycloak): 21 path вида `/users/{id}/reset-password`,
+ * `/clients/{id}/test-nodes-available`, `/authentication/executions/{id}/
+ * lower-priority` переставали материализоваться как entity `ResetPassword` /
+ * `TestNodesAvailable` / `LowerPriority`.
+ *
+ * Conservative: only explicit verb-prefix. Plural collections
+ * (`/users/{id}/role-mappings`, `/users/{id}/credentials`) не трогаются.
+ */
+const ACTION_VERBS = [
+  "activate", "deactivate",
+  "test",
+  "reset",
+  "send",
+  "move",
+  "logout", "logoff", "login",
+  "copy",
+  "import", "export",
+  "sync", "clear",
+  "validate", "verify",
+  "restart", "stop", "start", "pause", "resume",
+  "run",
+  "convert", "parse", "evaluate",
+  "download", "upload",
+  "enable", "disable",
+  "refresh",
+  "lower", "raise",
+  "install", "uninstall",
+  "approve", "reject", "dismiss",
+  "publish", "unpublish",
+  "register", "unregister",
+  "cancel", "complete", "finish",
+  "archive", "restore",
+  "attach", "detach",
+  "link", "unlink",
+  "assign", "unassign",
+  "grant", "revoke",
+  "subscribe", "unsubscribe",
+  "confirm",
+];
+const ACTION_VERB_RE = new RegExp(
+  "^(" + ACTION_VERBS.join("|") + ")(?:[-_][a-z0-9]+)*$",
+  "i",
+);
+
+function isActionVerbSegment(segment) {
+  if (!segment || segment.startsWith("{")) return false;
+  return ACTION_VERB_RE.test(segment);
+}
+
+/**
+ * Detects action-endpoint shape: `/.../collection/{param}/action-verb`.
+ * Returns `{ parentEntity, actionSegment, actionName }` or null если это
+ * обычный sub-collection или не action.
+ *
+ * @param {string} path — OpenAPI path с `{param}` syntax
+ * @returns {{ parentEntity: string, actionSegment: string, actionName: string } | null}
+ */
+export function detectActionEndpoint(path) {
+  const segs = path.split("/").filter(Boolean);
+  if (segs.length < 3) return null;
+  const last = segs[segs.length - 1];
+  const beforeLast = segs[segs.length - 2];
+  if (!last || last.startsWith("{")) return null;
+  if (!beforeLast || !beforeLast.startsWith("{")) return null;
+  if (!isActionVerbSegment(last)) return null;
+  // Parent collection — сегмент перед {param}. Ищем ближайший не-{param}, не-skip.
+  let parentCollection = null;
+  for (let i = segs.length - 3; i >= 0; i--) {
+    const s = segs[i];
+    if (s.startsWith("{")) continue;
+    if (SKIPPED_PREFIXES.has(s.toLowerCase())) continue;
+    parentCollection = s;
+    break;
+  }
+  if (!parentCollection) return null;
+  const parentEntity = toPascalSingular(parentCollection);
+  // actionName: camelCase из action-segment. "reset-password" → "resetPassword".
+  const actionName = kebabToCamel(last);
+  return { parentEntity, actionSegment: last, actionName };
+}
+
+function kebabToCamel(s) {
+  const parts = s.split(/[-_]/);
+  if (parts.length === 0) return s;
+  return parts[0].toLowerCase()
+    + parts.slice(1).map(p => p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()).join("");
+}
+
+/**
  * /tasks → Task, /order-items → OrderItem, /api/v1/tasks → Task.
  * Берёт последний сегмент, который является collection-name (не {param}, не skip-prefix).
  */
@@ -59,11 +153,17 @@ function endsWithPathParam(path) {
  * Если operation.operationId задан — используется как имя intent.
  */
 export function pathToIntent(method, path, operation) {
-  const entity = entityNameFromPath(path);
   const methodUpper = method.toUpperCase();
   const pathParams = extractPathParams(path);
   const hasTrailingParam = endsWithPathParam(path);
   const idfPath = openApiPathToIdf(path);
+
+  // G-K-2: action-endpoint shape — `/collection/{param}/action-verb`.
+  // Intent.target = parent entity (не action-verb); intent.name =
+  // actionVerb + Parent (camelCase). Action-verbs detection — conservative,
+  // explicit list (см. ACTION_VERBS). Intent.alpha = "replace".
+  const action = detectActionEndpoint(path);
+  const entity = action ? action.parentEntity : entityNameFromPath(path);
 
   const intent = {
     target: entity,
@@ -75,8 +175,12 @@ export function pathToIntent(method, path, operation) {
   }
 
   let name;
-  if (methodUpper === "POST") {
-    // POST /tasks → create; POST /tasks/{id}/approve → approve
+  if (action) {
+    // action всегда над identified resource → replace
+    name = `${action.actionName}${entity}`;
+    intent.alpha = "replace";
+  } else if (methodUpper === "POST") {
+    // POST /tasks → create; POST /tasks/{id}/sub-collection → generic
     const segs = path.split("/").filter(Boolean);
     const lastSeg = segs[segs.length - 1];
     if (hasTrailingParam) {
@@ -84,7 +188,8 @@ export function pathToIntent(method, path, operation) {
       name = `create${entity}`;
       intent.alpha = "insert";
     } else if (pathParams.length > 0 && lastSeg && !lastSeg.startsWith("{")) {
-      // /tasks/{id}/approve — action поверх existing ресурса
+      // /tasks/{id}/approve — action поверх existing ресурса (legacy: не
+      // verb-list detected, но structure action-like)
       name = `${lastSeg.replace(/-/g, "_")}${entity}`;
       intent.alpha = "replace";
     } else {

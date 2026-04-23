@@ -1,7 +1,7 @@
 import { resolveRef } from "./resolveRef.js";
 import { flattenSchema } from "./flattenSchema.js";
 import { schemaToEntity, propertyToField } from "./schemaToEntity.js";
-import { pathToIntent, entityNameFromPath } from "./pathToIntent.js";
+import { pathToIntent, entityNameFromPath, detectActionEndpoint } from "./pathToIntent.js";
 import { extractParentChain, extractCollectionChain, synthesizeFkField } from "./extractParentChain.js";
 import {
   mergeRepresentationDuplicates,
@@ -13,6 +13,7 @@ import { parse as parseYaml } from "yaml";
 export {
   resolveRef, flattenSchema,
   schemaToEntity, propertyToField, pathToIntent, entityNameFromPath,
+  detectActionEndpoint,
   extractParentChain, extractCollectionChain, synthesizeFkField,
   mergeRepresentationDuplicates,
   rewriteReferencesByAliases,
