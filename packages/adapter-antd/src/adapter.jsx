@@ -660,27 +660,81 @@ function AntdDataGrid({ node, ctx }) {
 
 function renderCellValue(value, col) {
   if (value == null) return <span style={{ color: "#9ca3af" }}>—</span>;
-  if (col.format === "badge") {
-    return <Tag>{String(value)}</Tag>;
+
+  // Explicit format overrides
+  if (col.format === "badge") return <Tag>{String(value)}</Tag>;
+  if (col.format === "date" || col.format === "datetime") {
+    return <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{formatDateTime(value, col.format)}</span>;
+  }
+  if (col.format === "number" || col.format === "currency") {
+    return <span style={{ fontVariantNumeric: "tabular-nums" }}>{formatNumber(value, col)}</span>;
+  }
+  if (col.format === "code" || col.format === "mono") {
+    return <code style={{ fontSize: 11, color: "#374151", background: "#f3f4f6", padding: "1px 4px", borderRadius: 3 }}>{String(value)}</code>;
+  }
+
+  // Type-based rendering
+  if (typeof value === "boolean") {
+    return value
+      ? <Tag color="green" style={{ marginRight: 0 }}>✓</Tag>
+      : <Tag color="default" style={{ marginRight: 0, color: "#9ca3af" }}>✗</Tag>;
   }
   if (Array.isArray(value)) {
     if (value.length === 0) return <span style={{ color: "#9ca3af" }}>—</span>;
     const shown = value.slice(0, 3);
     const rest = value.length - shown.length;
+    // Variant inferred from column (policy / role / tag) if provided
+    const tagColor = col.chipVariant === "policy" ? "gold" : col.chipVariant === "role" ? "purple" : undefined;
     return (
       <span>
         {shown.map((v, i) => {
           const label = typeof v === "object" ? (v.name || v.id || JSON.stringify(v).slice(0, 20)) : String(v);
-          return <Tag key={i} style={{ marginRight: 4 }}>{label}</Tag>;
+          return <Tag key={i} color={tagColor} style={{ marginRight: 4 }}>{label}</Tag>;
         })}
         {rest > 0 && <span style={{ color: "#9ca3af", fontSize: 11 }}>+{rest}</span>}
       </span>
     );
   }
   if (typeof value === "object") {
-    return <code style={{ fontSize: 11, color: "#6b7280" }}>{JSON.stringify(value).slice(0, 40)}</code>;
+    // Compact JSON blob with expandable tooltip, visually different from plain text
+    return <code style={{ fontSize: 11, color: "#6b7280" }} title={JSON.stringify(value)}>{JSON.stringify(value).slice(0, 40)}…</code>;
+  }
+  // Heuristic: ISO date-string detection
+  if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    return <span style={{ fontFamily: "ui-monospace, monospace", fontSize: 12 }}>{formatDateTime(value, "datetime")}</span>;
   }
   return String(value);
+}
+
+function formatDateTime(value, mode) {
+  try {
+    const d = new Date(value);
+    if (isNaN(d.getTime())) return String(value);
+    if (mode === "date") return d.toISOString().slice(0, 10);
+    // datetime — YYYY-MM-DD HH:mm
+    return d.toISOString().replace("T", " ").slice(0, 16);
+  } catch {
+    return String(value);
+  }
+}
+
+function formatNumber(value, col) {
+  const n = typeof value === "number" ? value : Number(value);
+  if (!Number.isFinite(n)) return String(value);
+  if (col.format === "currency") {
+    const currency = col.currency || "USD";
+    try {
+      return new Intl.NumberFormat(undefined, { style: "currency", currency }).format(n);
+    } catch {
+      return `${currency} ${n.toFixed(2)}`;
+    }
+  }
+  // Default number — tabular with commas
+  try {
+    return new Intl.NumberFormat().format(n);
+  } catch {
+    return String(n);
+  }
 }
 
 /**
@@ -1024,6 +1078,42 @@ AntdTel.affinity = {
 AntdEmail.affinity = {
   types: ["email"],
   fields: ["email", "contactEmail"],
+};
+
+// ───────────────────────────────────────────────────────────
+// Primitive affinities (Stage 8 polish) — дают pickBest-scoring
+// преимущество AntD-нативным delegations над generic SVG-fallback'ом,
+// когда renderer проходит через matching/ranking pipeline.
+// ───────────────────────────────────────────────────────────
+
+AntdDataGrid.affinity = {
+  types: ["json", "array"],
+  // Catalog.tags/policies, User/Group.roles, Role.securableObjects —
+  // всё это collection-поля; при shape-layer "table" катализируется
+  // в DataGrid приоритетнее generic list.
+  fields: ["columns", "tags", "policies", "items", "rows"],
+  roles: ["table-shape", "column-schema"],
+};
+
+AntdWizard.affinity = {
+  // Wizard — projection-level; affinity помогает когда ontology
+  // декларирует field-level primitive hint "wizard" (rare).
+  types: ["json"],
+  roles: ["wizard-flow"],
+};
+
+AntdPropertyPopover.affinity = {
+  types: ["json", "map"],
+  // properties — общее имя для key-value metadata на Metalake/Catalog/
+  // Schema/Table и т.п. metadata-based доменах.
+  fields: ["properties", "metadata", "labels", "attributes", "tags"],
+};
+
+AntdChipList.affinity = {
+  types: ["json", "array"],
+  // roles (массив имён ролей на User/Group), tags (array of tag-objects),
+  // policies — все chip-friendly collections.
+  fields: ["roles", "tags", "policies", "labels", "permissions"],
 };
 
 /**

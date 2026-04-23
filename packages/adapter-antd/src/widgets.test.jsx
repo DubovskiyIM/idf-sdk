@@ -1,27 +1,15 @@
 /**
  * Юнит-тесты виджетов adapter-antd (backlog §2).
  * Рендер через @testing-library/react + jsdom.
+ *
+ * jsdom polyfills (matchMedia / getComputedStyle / ResizeObserver) +
+ * auto-cleanup — см. src/test/setup.js, подключается через
+ * vitest.config.js setupFiles.
  */
-import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { describe, it, expect, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { antdAdapter } from "./adapter.jsx";
 import { pickBest, rankCandidates } from "@intent-driven/renderer";
-
-// jsdom не реализует matchMedia/getComputedStyle полноценно — AntD v6
-// Table/Steps используют responsive observer. Stub'аем минимально.
-beforeAll(() => {
-  if (typeof window !== "undefined" && !window.matchMedia) {
-    window.matchMedia = () => ({
-      matches: false,
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      addListener: () => {},
-      removeListener: () => {},
-    });
-  }
-});
-
-afterEach(cleanup);
 
 function get(kind, type) {
   return antdAdapter[kind][type];
@@ -226,6 +214,59 @@ describe("AntdDataGrid primitive", () => {
     expect(antdAdapter.capabilities?.primitive?.dataGrid?.sort).toBe(true);
     expect(antdAdapter.capabilities?.primitive?.dataGrid?.filter).toBe(true);
   });
+
+  it("boolean cell → green/default Tag", () => {
+    const G = get("primitive", "dataGrid");
+    const { container } = render(
+      <G
+        node={{
+          type: "dataGrid",
+          items: [{ id: 1, active: true }, { id: 2, active: false }],
+          columns: [{ key: "active", label: "Active" }],
+        }}
+      />
+    );
+    // Найти обе формы: ✓ (green) и ✗ (default)
+    expect(container.textContent).toContain("✓");
+    expect(container.textContent).toContain("✗");
+  });
+
+  it("col.format='currency' → formatted", () => {
+    const G = get("primitive", "dataGrid");
+    render(
+      <G
+        node={{
+          type: "dataGrid",
+          items: [{ id: 1, price: 1234.5 }],
+          columns: [{ key: "price", label: "Price", format: "currency", currency: "USD" }],
+        }}
+      />
+    );
+    // Currency format содержит $ или USD + разделители
+    const rendered = screen.getByText(/1,234|USD|\$1/);
+    expect(rendered).toBeTruthy();
+  });
+
+  it("ISO datetime string auto-detection", () => {
+    const G = get("primitive", "dataGrid");
+    render(
+      <G
+        node={{
+          type: "dataGrid",
+          items: [{ id: 1, createdAt: "2026-04-23T10:00:00.000Z" }],
+          columns: [{ key: "createdAt", label: "Created" }],
+        }}
+      />
+    );
+    // Auto-formatted: YYYY-MM-DD HH:mm
+    expect(screen.getByText(/2026-04-23/)).toBeTruthy();
+  });
+
+  it("affinity declared на DataGrid для правильного scoring", () => {
+    expect(antdAdapter.primitive.dataGrid.affinity).toBeDefined();
+    expect(antdAdapter.primitive.dataGrid.affinity.types).toContain("json");
+    expect(antdAdapter.primitive.dataGrid.affinity.fields).toContain("tags");
+  });
 });
 
 describe("AntdWizard primitive", () => {
@@ -298,6 +339,27 @@ describe("AntdChipList primitive", () => {
 
   it("capability registered: chipList.variants", () => {
     expect(antdAdapter.capabilities?.primitive?.chipList?.variants).toEqual(["tag", "policy", "role"]);
+  });
+
+  it("affinity declared на ChipList", () => {
+    expect(antdAdapter.primitive.chipList.affinity).toBeDefined();
+    expect(antdAdapter.primitive.chipList.affinity.fields).toContain("roles");
+  });
+});
+
+describe("Primitive affinities (Stage 8 polish)", () => {
+  it("PropertyPopover affinity для properties/metadata fields", () => {
+    const aff = antdAdapter.primitive.propertyPopover.affinity;
+    expect(aff).toBeDefined();
+    expect(aff.fields).toContain("properties");
+    expect(aff.fields).toContain("metadata");
+    expect(aff.types).toContain("json");
+  });
+
+  it("Wizard affinity для wizard-flow role", () => {
+    const aff = antdAdapter.primitive.wizard.affinity;
+    expect(aff).toBeDefined();
+    expect(aff.roles).toContain("wizard-flow");
   });
 });
 
