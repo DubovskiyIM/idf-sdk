@@ -1,0 +1,67 @@
+{
+  "id": "properties-popover-on-count",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "entity-field",
+        "field": "properties",
+        "valueType": "map"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "body.cell",
+    "description": "В list-колонке для map/object-поля показывается count («5 properties»); hover раскрывает popover с key-value таблицей. В create/edit форме — pre-filled defaults с editable override."
+  },
+  "rationale": {
+    "hypothesis": "Free-form key-value bag слишком разный между entity и занимает слишком много места в colum чтобы быть inline. Count даёт scan-signal (есть/нет), popover даёт on-demand expansion без навигации в detail.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Properties column в Catalog/Schema/Table списках — count с hover-popover",
+        "reliability": "high"
+      },
+      {
+        "source": "kubernetes-dashboard",
+        "description": "Labels/Annotations count с hover-expand",
+        "reliability": "high"
+      },
+      {
+        "source": "docker-desktop",
+        "description": "Environment variables count с popover",
+        "reliability": "medium"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "notion-db",
+        "description": "Properties как top-level columns — когда они semantic, а не bag",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "workflow",
+        "projection": "node_catalog",
+        "reason": "Node.config как opaque map"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "invest",
+        "projection": "portfolio_catalog",
+        "reason": "Structured fields, не bag"
+      },
+      {
+        "domain": "messenger",
+        "projection": "message_feed",
+        "reason": "Нет map-поля"
+      }
+    ]
+  }
+}

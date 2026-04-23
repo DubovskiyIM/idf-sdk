@@ -1,0 +1,72 @@
+{
+  "id": "template-instantiation-split-panel",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "detail",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "intent-creates",
+        "entity": "<Instance>"
+      },
+      {
+        "kind": "sub-entity-exists",
+        "child": "<Instance>",
+        "parent": "<Template>",
+        "foreignKey": "templateId"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "overlay",
+    "description": "Split-panel modal: слева — read-only preview template-полей (script, params); справа — editable override-конфигурация с placeholder-substitution ({{var}}). Submit создаёт Instance со snapshot конфигурации."
+  },
+  "rationale": {
+    "hypothesis": "Run-from-template требует показать «что зафиксировано шаблоном» рядом с «что я меняю на этот запуск». Split-panel делает ссылку на исходник явной, снижает ошибки перезаписи и даёт audit trail в визуальной форме.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Run Job: слева read-only template script, справа editable configuration с {{placeholder}}",
+        "reliability": "high"
+      },
+      {
+        "source": "gitlab-ci-runner",
+        "description": "Run pipeline from template — preview + override vars",
+        "reliability": "high"
+      },
+      {
+        "source": "jupyter-nbconvert",
+        "description": "Parameterized notebook run — template + params panel",
+        "reliability": "medium"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "figma-components",
+        "description": "Instance override — inline в canvas, не split-panel, потому что context — visual",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "workflow",
+        "projection": "execution_create",
+        "reason": "Run workflow from template — params override preview"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "message_composer",
+        "reason": "Нет template-instance отношения"
+      },
+      {
+        "domain": "reflect",
+        "projection": "mood_entry_create",
+        "reason": "Нет параметризации"
+      }
+    ]
+  }
+}

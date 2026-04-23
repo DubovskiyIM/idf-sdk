@@ -1,0 +1,76 @@
+{
+  "id": "multi-step-create-wizard",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "intent-creates",
+        "entity": "<mainEntity>"
+      },
+      {
+        "kind": "entity-field",
+        "fieldCount": ">=6",
+        "description": "entity с ≥6 обязательных полей или ≥3 логических группы полей"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "overlay",
+    "description": "Create-flow разбит на N шагов по семантическим группам (например: provider→config для Catalog; columns→partitions→sortOrders→distribution→properties для Table). Stepper с назад/далее, валидация per-step, finish submit на последнем."
+  },
+  "rationale": {
+    "hypothesis": "Когда entity имеет >6 полей или поля имеют зависимости (step 2 зависит от выбора step 1 — provider определяет shape config), single-screen form создаёт cognitive overload и заставляет валидировать всё одновременно. Wizard декомпозирует решения и даёт progressive disclosure.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Create Catalog: 2 шага (provider → config); Create Table: 5 шагов (columns → partitions → sortOrders → distribution → properties)",
+        "reliability": "high"
+      },
+      {
+        "source": "stripe-connect",
+        "description": "Onboarding wizard (account type → business → banking → review)",
+        "reliability": "high"
+      },
+      {
+        "source": "aws-console",
+        "description": "Launch EC2: 7-step wizard с валидацией per step",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "gravitino-webui",
+        "description": "Create Metalake: 1 шаг с 4 полями — wizard overkill для простых entity",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "workflow",
+        "projection": "workflow_catalog",
+        "reason": "Workflow create: nodes → edges → triggers — естественные фазы"
+      },
+      {
+        "domain": "invest",
+        "projection": "portfolio_catalog",
+        "reason": "Portfolio create: риск-профиль → аллокация → цели — dependent steps"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "message_composer",
+        "reason": "Send message: one field, wizard лишний"
+      },
+      {
+        "domain": "reflect",
+        "projection": "mood_entry_catalog",
+        "reason": "Mood entry: 2-3 поля, single form"
+      }
+    ]
+  }
+}

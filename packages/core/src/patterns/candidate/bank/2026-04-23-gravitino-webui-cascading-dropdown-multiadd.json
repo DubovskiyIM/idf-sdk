@@ -1,0 +1,77 @@
+{
+  "id": "cascading-dropdown-multiadd",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "detail",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "intent-creates",
+        "entity": "<Junction>"
+      },
+      {
+        "kind": "entity-field",
+        "field": "objectType",
+        "valueType": "enum",
+        "description": "discriminator на добавляемом элементе"
+      },
+      {
+        "kind": "field-role-present",
+        "role": "privileges-depend-on-type",
+        "description": "shape полей зависит от выбора на предыдущем шаге"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "overlay.form",
+    "description": "Форма add-item с цепочкой dropdown: objectType → specific object (фильтрованный по type) → privileges/options checkboxes (список определяется objectType). Add-row в summary table внизу модалки; submit создаёт N junction-entries разом."
+  },
+  "rationale": {
+    "hypothesis": "Когда junction несёт payload, зависящий от типа связанного объекта (privileges для Table ≠ privileges для Schema), flat form заставил бы показывать все возможные privileges и валидировать исключения; dependent dropdown делает invalid states невыразимыми в UI.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Create Role: dependent dropdown object type → specific object → privileges, add-row summary",
+        "reliability": "high"
+      },
+      {
+        "source": "aws-iam-policy-editor",
+        "description": "Service → Actions (фильтр по service) → Resources — cascading",
+        "reliability": "high"
+      },
+      {
+        "source": "postgres-grant-ui",
+        "description": "Grant UI в DBeaver: object type → object → privilege matrix",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "google-drive-share",
+        "description": "Share dialog: один role dropdown — privileges одинаковые независимо от resource type",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "compliance",
+        "projection": "role_detail",
+        "reason": "SecurableObject: objectType → specific control/JE → privileges"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "conversation_participants",
+        "reason": "Participant add — single type, без privilege matrix"
+      },
+      {
+        "domain": "planning",
+        "projection": "poll_detail",
+        "reason": "Vote не несёт type-dependent payload"
+      }
+    ]
+  }
+}

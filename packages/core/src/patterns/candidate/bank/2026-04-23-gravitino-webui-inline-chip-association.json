@@ -1,0 +1,81 @@
+{
+  "id": "inline-chip-association",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "m2m-junction",
+        "description": "entity с objectId+objectType+referenceId (например TagAssociation)"
+      },
+      {
+        "kind": "intent-creates",
+        "entity": "<AssociationEntity>"
+      },
+      {
+        "kind": "intent-effect",
+        "α": "remove",
+        "target": "entities",
+        "description": "парный unassociate"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "body.row",
+    "description": "В каждой строке list-архетипа рендерится horizontal chip-группа ассоциированных объектов + «+» chip открывает picker для associate, «×» на chip делает remove. Один UI для многих разных m2m-связей (tags, policies, labels)."
+  },
+  "rationale": {
+    "hypothesis": "M2M associations обычно нужно увидеть и изменить в контексте родительской строки, не переходя в detail; chips в строке дают scan-and-act без навигации. Consistent UX для всех tag-like ассоциаций снижает cognitive load.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Tags и Policies показаны как chips в catalog/table list с Associate и X — shared UI для двух разных m2m",
+        "reliability": "high"
+      },
+      {
+        "source": "github-issues",
+        "description": "Labels на issue-row — chips с hover X",
+        "reliability": "high"
+      },
+      {
+        "source": "linear",
+        "description": "Labels inline на issue в list view",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "gmail",
+        "description": "Recipients на email list не показаны chips — irrelevant для строки-summary",
+        "reliability": "medium"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "sales",
+        "projection": "listing_catalog",
+        "reason": "Listing↔Category как chips с add/remove"
+      },
+      {
+        "domain": "lifequest",
+        "projection": "task_catalog",
+        "reason": "Task↔Sphere labels inline"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "conversation_feed",
+        "reason": "Participants это не тонкая ассоциация, а core entity — нужен avatar-cluster, не chips"
+      },
+      {
+        "domain": "booking",
+        "projection": "booking_detail",
+        "reason": "Single-slot FK, не m2m"
+      }
+    ]
+  }
+}

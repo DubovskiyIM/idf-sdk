@@ -1,0 +1,71 @@
+{
+  "id": "reverse-association-browser",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "detail",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "m2m-junction",
+        "description": "junction entity с (refId, objectId, objectType)"
+      },
+      {
+        "kind": "entity-field",
+        "field": "associatedObjectsCount",
+        "description": "denormalized-count на reference entity"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "sections",
+    "description": "На detail reference-entity (Tag, Policy) секция «Associated objects» показывает обратный обход m2m: все objects с этим tag'ом, сгруппированные по objectType. Click на count в list-ячейке тоже ведёт сюда."
+  },
+  "rationale": {
+    "hypothesis": "M2M доступна в двух направлениях; UI обычно показывает одно (catalog→tags), но governance/audit-вопросы часто идут в обратную сторону (какие объекты используют эту policy?). Reverse browser закрывает вторую половину без отдельной query-UI.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Click на Tag/Policy → страница «все объекты с этой меткой», сгруппировано по типу",
+        "reliability": "high"
+      },
+      {
+        "source": "aws-iam",
+        "description": "Policy detail показывает «Attached entities» (users/groups/roles)",
+        "reliability": "high"
+      },
+      {
+        "source": "github-labels",
+        "description": "Label page показывает issues с этим label",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "instagram",
+        "description": "Hashtag page — feed постов, но это не governance-usecase, а discovery",
+        "reliability": "medium"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "sales",
+        "projection": "category_detail",
+        "reason": "Category detail → все Listings в категории"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "user_detail",
+        "reason": "User→Messages это core ownership, не m2m-ассоциация"
+      },
+      {
+        "domain": "booking",
+        "projection": "service_detail",
+        "reason": "Service→Bookings — core composition, покрывается subcollections"
+      }
+    ]
+  }
+}
