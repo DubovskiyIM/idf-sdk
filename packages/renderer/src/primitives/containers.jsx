@@ -5,6 +5,30 @@ import { resolve, evalCondition, evalIntentCondition } from "../eval.js";
 import { resolveNavigateAction } from "../navigation/navigate.js";
 import Icon from "../adapters/Icon.jsx";
 import { getAdaptedComponent } from "../adapters/registry.js";
+import RowAssociationChips from "./RowAssociationChips.jsx";
+
+/**
+ * RowAssociationsGroup — блок chip-ассоциаций под item в list/grid layout.
+ * Рендерит все rowAssociations из ctx, каждую в stacked-layout (label сверху,
+ * chips под ним). Ничего не рендерит если rowAssociations пусто или нет item.
+ */
+function RowAssociationsGroup({ item, ctx }) {
+  const assocs = Array.isArray(ctx?.rowAssociations) ? ctx.rowAssociations : [];
+  if (assocs.length === 0 || !item) return null;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginTop: 6 }}>
+      {assocs.map(assoc => (
+        <RowAssociationChips
+          key={assoc.id || assoc.junction}
+          assoc={assoc}
+          item={item}
+          ctx={ctx}
+          layout="stacked"
+        />
+      ))}
+    </div>
+  );
+}
 
 export function Row({ node, ctx, item }) {
   return (
@@ -518,10 +542,19 @@ export function List({ node, ctx }) {
         const content = isGrid
           ? <GridCard item={item} node={node} ctx={ctx} />
           : <SlotRenderer item={node.item} ctx={ctx} contextItem={item} />;
-        if (!onItemClick) return <div key={item.id || i}>{content}</div>;
+        // Pattern inline-chip-association: под каждым item рендерим chips per
+        // rowAssociation (из ctx.rowAssociations). Пусто, если patttern не
+        // сработал на эту projection.
+        const withChips = (
+          <>
+            {content}
+            <RowAssociationsGroup item={item} ctx={ctx} />
+          </>
+        );
+        if (!onItemClick) return <div key={item.id || i}>{withChips}</div>;
         return (
           <ClickableItem key={item.id || i} action={onItemClick} item={item} ctx={ctx}>
-            {content}
+            {withChips}
           </ClickableItem>
         );
       })}
@@ -617,7 +650,10 @@ function KanbanBoard({ layout, items, node, ctx, onItemClick }) {
             </div>
             {allItems.map((item, i) => {
               const content = (
-                <SlotRenderer item={node.item} ctx={ctx} contextItem={item} />
+                <>
+                  <SlotRenderer item={node.item} ctx={ctx} contextItem={item} />
+                  <RowAssociationsGroup item={item} ctx={ctx} />
+                </>
               );
               if (!onItemClick) return <div key={item.id || i}>{content}</div>;
               return (
