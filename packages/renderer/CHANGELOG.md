@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.37.0
+
+### Minor Changes
+
+- c3b3621: Рендер-интеграция 3 Gravitino-паттернов (PR #230):
+
+  - `ArchetypeDetail` прокидывает `slots.actionGates` в ctx; `IntentButton` читает gate'ы по `spec.intentId`, eval'ит `blockedWhen` против target → disabled + tooltip. Click по disabled — no-op.
+  - `ArchetypeCatalog` прокидывает `slots.rowAssociations` в ctx; `DataGrid` автоматически инжектит chip-column per association (перед actions), `ChipCell` резолвит junction-records + других entity + рендер через `ChipList` с attach/detach.
+  - `SubCollectionSection` получает fallback для `source: "derived:<id>"` — collection-key берётся из `section.collection` или pluralized `section.itemEntity`. Pattern `reverse-association-browser` теперь корректно отображает referrer-items на reference-entity detail.
+
+  Core (patch): у `reverse-association-browser` section дополнительно выставляется `itemEntity` и `collection` (pluralized, с учётом `entity.collection` override'а).
+
+- c3b3621: Рендер chip-ассоциаций (`inline-chip-association` pattern) в list/grid/kanban layouts (PR #231):
+
+  - Новый primitive `RowAssociationChips` — shared между DataGrid cell-renderer'ом и containers. Layouts `inline` (для таблицы) и `stacked` (label + chips под ним для card/list).
+  - `containers.jsx` оборачивает каждый item (list / grid-card / kanban card) в `RowAssociationsGroup` — блок со stacked chips per `ctx.rowAssociations`. Пусто без ассоциаций — ничего не рендерится.
+  - `DataGrid.ChipCell` теперь делегирует в `RowAssociationChips`; header-label берётся через `pluralizeAsLabel`.
+
+  `+` кнопка дергает attachIntent, «×» на chip — detachIntent (attach-picker modal — follow-up).
+
+- c3b3621: `SubCollectionSection` поддерживает `section.groupBy` для polymorphic junctions (PR #232).
+
+  Если задано, items группируются по значению field, рендерятся bucket'ами: subheader «Label (count)» + items внутри. Null/пустые значения — отдельный bucket с `groupNullLabel` (дефолт «Без значения»). Порядок групп — стабильный по первому встреченному значению после `applySort`.
+
+  Pattern `reverse-association-browser` уже выставляет `groupBy` на discriminator-поле polymorphic junction (`objectType` / `entityType` / `kind`) — теперь Gravitino Tag.detail рендерится сгруппированным: Catalog (3) / Schema (12) / Table (45), а не flat-списком. Без `groupBy` поведение не меняется (back-compat).
+
 ## 0.36.0
 
 ### Minor Changes
