@@ -202,3 +202,66 @@ describe("SubCollectionSection — pattern-derived source fallback", () => {
     expect(container.textContent).toContain("Portfolio A");
   });
 });
+
+describe("SubCollectionSection — groupBy (polymorphic reverseM2mBrowse)", () => {
+  const TAG_TARGET = { id: "tag-pii" };
+  const TAG_ASSOCIATIONS = [
+    { id: "ta1", tagId: "tag-pii", objectId: "cat-1", objectType: "Catalog", label: "Prod Lake" },
+    { id: "ta2", tagId: "tag-pii", objectId: "tbl-1", objectType: "Table", label: "users" },
+    { id: "ta3", tagId: "tag-pii", objectId: "tbl-2", objectType: "Table", label: "orders" },
+    { id: "ta4", tagId: "tag-pii", objectId: "sch-1", objectType: "Schema", label: "public" },
+    { id: "ta5", tagId: "tag-other", objectId: "x", objectType: "Table", label: "chuzhoy" },
+    { id: "ta6", tagId: "tag-pii", objectId: "z", objectType: null, label: "unknown" },
+  ];
+  const baseSection = {
+    title: "Tagged objects",
+    source: "tagAssociations",
+    foreignKey: "tagId",
+    groupBy: "objectType",
+    itemView: { type: "text", bind: "label" },
+  };
+  const ctxWithTags = () => ({ world: { tagAssociations: TAG_ASSOCIATIONS }, viewer: { id: "u1" } });
+
+  it("группирует items по groupBy-полю с header + count", () => {
+    const { container } = render(
+      <SubCollectionSection section={baseSection} target={TAG_TARGET} ctx={ctxWithTags()} />
+    );
+    const text = container.textContent;
+    expect(text).toContain("Catalog (1)");
+    expect(text).toContain("Table (2)");
+    expect(text).toContain("Schema (1)");
+    expect(text).toContain("Prod Lake");
+    expect(text).toContain("users");
+    expect(text).toContain("orders");
+    expect(text).toContain("public");
+  });
+
+  it("фильтрует по foreignKey до группировки (чужие items не попадают)", () => {
+    const { container } = render(
+      <SubCollectionSection section={baseSection} target={TAG_TARGET} ctx={ctxWithTags()} />
+    );
+    expect(container.textContent).not.toContain("chuzhoy");
+  });
+
+  it("null-значения попадают в отдельный bucket с groupNullLabel", () => {
+    const section = { ...baseSection, groupNullLabel: "Без типа" };
+    const { container } = render(
+      <SubCollectionSection section={section} target={TAG_TARGET} ctx={ctxWithTags()} />
+    );
+    const text = container.textContent;
+    expect(text).toContain("Без типа (1)");
+    expect(text).toContain("unknown");
+  });
+
+  it("без groupBy работает по-старому (flat list, no headers)", () => {
+    const flatSection = { ...baseSection, groupBy: undefined };
+    const { container } = render(
+      <SubCollectionSection section={flatSection} target={TAG_TARGET} ctx={ctxWithTags()} />
+    );
+    const text = container.textContent;
+    expect(text).toContain("Prod Lake");
+    expect(text).toContain("users");
+    expect(text).not.toContain("Catalog (1)");
+    expect(text).not.toContain("Table (2)");
+  });
+});
