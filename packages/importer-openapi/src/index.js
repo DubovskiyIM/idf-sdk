@@ -1,11 +1,13 @@
 import { resolveRef } from "./resolveRef.js";
+import { flattenSchema } from "./flattenSchema.js";
 import { schemaToEntity, propertyToField } from "./schemaToEntity.js";
 import { pathToIntent, entityNameFromPath } from "./pathToIntent.js";
 import { extractParentChain, extractCollectionChain, synthesizeFkField } from "./extractParentChain.js";
 import { parse as parseYaml } from "yaml";
 
 export {
-  resolveRef, schemaToEntity, propertyToField, pathToIntent, entityNameFromPath,
+  resolveRef, flattenSchema,
+  schemaToEntity, propertyToField, pathToIntent, entityNameFromPath,
   extractParentChain, extractCollectionChain, synthesizeFkField,
 };
 
@@ -22,11 +24,14 @@ export function importOpenApi(spec, opts = {}) {
   const entities = {};
   const intents = {};
 
-  // 1) entities из components.schemas
+  // 1) entities из components.schemas.
+  //    flattenSchema резолвит $ref + сливает allOf/oneOf/anyOf
+  //    композиции — закрывает Gravitino G32 (PolicyBase +
+  //    CustomPolicy allOf + Policy oneOf → flat Policy entity).
   const schemas = spec.components?.schemas ?? {};
   for (const [name, schema] of Object.entries(schemas)) {
-    const resolved = schema.$ref ? resolveRef(schema, spec) : schema;
-    const entity = schemaToEntity(name, resolved);
+    const flat = flattenSchema(schema, spec);
+    const entity = schemaToEntity(name, flat);
     if (entity) entities[name] = entity;
   }
 

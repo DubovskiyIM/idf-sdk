@@ -45,7 +45,13 @@ export function propertyToField(name, schema) {
 }
 
 export function schemaToEntity(name, schema) {
-  if (!schema || schema.type !== "object" || !schema.properties) return null;
+  // Ожидает flattened schema (caller должен flattenSchema'ить раньше для
+  // allOf/oneOf). Раньше требовало `type === "object"` strict; теперь
+  // принимает schema без explicit type если есть properties — результат
+  // flattenSchema может опустить type hint.
+  if (!schema) return null;
+  const effectiveType = schema.type || (schema.properties ? "object" : null);
+  if (effectiveType !== "object" || !schema.properties) return null;
 
   const fields = {};
   for (const [propName, propSchema] of Object.entries(schema.properties)) {
