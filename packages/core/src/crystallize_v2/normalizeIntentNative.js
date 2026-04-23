@@ -153,11 +153,13 @@ export function normalizeIntentNative(intent) {
   const particles = intent.particles || {};
   let newParticles = particles;
   let particlesMutated = false;
+  let intentMutated = false;
+  const extraIntentPatch = {};
 
   // 1. particles.entities ← intent.target
   const existingEntities = Array.isArray(particles.entities) ? particles.entities : [];
   if (existingEntities.length === 0 && typeof intent.target === "string") {
-    const t = intent.target;
+    const t = intent.target.split(".")[0]; // "Task.status" → "Task"
     const alias = t[0].toLowerCase() + t.slice(1);
     newParticles = { ...newParticles, entities: [`${alias}: ${t}`] };
     particlesMutated = true;
@@ -168,6 +170,25 @@ export function normalizeIntentNative(intent) {
   if (Array.isArray(effects) && effects.some(e => e && e.op && !e.α)) {
     newParticles = { ...newParticles, effects: effects.map(normalizeEffect) };
     particlesMutated = true;
+  }
+
+  // 2b. Синтезируем particles.effects из flat α+target (scaffold-path format).
+  // Без этого deriveProjections видит mutators/creators пустыми и не триггерит
+  // R1/R3. Применяется только если effects ещё не заданы author'ом.
+  const alphaTop = typeof intent.α === "string" ? intent.α : typeof intent.alpha === "string" ? intent.alpha : null;
+  const targetTop = typeof intent.target === "string" ? intent.target : null;
+  const hasEffects = Array.isArray(newParticles.effects) && newParticles.effects.length > 0;
+  if (alphaTop && targetTop && !hasEffects) {
+    const op = alphaTop === "create" ? "create" : alphaTop === "remove" ? "remove" : "replace";
+    newParticles = { ...newParticles, effects: [{ target: targetTop, op, α: op }] };
+    particlesMutated = true;
+  }
+
+  // 2c. intent.creates ← entity из target для α:"create" (legacy-format hint).
+  // deriveProjections.analyzeIntents читает creators как intent.creates.
+  if (alphaTop === "create" && !intent.creates && targetTop) {
+    extraIntentPatch.creates = targetTop.split(".")[0];
+    intentMutated = true;
   }
 
   // 3. Parameters: object → array
@@ -187,12 +208,13 @@ export function normalizeIntentNative(intent) {
     particlesMutated = true;
   }
 
-  if (!particlesMutated && newParameters === intent.parameters) {
+  if (!particlesMutated && newParameters === intent.parameters && !intentMutated) {
     return intent;
   }
 
   return {
     ...intent,
+    ...extraIntentPatch,
     particles: newParticles,
     ...(newParameters !== intent.parameters ? { parameters: newParameters } : {}),
   };
