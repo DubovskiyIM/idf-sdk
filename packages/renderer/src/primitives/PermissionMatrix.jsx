@@ -125,6 +125,12 @@ export default function PermissionMatrix({ value, privileges, readOnly = true, o
                   <span style={isWildcardRow ? resourceWildcardStyle : resourceNameStyle}>
                     {isWildcardRow ? `${row.type} (all)` : row.name || ""}
                   </span>
+                  {/* P-K-D: inheritance-badge (composite / group / other
+                      source). value[].inheritedFrom: string | {kind, via}.
+                      Для direct-назначения — не рендерится. */}
+                  {row.inheritedFrom && (
+                    <InheritanceBadge source={row.inheritedFrom} />
+                  )}
                 </td>
                 {effectivePrivileges.map(p => {
                   const checked = privs.has(p) || (grantsAll && p !== "*");
@@ -280,3 +286,51 @@ const legendDotFilled = {
 const legendDotHollow = {
   color: "var(--idf-text-muted, #9ca3af)",
 };
+
+/**
+ * P-K-D (Keycloak Stage 9): inheritance-badge для role-mappings.
+ * Keycloak User имеет 4 источника ролей: direct / composite / group /
+ * client-default. Badge визуализирует источник — user видит не только
+ * наличие роли, но и причину (почему она attached).
+ *
+ * source shape:
+ *   - string: "composite:admin" / "group:developers" — parses kind:via
+ *   - object: { kind: "composite" | "group" | "client" | ..., via: string }
+ */
+function InheritanceBadge({ source }) {
+  const parsed = typeof source === "string"
+    ? (() => {
+        const [kind, ...viaParts] = source.split(":");
+        return { kind, via: viaParts.join(":") };
+      })()
+    : (source || {});
+  const { kind, via } = parsed;
+  if (!kind) return null;
+
+  const toneMap = {
+    composite: { bg: "#ede9fe", fg: "#5b21b6", label: "через composite" },
+    group:     { bg: "#dbeafe", fg: "#1e40af", label: "через группу" },
+    client:    { bg: "#dcfce7", fg: "#166534", label: "client-default" },
+    inherited: { bg: "#f3f4f6", fg: "#374151", label: "inherited" },
+  };
+  const tone = toneMap[kind] || { bg: "#f3f4f6", fg: "#374151", label: kind };
+
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        marginLeft: 8,
+        padding: "1px 6px",
+        borderRadius: 10,
+        fontSize: 10,
+        fontWeight: 600,
+        background: tone.bg,
+        color: tone.fg,
+      }}
+      title={via ? `${tone.label}: ${via}` : tone.label}
+    >
+      {tone.label}{via ? `: ${via}` : ""}
+    </span>
+  );
+}

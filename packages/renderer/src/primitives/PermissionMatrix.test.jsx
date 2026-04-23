@@ -164,6 +164,56 @@ describe("PermissionMatrix — wildcard privilege", () => {
   });
 });
 
+describe("PermissionMatrix — inheritance badges (P-K-D Keycloak Stage 9)", () => {
+  it("row с inheritedFrom (string) показывает badge 'через composite'", () => {
+    const value = [
+      { type: "realm", name: "admin", privileges: ["manage"] },
+      { type: "realm", name: "view", privileges: ["view"], inheritedFrom: "composite:admin" },
+    ];
+    const { container } = render(<PermissionMatrix value={value} />);
+    expect(container.textContent).toContain("через composite");
+    // via 'admin' появится в title attribute, но не в textContent
+  });
+
+  it("row с inheritedFrom (object {kind, via}) — корректный tone/label", () => {
+    const value = [
+      { type: "client", name: "view-users", privileges: ["view"],
+        inheritedFrom: { kind: "group", via: "developers" } },
+    ];
+    const { container } = render(<PermissionMatrix value={value} />);
+    expect(container.textContent).toContain("через группу");
+    expect(container.textContent).toContain("developers");
+  });
+
+  it("unknown kind — fallback label kind-name", () => {
+    const value = [
+      { type: "realm", name: "custom", privileges: ["use"],
+        inheritedFrom: { kind: "somewhere", via: "x" } },
+    ];
+    const { container } = render(<PermissionMatrix value={value} />);
+    expect(container.textContent).toContain("somewhere");
+  });
+
+  it("row без inheritedFrom — badge не рендерится", () => {
+    const value = [{ type: "realm", name: "admin", privileges: ["manage"] }];
+    const { container } = render(<PermissionMatrix value={value} />);
+    expect(container.textContent).not.toContain("через");
+    expect(container.textContent).not.toContain("inherited");
+    expect(container.textContent).not.toContain("client-default");
+  });
+
+  it("multiple rows — каждая независимо получает badge (или нет)", () => {
+    const value = [
+      { type: "realm", name: "admin", privileges: ["manage"] }, // direct
+      { type: "realm", name: "view", privileges: ["view"], inheritedFrom: "composite:admin" },
+      { type: "client", name: "default", privileges: ["use"], inheritedFrom: { kind: "client", via: "realm" } },
+    ];
+    const { container } = render(<PermissionMatrix value={value} />);
+    expect(container.textContent).toContain("через composite");
+    expect(container.textContent).toContain("client-default");
+  });
+});
+
 describe("PermissionMatrix — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const Adapted = ({ value }) => <div data-testid="adapter-pm">adapter:{value.length}</div>;
