@@ -8,6 +8,7 @@ import {
   rewriteReferencesByAliases,
   rewriteIntentTargetsByAliases,
 } from "./mergeRepresentationDuplicates.js";
+import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -18,6 +19,7 @@ export {
   mergeRepresentationDuplicates,
   rewriteReferencesByAliases,
   rewriteIntentTargetsByAliases,
+  markEmbeddedTypes,
 };
 
 export function parseSpec(source) {
@@ -91,6 +93,15 @@ export function importOpenApi(spec, opts = {}) {
     const { entities: mergedEntities, aliases } = mergeRepresentationDuplicates(entities, { suffix });
     finalEntities = rewriteReferencesByAliases(mergedEntities, aliases);
     finalIntents = rewriteIntentTargetsByAliases(intents, aliases);
+  }
+
+  // 5) markEmbeddedTypes (Keycloak G-K-3): entity без intent.target/creates
+  //    помечается kind:"embedded". ROOT_PROJECTIONS whitelist'ы host'ов
+  //    фильтруют embedded автоматически. Идёт после step 4 — aliases уже
+  //    применены, target'ы на canonical short name.
+  //    Opt-out: opts.markEmbedded = false.
+  if (opts.markEmbedded !== false) {
+    finalEntities = markEmbeddedTypes(finalEntities, finalIntents);
   }
 
   return {
