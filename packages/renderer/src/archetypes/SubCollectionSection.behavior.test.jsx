@@ -145,3 +145,60 @@ describe("SubCollectionSection — sort/where/terminalStatus (backlog §4.7/§4.
     expect(container.textContent).toContain("(+1)");
   });
 });
+
+describe("SubCollectionSection — pattern-derived source fallback", () => {
+  const POSITIONS = [
+    { id: "p1", assetId: "asset-1", label: "Portfolio A" },
+    { id: "p2", assetId: "asset-1", label: "Portfolio B" },
+    { id: "p3", assetId: "asset-OTHER", label: "Chuzhoy" },
+  ];
+  const ASSET_TARGET = { id: "asset-1" };
+
+  it("source='derived:<pattern>' + collection='positions' → читает из ctx.world.positions", () => {
+    const section = {
+      title: "Использование (Position)",
+      kind: "reverseM2mBrowse",
+      source: "derived:reverse-association-browser",
+      collection: "positions",
+      itemEntity: "Position",
+      foreignKey: "assetId",
+      itemView: { type: "text", bind: "label" },
+    };
+    const ctx = { world: { positions: POSITIONS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={ASSET_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).toContain("Portfolio A");
+    expect(container.textContent).toContain("Portfolio B");
+    expect(container.textContent).not.toContain("Chuzhoy");
+  });
+
+  it("source='derived:<pattern>' без collection → pluralization itemEntity (Position → positions)", () => {
+    const section = {
+      title: "Reverse",
+      source: "derived:reverse-association-browser",
+      itemEntity: "Position",
+      foreignKey: "assetId",
+      itemView: { type: "text", bind: "label" },
+    };
+    const ctx = { world: { positions: POSITIONS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={ASSET_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).toContain("Portfolio A");
+  });
+
+  it("source — реальный key (не witness) → читает без fallback", () => {
+    const section = {
+      title: "Direct",
+      source: "positions",
+      foreignKey: "assetId",
+      itemView: { type: "text", bind: "label" },
+    };
+    const ctx = { world: { positions: POSITIONS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={ASSET_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).toContain("Portfolio A");
+  });
+});

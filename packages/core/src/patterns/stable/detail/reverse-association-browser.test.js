@@ -88,10 +88,30 @@ describe("reverse-association-browser.structure.apply", () => {
     expect(section.id).toBe("reverse_ref_position");
     expect(section.kind).toBe("reverseM2mBrowse");
     expect(section.entity).toBe("Position");
+    expect(section.itemEntity).toBe("Position");
     expect(section.foreignKey).toBe("assetId");
+    expect(section.collection).toBe("positions");
     expect(section.groupBy).toBeNull();
     expect(section.readOnly).toBe(true);
     expect(section.source).toBe("derived:reverse-association-browser");
+  });
+
+  it("entityDef.collection override'ит pluralization", () => {
+    const ontology = {
+      entities: {
+        Asset: { kind: "reference", fields: { id: { type: "text" } } },
+        Position: {
+          collection: "portfolioPositions",
+          fields: { id: { type: "text" }, assetId: { type: "entityRef" } },
+        },
+      },
+    };
+    const result = pattern.structure.apply({}, {
+      ontology,
+      mainEntity: "Asset",
+      projection: {},
+    });
+    expect(result.sections[0].collection).toBe("portfolioPositions");
   });
 
   it("polymorphic junction с objectType → groupBy заполнен", () => {

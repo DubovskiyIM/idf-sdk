@@ -67,6 +67,20 @@ function isTerminalItem(item, statusField) {
 }
 
 /**
+ * Pluralization для fallback collection-key'а: "Position" → "positions",
+ * "Address" → "addresses". Используется когда section.source — witness
+ * ("derived:<pattern>"), а реальный ключ коллекции не задан явно.
+ */
+function humanizePluralCollection(entity) {
+  if (!entity) return "";
+  const first = entity.charAt(0).toLowerCase();
+  const rest = entity.slice(1);
+  const base = first + rest;
+  if (/[sxz]$/.test(base) || /(ch|sh)$/.test(base)) return base + "es";
+  return base + "s";
+}
+
+/**
  * SubCollectionSection — секция связанной коллекции в detail-проекции.
  *
  * Рендерит:
@@ -83,6 +97,7 @@ function isTerminalItem(item, statusField) {
 export default function SubCollectionSection({ section, target, ctx }) {
   const {
     title, source, foreignKey, itemView, itemIntents, addControl, emptyLabel, editableFields,
+    readOnly,
     // Author-decl (backlog §4.7/§4.8):
     sort: sectionSort,
     where: sectionWhere,
@@ -91,12 +106,20 @@ export default function SubCollectionSection({ section, target, ctx }) {
     toggleTerminalLabel,
   } = section;
 
+  // Pattern-derived section'ы могут держать `source` как witness ("derived:<id>")
+  // и указывать реальный collection-key в `section.collection` (а itemEntity как
+  // fallback). Для обратной совместимости со старыми авторскими sections
+  // (source — ключ) оставляем source приоритетом, если он не witness.
+  const collectionKey = (typeof source === "string" && source.startsWith("derived:"))
+    ? (section.collection || (section.itemEntity && humanizePluralCollection(section.itemEntity)) || source)
+    : source;
+
   // §6.7: toggle "показать всё" для terminal items. hidden by default когда terminalStatus задан.
   const [showAllTerminal, setShowAllTerminal] = useState(false);
 
   // Фильтруем коллекцию по foreignKey === target.id + author where + sort + terminal hiding
   const items = useMemo(() => {
-    const all = ctx.world?.[source] || [];
+    const all = ctx.world?.[collectionKey] || [];
     let result = (!foreignKey || !target?.id)
       ? all
       : all.filter(it => it[foreignKey] === target.id);
@@ -106,7 +129,7 @@ export default function SubCollectionSection({ section, target, ctx }) {
     }
     result = applySort(result, sectionSort);
     return result;
-  }, [ctx.world, source, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer]);
+  }, [ctx.world, collectionKey, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer]);
 
   // Temporal sub-entity (v0.14): если section.renderAs.type === "eventTimeline",
   // рендерим через EventTimeline primitive, пропуская default path.
@@ -144,12 +167,12 @@ export default function SubCollectionSection({ section, target, ctx }) {
   // Скрытые terminal items для toggle affordance (§6.7).
   const hiddenTerminalCount = useMemo(() => {
     if (!hideTerminalFlag || !terminalStatus || showAllTerminal) return 0;
-    const all = ctx.world?.[source] || [];
+    const all = ctx.world?.[collectionKey] || [];
     const scoped = (!foreignKey || !target?.id)
       ? all
       : all.filter(it => it[foreignKey] === target.id);
     return scoped.filter(it => isTerminalItem(it, terminalStatus)).length;
-  }, [hideTerminalFlag, terminalStatus, showAllTerminal, ctx.world, source, foreignKey, target]);
+  }, [hideTerminalFlag, terminalStatus, showAllTerminal, ctx.world, collectionKey, foreignKey, target]);
 
   // Пустая секция без возможности добавления и без скрытых terminal — не показываем
   if (items.length === 0 && !canAdd && hiddenTerminalCount === 0) return null;

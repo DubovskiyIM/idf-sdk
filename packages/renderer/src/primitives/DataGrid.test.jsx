@@ -372,6 +372,126 @@ describe("DataGrid — action column display modes", () => {
   });
 });
 
+describe("DataGrid — chipAssociation (inline-chip-association)", () => {
+  const zones = [
+    { id: "zone-1", name: "Центр" },
+    { id: "zone-2", name: "Юг" },
+  ];
+  const dispatchers = [
+    { id: "disp-A", name: "Алиса" },
+    { id: "disp-B", name: "Борис" },
+  ];
+  const assignments = [
+    { id: "a1", zoneId: "zone-1", dispatcherId: "disp-A" },
+    { id: "a2", zoneId: "zone-1", dispatcherId: "disp-B" },
+    { id: "a3", zoneId: "zone-2", dispatcherId: "disp-A" },
+  ];
+  const zoneColumns = [
+    { key: "name", label: "Zone" },
+  ];
+  const rowAssociation = {
+    id: "chip_dispatcherassignment",
+    junction: "DispatcherAssignment",
+    foreignKey: "zoneId",
+    otherField: "dispatcherId",
+    otherEntity: "Dispatcher",
+    attachIntent: "assign_dispatcher_to_zone",
+    detachIntent: "unassign_dispatcher_from_zone",
+    source: "derived:inline-chip-association",
+  };
+
+  it("добавляет chipAssociation колонку из ctx.rowAssociations", () => {
+    const ctx = {
+      world: { dispatcherAssignments: assignments, dispatchers },
+      rowAssociations: [rowAssociation],
+    };
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: zones, columns: zoneColumns }}
+        ctx={ctx}
+      />
+    );
+    // Label в header — pluralized otherEntity
+    expect(screen.getByText("Dispatchers")).toBeTruthy();
+    // Rows содержат имена связанных диспетчеров (Алиса в двух зонах, Борис в одной)
+    expect(screen.getAllByText("Алиса").length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText("Борис")).toBeTruthy();
+  });
+
+  it("detach-chip вызывает ctx.exec(detachIntent)", () => {
+    const exec = vi.fn();
+    const ctx = {
+      world: { dispatcherAssignments: assignments, dispatchers },
+      rowAssociations: [rowAssociation],
+      exec,
+    };
+    const { container } = render(
+      <DataGrid
+        node={{ type: "dataGrid", items: zones, columns: zoneColumns }}
+        ctx={ctx}
+      />
+    );
+    const detachButtons = container.querySelectorAll("button[aria-label^='Detach']");
+    expect(detachButtons.length).toBeGreaterThan(0);
+    fireEvent.click(detachButtons[0]);
+    expect(exec).toHaveBeenCalledWith(
+      "unassign_dispatcher_from_zone",
+      expect.objectContaining({ zoneId: expect.any(String) }),
+    );
+  });
+
+  it("attach-кнопка '+' вызывает ctx.exec(attachIntent)", () => {
+    const exec = vi.fn();
+    const ctx = {
+      world: { dispatcherAssignments: [], dispatchers },
+      rowAssociations: [rowAssociation],
+      exec,
+    };
+    const { container } = render(
+      <DataGrid
+        node={{ type: "dataGrid", items: zones, columns: zoneColumns }}
+        ctx={ctx}
+      />
+    );
+    const addButtons = container.querySelectorAll("button[aria-label^='Add']");
+    expect(addButtons.length).toBeGreaterThan(0);
+    fireEvent.click(addButtons[0]);
+    expect(exec).toHaveBeenCalledWith(
+      "assign_dispatcher_to_zone",
+      expect.objectContaining({ zoneId: "zone-1" }),
+    );
+  });
+
+  it("без rowAssociations — column НЕ добавляется", () => {
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: zones, columns: zoneColumns }}
+        ctx={{ world: {} }}
+      />
+    );
+    expect(screen.queryByText("Dispatchers")).toBeNull();
+  });
+
+  it("existing authored column с тем же key побеждает", () => {
+    const authoredColumns = [
+      { key: "name", label: "Zone" },
+      { key: "assoc_dispatcherassignment", label: "Custom" },
+    ];
+    const ctx = {
+      world: { dispatcherAssignments: assignments, dispatchers },
+      rowAssociations: [rowAssociation],
+    };
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: zones, columns: authoredColumns }}
+        ctx={ctx}
+      />
+    );
+    expect(screen.getByText("Custom")).toBeTruthy();
+    expect(screen.queryByText("Dispatchers")).toBeNull();
+  });
+});
+
 describe("DataGrid — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;

@@ -16,6 +16,21 @@
  * GitHub label.detail → issues list, Stripe product.detail → subscriptions.
  */
 
+function pluralizeCollection(entity) {
+  if (!entity) return "";
+  const first = entity.charAt(0).toLowerCase();
+  const rest = entity.slice(1);
+  const base = first + rest;
+  if (/[sxz]$/.test(base) || /(ch|sh)$/.test(base)) return base + "es";
+  return base + "s";
+}
+
+function collectionKeyFor(entity, ontology) {
+  const entityDef = ontology?.entities?.[entity];
+  if (typeof entityDef?.collection === "string") return entityDef.collection;
+  return pluralizeCollection(entity);
+}
+
 function findReverseReferrers(ontology, mainEntity) {
   if (!ontology?.entities || !mainEntity) return [];
   const mainLower = mainEntity.toLowerCase();
@@ -106,9 +121,14 @@ export default {
           title: `Использование (${r.entity})`,
           kind: "reverseM2mBrowse",
           entity: r.entity,
+          itemEntity: r.entity,
           foreignKey: r.fkField,
+          collection: collectionKeyFor(r.entity, ontology),
           groupBy: r.discriminatorField,
           readOnly: !r.isAssignment,
+          // Witness-источник для overlay (PatternPreviewOverlay читает section.source).
+          // Collection-key для SubCollectionSection живёт в `collection` — там
+          // fallback с derived: source на `collection` / `itemEntity`.
           source: "derived:reverse-association-browser",
         }))
         .filter(s => !existingIds.has(s.id));
