@@ -58,9 +58,11 @@ function mergeEntityFieldsForReplace(intent, parameters, context) {
       required: fieldDef.required || false,
       editable: true,
       default: fieldDef.default ?? undefined,
+      // KNOWN_PARAMETER_TYPES в validateArtifact определяет supported
+      // controls — используем "boolean"/"datetime"/"textarea" из KNOWN.
       ...(Array.isArray(fieldDef.values)
         ? { control: "select", options: fieldDef.values.map(v => ({ value: v, label: (fieldDef.valueLabels || {})[v] || String(v) })) }
-        : fieldDef.type === "boolean" ? { control: "checkbox" }
+        : fieldDef.type === "boolean" ? { control: "boolean" }
         : fieldDef.type === "datetime" || fieldDef.type === "date" ? { control: "datetime" }
         : fieldDef.type === "textarea" ? { control: "textarea" }
         : {}),
