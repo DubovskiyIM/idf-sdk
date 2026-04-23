@@ -596,6 +596,51 @@ function AntdBreadcrumbs({ node, ctx }) {
  * AntD даёт: sortable (native), filterDropdown, column resize (indirect),
  * virtualized scrolling при pagination/scroll.y.
  */
+/**
+ * AntdActionCell — per-row buttons для `col.kind === "actions"`.
+ * См. renderer DataGrid.ActionCell — adapter-antd делает то же, используя
+ * AntButton для нативного look'a + stopPropagation от onRow click.
+ */
+function AntdActionCell({ item, col, ctx }) {
+  const actions = Array.isArray(col.actions) ? col.actions : [];
+  if (actions.length === 0) return <span style={{ color: "#9ca3af" }}>—</span>;
+  return (
+    <span
+      style={{ display: "inline-flex", gap: 6 }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {actions.map((a, i) => {
+        const disabled = typeof a.disabled === "function" ? a.disabled(item, ctx) : !!a.disabled;
+        return (
+          <AntButton
+            key={a.intent || i}
+            size="small"
+            type={a.danger ? "default" : "link"}
+            danger={!!a.danger}
+            disabled={disabled}
+            onClick={() => {
+              if (!ctx?.exec) return;
+              const resolved = {};
+              for (const [k, v] of Object.entries(a.params || {})) {
+                if (typeof v === "string" && v.startsWith("item.")) {
+                  resolved[k] = item?.[v.slice(5)];
+                } else if (typeof v === "string" && v.startsWith("route.")) {
+                  resolved[k] = ctx?.routeParams?.[v.slice(6)];
+                } else {
+                  resolved[k] = v;
+                }
+              }
+              ctx.exec(a.intent, resolved);
+            }}
+          >
+            {a.label || a.intent}
+          </AntButton>
+        );
+      })}
+    </span>
+  );
+}
+
 function AntdDataGrid({ node, ctx }) {
   // items: node.items приоритетнее, fallback на ctx.world[node.source].
   // Это позволяет projection.bodyOverride declarе catalog collection
@@ -605,30 +650,41 @@ function AntdDataGrid({ node, ctx }) {
   const columns = Array.isArray(node?.columns) ? node.columns : [];
   const emptyLabel = node?.emptyLabel ?? "Нет данных";
 
-  const antColumns = columns.map(col => ({
-    key: col.key,
-    dataIndex: col.key,
-    title: col.label || col.key,
-    align: col.align,
-    width: col.width,
-    sorter: col.sortable !== false
-      ? (a, b) => {
-          const av = a[col.key], bv = b[col.key];
-          if (av == null && bv == null) return 0;
-          if (av == null) return 1;
-          if (bv == null) return -1;
-          if (typeof av === "number" && typeof bv === "number") return av - bv;
-          return String(av).localeCompare(String(bv));
-        }
-      : undefined,
-    filters: col.filter === "enum" && Array.isArray(col.values)
-      ? col.values.map(v => ({ text: v, value: v }))
-      : undefined,
-    onFilter: col.filter === "enum" && Array.isArray(col.values)
-      ? (value, record) => String(record[col.key]) === String(value)
-      : undefined,
-    render: (value) => renderCellValue(value, col),
-  }));
+  const antColumns = columns.map(col => {
+    if (col.kind === "actions") {
+      return {
+        key: col.key,
+        title: col.label || "Actions",
+        align: col.align,
+        width: col.width,
+        render: (_value, record) => <AntdActionCell item={record} col={col} ctx={ctx} />,
+      };
+    }
+    return {
+      key: col.key,
+      dataIndex: col.key,
+      title: col.label || col.key,
+      align: col.align,
+      width: col.width,
+      sorter: col.sortable !== false
+        ? (a, b) => {
+            const av = a[col.key], bv = b[col.key];
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            if (typeof av === "number" && typeof bv === "number") return av - bv;
+            return String(av).localeCompare(String(bv));
+          }
+        : undefined,
+      filters: col.filter === "enum" && Array.isArray(col.values)
+        ? col.values.map(v => ({ text: v, value: v }))
+        : undefined,
+      onFilter: col.filter === "enum" && Array.isArray(col.values)
+        ? (value, record) => String(record[col.key]) === String(value)
+        : undefined,
+      render: (value) => renderCellValue(value, col),
+    };
+  });
 
   const handleRow = node?.onItemClick
     ? (record) => ({

@@ -174,7 +174,9 @@ export default function DataGrid({ node, ctx }) {
               >
                 {visibleColumns.map(col => (
                   <td key={col.key} style={{ ...bodyCellStyle, textAlign: col.align || "left" }}>
-                    <CellValue value={item[col.key]} col={col} />
+                    {col.kind === "actions"
+                      ? <ActionCell item={item} col={col} ctx={ctx} />
+                      : <CellValue value={item[col.key]} col={col} />}
                   </td>
                 ))}
               </tr>
@@ -189,7 +191,8 @@ export default function DataGrid({ node, ctx }) {
 function HeaderCell({ col, sortBy, onToggleSort }) {
   const isSorted = sortBy?.key === col.key;
   const sortIndicator = isSorted ? (sortBy.dir === "asc" ? " ↑" : " ↓") : "";
-  const clickable = col.sortable !== false; // default sortable
+  // Actions-column не сортируется (нет скалярного значения для compare).
+  const clickable = col.kind !== "actions" && col.sortable !== false;
   return (
     <th
       style={{
@@ -207,7 +210,7 @@ function HeaderCell({ col, sortBy, onToggleSort }) {
 }
 
 function FilterCell({ col, value, onChange }) {
-  if (!col.filterable) return <td style={filterCellStyle} />;
+  if (col.kind === "actions" || !col.filterable) return <td style={filterCellStyle} />;
   if (col.filter === "enum" && Array.isArray(col.values)) {
     return (
       <td style={filterCellStyle}>
@@ -256,6 +259,55 @@ function CellValue({ value, col }) {
     return <code style={codeStyle}>{JSON.stringify(value).slice(0, 40)}</code>;
   }
   return <span>{String(value)}</span>;
+}
+
+/**
+ * ActionCell — per-row buttons для `col.kind === "actions"`.
+ *
+ * Каждый action = `{ intent, label, params?, danger?, disabled? }`:
+ *   - `intent` — intent ID для ctx.exec
+ *   - `label` — текст кнопки
+ *   - `params` — map где значения "item.X" резолвятся против record,
+ *     "route.Y" — против ctx.routeParams, всё остальное — literal
+ *   - `danger: true` — visual-hint (красный), семантический для revoke/delete
+ *   - `disabled: (item, ctx) => boolean` — опциональный predicate
+ *
+ * Click.stopPropagation — чтобы row-click не триггерился одновременно.
+ */
+function ActionCell({ item, col, ctx }) {
+  const actions = Array.isArray(col.actions) ? col.actions : [];
+  if (actions.length === 0) return <span style={mutedStyle}>—</span>;
+  return (
+    <span style={actionRowStyle} onClick={(e) => e.stopPropagation()}>
+      {actions.map((a, i) => {
+        const disabled = typeof a.disabled === "function" ? a.disabled(item, ctx) : !!a.disabled;
+        return (
+          <button
+            key={a.intent || i}
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              if (!ctx?.exec) return;
+              const resolved = {};
+              for (const [k, v] of Object.entries(a.params || {})) {
+                if (typeof v === "string" && v.startsWith("item.")) {
+                  resolved[k] = item?.[v.slice(5)];
+                } else if (typeof v === "string" && v.startsWith("route.")) {
+                  resolved[k] = ctx?.routeParams?.[v.slice(6)];
+                } else {
+                  resolved[k] = v;
+                }
+              }
+              ctx.exec(a.intent, resolved);
+            }}
+            style={a.danger ? actionButtonDangerStyle : actionButtonStyle}
+          >
+            {a.label || a.intent}
+          </button>
+        );
+      })}
+    </span>
+  );
 }
 
 function ColumnMenu({ columns, hiddenCols, onToggle }) {
@@ -426,6 +478,28 @@ const menuItemStyle = {
   padding: "4px 10px",
   fontSize: 13,
   cursor: "pointer",
+};
+
+const actionRowStyle = {
+  display: "inline-flex",
+  gap: 6,
+  alignItems: "center",
+};
+
+const actionButtonStyle = {
+  padding: "3px 10px",
+  border: "1px solid var(--idf-border, #d1d5db)",
+  borderRadius: 4,
+  background: "var(--idf-card, #fff)",
+  color: "var(--idf-text, #1a1a2e)",
+  fontSize: 12,
+  cursor: "pointer",
+};
+
+const actionButtonDangerStyle = {
+  ...actionButtonStyle,
+  borderColor: "var(--idf-danger-border, #fca5a5)",
+  color: "var(--idf-danger, #b91c1c)",
 };
 
 /**
