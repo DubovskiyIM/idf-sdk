@@ -96,7 +96,7 @@ function assignToSlotsFeed(INTENTS, projection, ONTOLOGY) {
       control: inferControlType(p, ONTOLOGY),
     })).map(p => enrichWithOptions(p, ONTOLOGY));
 
-    const wrapped = wrapByConfirmation(intent, id, parameters, { projection });
+    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
     if (wrapped === null) continue; // confirmation: auto
 
     const isPerItem = isPerItemIntent(intent, projection);
