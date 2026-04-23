@@ -35,11 +35,21 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     ? (Array.isArray(projection.hero) ? [...projection.hero] : [projection.hero])
     : [];
 
+  // projection.bodyOverride — authored body-node (e.g. dataGrid primitive
+  // с явными columns) полностью заменяет derived buildCatalogBody.
+  // Use-case: Gravitino catalog_list хочет DataGrid с native AntD sort/
+  // filter вместо default card-list. SDK respect'ит так же, как
+  // subCollections уже — authored curation поверх derivation.
+  const hasBodyOverride = projection?.bodyOverride && typeof projection.bodyOverride === "object";
+  const derivedBody = hasBodyOverride
+    ? projection.bodyOverride
+    : buildCatalogBody(projection, ONTOLOGY);
+
   const slots = {
     header: [],
     toolbar: [],
     hero: authoredHero, // authored baннер + heroCreate intent (ниже)
-    body: buildCatalogBody(projection, ONTOLOGY),
+    body: derivedBody,
     context: [],
     fab: [],
     overlay: [],
@@ -194,7 +204,9 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     }
   }
 
-  if (slots.body.item) {
+  // Когда body authored — не трогаем его item-binding. Автор сам
+  // декларирует interactions (e.g. DataGrid.onItemClick).
+  if (!hasBodyOverride && slots.body.item) {
     slots.body.item.intents = itemIntents;
   }
 
@@ -213,12 +225,15 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     slots.toolbar.push({ type: "overflow", children: overflow });
   }
 
-  if (shape && shape !== "default" && slots.body) {
+  // Body-mutations (shape, strategy.itemLayout/emphasisFields/aggregateHeader/
+  // extraSlots) применяются к derived body. Authored bodyOverride
+  // оставляется as-is — автор знает что декларирует.
+  if (!hasBodyOverride && shape && shape !== "default" && slots.body) {
     slots.body.shape = shape;
   }
 
   // Strategy metadata для renderer
-  if (strategy) {
+  if (!hasBodyOverride && strategy) {
     if (strategy.itemLayout) slots.body.itemLayout = strategy.itemLayout(projection.mainEntity, []);
     if (strategy.emphasisFields) {
       const fieldNames = (projection.witnesses || []).map(w => typeof w === "string" ? w : w.field);
