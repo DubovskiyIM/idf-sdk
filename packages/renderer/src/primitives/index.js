@@ -12,6 +12,7 @@ import TreeNav from "./TreeNav.jsx";
 import Breadcrumbs from "./Breadcrumbs.jsx";
 import SchemaEditor from "./SchemaEditor.jsx";
 import DataGrid from "./DataGrid.jsx";
+import PermissionMatrix from "./PermissionMatrix.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -25,6 +26,7 @@ export { default as TreeNav } from "./TreeNav.jsx";
 export { default as Breadcrumbs } from "./Breadcrumbs.jsx";
 export { default as SchemaEditor } from "./SchemaEditor.jsx";
 export { default as DataGrid } from "./DataGrid.jsx";
+export { default as PermissionMatrix } from "./PermissionMatrix.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -60,4 +62,5 @@ export const PRIMITIVES = {
   breadcrumbs: Breadcrumbs,
   schemaEditor: SchemaEditor,
   dataGrid: DataGrid,
+  permissionMatrix: PermissionMatrix,
 };
