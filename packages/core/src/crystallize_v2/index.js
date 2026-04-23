@@ -282,6 +282,14 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       domain: domainId,
       layer: "canonical",
       archetype,
+      // mainEntity / entities прокидываются из projection в artifact (G-K-9):
+      // host-side R8 hub-absorption checks, projection-grouping, materializers
+      // (document/voice/agent) — все группируют artifacts по mainEntity, без
+      // этих полей deep-cloned копия теряет связь с ontology.
+      mainEntity: proj.mainEntity || null,
+      entities: Array.isArray(proj.entities)
+        ? proj.entities
+        : (proj.mainEntity ? [proj.mainEntity] : []),
       pattern: patternResult.pattern,
       matchedPatterns: structuralPatterns.map(p => p.id),
       version: 2,
