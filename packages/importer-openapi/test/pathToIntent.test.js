@@ -256,3 +256,98 @@ describe("importOpenApi — action-endpoints не материализуются
     expect(result.intents.listCredentials?.target).toBe("Credential");
   });
 });
+
+describe("G-K-8 — POST на nested collection → create с α=insert", () => {
+  it("POST /realms/{realm}/users: target=User, name=createUser, alpha=insert, creates=User", () => {
+    const it_ = pathToIntent("POST", "/admin/realms/{realm}/users", {});
+    expect(it_.name).toBe("createUser");
+    expect(it_.intent.target).toBe("User");
+    expect(it_.intent.alpha).toBe("insert");
+    expect(it_.intent.creates).toBe("User");
+    expect(it_.intent.particles?.confirmation).toBe("enter");
+    expect(it_.intent.particles?.effects?.[0]).toEqual({ target: "User", op: "insert" });
+  });
+
+  it("POST /realms/{realm}/groups → createGroup", () => {
+    const it_ = pathToIntent("POST", "/admin/realms/{realm}/groups", {});
+    expect(it_.name).toBe("createGroup");
+    expect(it_.intent.target).toBe("Group");
+    expect(it_.intent.alpha).toBe("insert");
+  });
+
+  it("POST /realms/{realm}/identity-providers → createIdentityProvider (plural через dash)", () => {
+    const it_ = pathToIntent(
+      "POST",
+      "/admin/realms/{realm}/identity-providers",
+      {},
+    );
+    expect(it_.name).toBe("createIdentityProvider");
+    expect(it_.intent.target).toBe("IdentityProvider");
+    expect(it_.intent.alpha).toBe("insert");
+  });
+
+  it("POST /tasks/{id}/custom-endpoint (non-plural, non-verb) — legacy replace, не create", () => {
+    const it_ = pathToIntent("POST", "/tasks/{id}/custom-endpoint", {});
+    expect(it_.intent.alpha).toBe("replace");
+    expect(it_.intent.creates).toBeUndefined();
+  });
+
+  it("POST /tasks (top-level) → createTask (существующее поведение, не задето)", () => {
+    const it_ = pathToIntent("POST", "/tasks", {});
+    expect(it_.name).toBe("createTask");
+    expect(it_.intent.alpha).toBe("insert");
+  });
+
+  it("operationId override'ит name, но alpha/creates сохраняются для R1", () => {
+    const it_ = pathToIntent(
+      "POST",
+      "/realms/{realm}/users",
+      { operationId: "usersUser" },
+    );
+    expect(it_.name).toBe("usersUser");
+    expect(it_.intent.target).toBe("User");
+    expect(it_.intent.alpha).toBe("insert");
+    expect(it_.intent.creates).toBe("User");
+  });
+
+  it("opts.collectionPostAsCreate=false — legacy behavior (back-compat)", () => {
+    const it_ = pathToIntent(
+      "POST",
+      "/admin/realms/{realm}/users",
+      {},
+      { collectionPostAsCreate: false },
+    );
+    expect(it_.intent.alpha).toBe("replace");
+    expect(it_.intent.creates).toBeUndefined();
+    expect(it_.name).toBe("usersUser");
+  });
+});
+
+describe("importOpenApi — collection-POST-as-create integration", () => {
+  const spec = {
+    paths: {
+      "/admin/realms/{realm}/users": {
+        get: { operationId: "listUsers", responses: { 200: { description: "ok" } } },
+        post: { operationId: "usersUser", responses: { 201: { description: "created" } } },
+      },
+      "/admin/realms/{realm}/groups": {
+        post: { responses: { 201: { description: "created" } } },
+      },
+    },
+  };
+
+  it("POST intent.alpha=insert + creates=Entity — R1 catalog-rule работает", () => {
+    const result = importOpenApi(spec);
+    expect(result.intents.usersUser?.alpha).toBe("insert");
+    expect(result.intents.usersUser?.creates).toBe("User");
+    expect(result.intents.usersUser?.target).toBe("User");
+    expect(result.intents.createGroup?.alpha).toBe("insert");
+    expect(result.intents.createGroup?.creates).toBe("Group");
+  });
+
+  it("opts.collectionPostAsCreate=false — legacy behavior", () => {
+    const result = importOpenApi(spec, { collectionPostAsCreate: false });
+    expect(result.intents.usersUser?.alpha).toBe("replace");
+    expect(result.intents.usersUser?.creates).toBeUndefined();
+  });
+});

@@ -54,7 +54,9 @@ export function importOpenApi(spec, opts = {}) {
     for (const method of METHODS) {
       const op = pathItem[method];
       if (!op) continue;
-      const { name, intent } = pathToIntent(method, path, op);
+      const { name, intent } = pathToIntent(method, path, op, {
+        collectionPostAsCreate: opts.collectionPostAsCreate,
+      });
       intents[name] = intent;
 
       // Гарантируем что entity есть (из path, если не было в components)
