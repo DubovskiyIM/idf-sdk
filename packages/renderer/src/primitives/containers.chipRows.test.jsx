@@ -130,3 +130,74 @@ describe("List — rowAssociations в kanban-layout", () => {
     expect(container.textContent).toContain("Dispatchers");
   });
 });
+
+describe("List — attach-picker overlay-aware поведение", () => {
+  const OVERLAY = {
+    key: "overlay_assign_dispatcher_to_zone",
+    type: "customCapture",
+    widgetId: "entityPicker",
+    targetEntity: "Dispatcher",
+    targetCollection: "dispatchers",
+    targetAlias: "dispatcher",
+    intentId: "assign_dispatcher_to_zone",
+  };
+
+  it("при наличии overlay для attachIntent — '+' открывает picker, не exec", () => {
+    const exec = vi.fn();
+    const openOverlay = vi.fn();
+    const ctx = {
+      world: { zones: ZONES, dispatcherAssignments: [], dispatchers: DISPATCHERS },
+      viewer: { id: "u1" },
+      rowAssociations: [ROW_ASSOC],
+      artifact: { slots: { overlay: [OVERLAY] } },
+      exec, openOverlay,
+    };
+    const node = { type: "list", source: "zones", item: ITEM };
+    const { container } = render(<List node={node} ctx={ctx} />);
+    const addBtns = container.querySelectorAll("button[aria-label^='Add']");
+    expect(addBtns.length).toBeGreaterThan(0);
+    fireEvent.click(addBtns[0]);
+    expect(openOverlay).toHaveBeenCalledWith(
+      "overlay_assign_dispatcher_to_zone",
+      expect.objectContaining({ item: expect.objectContaining({ id: "zone-1" }) }),
+    );
+    expect(exec).not.toHaveBeenCalled();
+  });
+
+  it("без overlay для attachIntent — '+' exec'ит напрямую (back-compat)", () => {
+    const exec = vi.fn();
+    const openOverlay = vi.fn();
+    const ctx = {
+      world: { zones: ZONES, dispatcherAssignments: [], dispatchers: DISPATCHERS },
+      viewer: { id: "u1" },
+      rowAssociations: [ROW_ASSOC],
+      artifact: { slots: { overlay: [] } },
+      exec, openOverlay,
+    };
+    const node = { type: "list", source: "zones", item: ITEM };
+    const { container } = render(<List node={node} ctx={ctx} />);
+    fireEvent.click(container.querySelectorAll("button[aria-label^='Add']")[0]);
+    expect(openOverlay).not.toHaveBeenCalled();
+    expect(exec).toHaveBeenCalledWith(
+      "assign_dispatcher_to_zone",
+      expect.objectContaining({ zoneId: "zone-1" }),
+    );
+  });
+
+  it("overlay с чужим key не совпадает → exec fallback", () => {
+    const exec = vi.fn();
+    const openOverlay = vi.fn();
+    const ctx = {
+      world: { zones: ZONES, dispatcherAssignments: [], dispatchers: DISPATCHERS },
+      viewer: { id: "u1" },
+      rowAssociations: [ROW_ASSOC],
+      artifact: { slots: { overlay: [{ key: "overlay_some_other_intent", type: "formModal" }] } },
+      exec, openOverlay,
+    };
+    const node = { type: "list", source: "zones", item: ITEM };
+    const { container } = render(<List node={node} ctx={ctx} />);
+    fireEvent.click(container.querySelectorAll("button[aria-label^='Add']")[0]);
+    expect(openOverlay).not.toHaveBeenCalled();
+    expect(exec).toHaveBeenCalled();
+  });
+});

@@ -63,8 +63,22 @@ export default function RowAssociationChips({ assoc, item, ctx, layout = "inline
     ctx.exec(assoc.detachIntent, { id: chip.junctionRow?.id, [assoc.foreignKey]: item.id });
   } : undefined;
 
-  const handleAdd = assoc.attachIntent && ctx.exec ? () => {
-    ctx.exec(assoc.attachIntent, { [assoc.foreignKey]: item.id });
+  const handleAdd = assoc.attachIntent ? () => {
+    // Если кристаллизатор создал overlay для attachIntent (CAPTURE_RULES matches
+    // entityPicker: intent.creates=Junction + non-creates entity вне route scope),
+    // открываем picker — user выберет other-entity из списка, EntityPicker сам
+    // exec'ит intent с payload {targetAlias: picked.id, id: item.id}.
+    // Иначе fallback — exec напрямую (runtime решит через confirmation).
+    const overlayKey = `overlay_${assoc.attachIntent}`;
+    const overlays = ctx?.artifact?.slots?.overlay;
+    const hasOverlay = Array.isArray(overlays) && overlays.some(o => o?.key === overlayKey);
+    if (hasOverlay && ctx.openOverlay) {
+      ctx.openOverlay(overlayKey, { item });
+      return;
+    }
+    if (ctx.exec) {
+      ctx.exec(assoc.attachIntent, { [assoc.foreignKey]: item.id });
+    }
   } : undefined;
 
   const inner = (
