@@ -336,4 +336,52 @@ describe("assignToSlotsCatalog", () => {
       expect(slots.body.empty.cta).toEqual({ label: "Создать", intentId: "add_task" });
     });
   });
+
+  describe("projection.bodyOverride — authored body node", () => {
+    const bodyOntology = {
+      entities: {
+        Catalog: { fields: { name: { type: "text" }, type: { type: "text" } } },
+      },
+    };
+
+    it("bodyOverride заменяет derived body целиком", () => {
+      const projection = {
+        kind: "catalog", mainEntity: "Catalog", entities: ["Catalog"],
+        bodyOverride: {
+          type: "dataGrid",
+          items: [],
+          columns: [{ key: "name", label: "Name" }],
+        },
+      };
+      const slots = assignToSlotsCatalog({}, projection, bodyOntology);
+      expect(slots.body.type).toBe("dataGrid");
+      expect(slots.body.columns).toEqual([{ key: "name", label: "Name" }]);
+      expect(slots.body.item).toBeUndefined();
+      expect(slots.body.source).toBeUndefined();
+    });
+
+    it("без bodyOverride — default list-shape", () => {
+      const projection = {
+        kind: "catalog", mainEntity: "Catalog", entities: ["Catalog"],
+      };
+      const slots = assignToSlotsCatalog({}, projection, bodyOntology);
+      expect(slots.body.type).toBe("list");
+      expect(slots.body.item).toBeDefined();
+    });
+
+    it("bodyOverride не мутируется shape/strategy-post-processing", () => {
+      const projection = {
+        kind: "catalog", mainEntity: "Catalog", entities: ["Catalog"],
+        shape: "timeline",
+        bodyOverride: {
+          type: "dataGrid",
+          items: [],
+          columns: [{ key: "name" }],
+        },
+      };
+      const slots = assignToSlotsCatalog({}, projection, bodyOntology);
+      expect(slots.body.shape).toBeUndefined();
+      expect(slots.body.type).toBe("dataGrid");
+    });
+  });
 });
