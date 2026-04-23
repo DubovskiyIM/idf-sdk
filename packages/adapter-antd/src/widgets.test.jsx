@@ -2,10 +2,26 @@
  * Юнит-тесты виджетов adapter-antd (backlog §2).
  * Рендер через @testing-library/react + jsdom.
  */
-import { describe, it, expect, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
+import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import { antdAdapter } from "./adapter.jsx";
 import { pickBest, rankCandidates } from "@intent-driven/renderer";
+
+// jsdom не реализует matchMedia/getComputedStyle полноценно — AntD v6
+// Table/Steps используют responsive observer. Stub'аем минимально.
+beforeAll(() => {
+  if (typeof window !== "undefined" && !window.matchMedia) {
+    window.matchMedia = () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      addListener: () => {},
+      removeListener: () => {},
+    });
+  }
+});
+
+afterEach(cleanup);
 
 function get(kind, type) {
   return antdAdapter[kind][type];
@@ -187,6 +203,101 @@ describe("AntdBreadcrumbs primitive", () => {
 
   it("capability registered: adapter.capabilities.primitive.breadcrumbs === true", () => {
     expect(antdAdapter.capabilities?.primitive?.breadcrumbs).toBe(true);
+  });
+});
+
+describe("AntdDataGrid primitive", () => {
+  it("рендерит rows через AntD Table", () => {
+    const G = get("primitive", "dataGrid");
+    render(
+      <G
+        node={{
+          type: "dataGrid",
+          items: [{ id: 1, name: "a" }, { id: 2, name: "b" }],
+          columns: [{ key: "name", label: "Name", sortable: true }],
+        }}
+      />
+    );
+    expect(screen.getByText("a")).toBeTruthy();
+    expect(screen.getByText("b")).toBeTruthy();
+  });
+
+  it("capability registered: dataGrid.sort+filter", () => {
+    expect(antdAdapter.capabilities?.primitive?.dataGrid?.sort).toBe(true);
+    expect(antdAdapter.capabilities?.primitive?.dataGrid?.filter).toBe(true);
+  });
+});
+
+describe("AntdWizard primitive", () => {
+  it("рендерит AntD Steps + fields", () => {
+    const W = get("primitive", "wizard");
+    const { container } = render(
+      <W
+        node={{
+          type: "wizard",
+          steps: [
+            { id: "a", title: "Step A", fields: [{ name: "x", type: "text" }] },
+            { id: "b", title: "Step B", fields: [] },
+          ],
+        }}
+      />
+    );
+    expect(screen.getByText("Step A")).toBeTruthy();
+    expect(screen.getByText("Step B")).toBeTruthy();
+    expect(container.querySelector(".ant-steps")).toBeTruthy();
+  });
+
+  it("пустой steps → 'Нет шагов'", () => {
+    const W = get("primitive", "wizard");
+    render(<W node={{ type: "wizard", steps: [] }} />);
+    expect(screen.getByText("Нет шагов")).toBeTruthy();
+  });
+
+  it("capability registered: wizard.testConnection", () => {
+    expect(antdAdapter.capabilities?.primitive?.wizard?.testConnection).toBe(true);
+  });
+});
+
+describe("AntdPropertyPopover primitive", () => {
+  it("empty value → 'Нет properties'", () => {
+    const P = get("primitive", "propertyPopover");
+    render(<P node={{ value: {} }} />);
+    expect(screen.getByText(/Нет properties/i)).toBeTruthy();
+  });
+
+  it("non-empty value → trigger с counter", () => {
+    const P = get("primitive", "propertyPopover");
+    render(<P node={{ value: { env: "prod", region: "us-east-1" } }} />);
+    expect(screen.getByText(/properties/i)).toBeTruthy();
+  });
+
+  it("capability registered", () => {
+    expect(antdAdapter.capabilities?.primitive?.propertyPopover).toBe(true);
+  });
+});
+
+describe("AntdChipList primitive", () => {
+  it("рендерит items через AntD Tag", () => {
+    const C = get("primitive", "chipList");
+    const { container } = render(<C node={{ value: ["PII", "Financial"] }} />);
+    expect(screen.getByText("PII")).toBeTruthy();
+    expect(container.querySelector(".ant-tag")).toBeTruthy();
+  });
+
+  it("overflow +N при maxVisible", () => {
+    const C = get("primitive", "chipList");
+    render(<C node={{ value: ["a", "b", "c", "d"], maxVisible: 2 }} />);
+    expect(screen.getByText("+2")).toBeTruthy();
+  });
+
+  it("пустой value → emptyLabel", () => {
+    const C = get("primitive", "chipList");
+    render(<C node={{ value: [], emptyLabel: "Нет тегов" }} />);
+    expect(screen.getByText("Нет тегов")).toBeTruthy();
+  });
+
+  it("capability registered: chipList.variants", () => {
+    expect(antdAdapter.capabilities?.primitive?.chipList?.variants).toEqual(["tag", "policy", "role"]);
   });
 });
 

@@ -29,6 +29,9 @@ import {
   Statistic,
   Menu,
   Breadcrumb as AntBreadcrumb,
+  Table as AntTable,
+  Steps as AntSteps,
+  Popover as AntPopover,
 } from "antd";
 import {
   EditOutlined,
@@ -588,6 +591,330 @@ function AntdBreadcrumbs({ node, ctx }) {
 }
 
 /**
+ * DataGrid — native AntD Table с column sort/filter вместо built-in primitive.
+ * Node-shape тот же что у primitive renderer/src/primitives/DataGrid.jsx.
+ * AntD даёт: sortable (native), filterDropdown, column resize (indirect),
+ * virtualized scrolling при pagination/scroll.y.
+ */
+function AntdDataGrid({ node, ctx }) {
+  const items = Array.isArray(node?.items) ? node.items : [];
+  const columns = Array.isArray(node?.columns) ? node.columns : [];
+  const emptyLabel = node?.emptyLabel ?? "Нет данных";
+
+  const antColumns = columns.map(col => ({
+    key: col.key,
+    dataIndex: col.key,
+    title: col.label || col.key,
+    align: col.align,
+    width: col.width,
+    sorter: col.sortable !== false
+      ? (a, b) => {
+          const av = a[col.key], bv = b[col.key];
+          if (av == null && bv == null) return 0;
+          if (av == null) return 1;
+          if (bv == null) return -1;
+          if (typeof av === "number" && typeof bv === "number") return av - bv;
+          return String(av).localeCompare(String(bv));
+        }
+      : undefined,
+    filters: col.filter === "enum" && Array.isArray(col.values)
+      ? col.values.map(v => ({ text: v, value: v }))
+      : undefined,
+    onFilter: col.filter === "enum" && Array.isArray(col.values)
+      ? (value, record) => String(record[col.key]) === String(value)
+      : undefined,
+    render: (value) => renderCellValue(value, col),
+  }));
+
+  const handleRow = node?.onItemClick
+    ? (record) => ({
+        onClick: () => {
+          if (typeof node.onItemClick === "function") {
+            node.onItemClick(record);
+          } else if (node.onItemClick.action === "navigate" && ctx?.navigate) {
+            const params = {};
+            const spec = node.onItemClick.params || {};
+            for (const [k, v] of Object.entries(spec)) {
+              params[k] = (typeof v === "string" && v.startsWith("item."))
+                ? record[v.slice(5)]
+                : v;
+            }
+            ctx.navigate(node.onItemClick.to, params);
+          }
+        },
+        style: { cursor: "pointer" },
+      })
+    : undefined;
+
+  return (
+    <AntTable
+      size="small"
+      columns={antColumns}
+      dataSource={items.map((it, i) => ({ ...it, key: it.id ?? i }))}
+      pagination={items.length > 20 ? { pageSize: 20, size: "small" } : false}
+      locale={{ emptyText: emptyLabel }}
+      onRow={handleRow}
+    />
+  );
+}
+
+function renderCellValue(value, col) {
+  if (value == null) return <span style={{ color: "#9ca3af" }}>—</span>;
+  if (col.format === "badge") {
+    return <Tag>{String(value)}</Tag>;
+  }
+  if (Array.isArray(value)) {
+    if (value.length === 0) return <span style={{ color: "#9ca3af" }}>—</span>;
+    const shown = value.slice(0, 3);
+    const rest = value.length - shown.length;
+    return (
+      <span>
+        {shown.map((v, i) => {
+          const label = typeof v === "object" ? (v.name || v.id || JSON.stringify(v).slice(0, 20)) : String(v);
+          return <Tag key={i} style={{ marginRight: 4 }}>{label}</Tag>;
+        })}
+        {rest > 0 && <span style={{ color: "#9ca3af", fontSize: 11 }}>+{rest}</span>}
+      </span>
+    );
+  }
+  if (typeof value === "object") {
+    return <code style={{ fontSize: 11, color: "#6b7280" }}>{JSON.stringify(value).slice(0, 40)}</code>;
+  }
+  return String(value);
+}
+
+/**
+ * Wizard — native AntD Steps + form area + nav buttons.
+ * Inherits shape от built-in Wizard primitive. testConnection control
+ * работает через ctx.testConnection (adapter не trogает). Native Steps
+ * дают progress bar + click-to-step navigation.
+ */
+function AntdWizard({ node, ctx, value: initialValue, onSubmit }) {
+  const steps = Array.isArray(node?.steps) ? node.steps : [];
+  const [values, setValues] = useStateHook(initialValue || node?.value || {});
+  const [currentIdx, setCurrentIdx] = useStateHook(0);
+
+  const activeSteps = steps.filter(step => {
+    const cond = step.dependsOn;
+    if (!cond || typeof cond !== "object") return true;
+    for (const [k, expected] of Object.entries(cond)) {
+      if (values[k] !== expected) return false;
+    }
+    return true;
+  });
+
+  const safeIdx = Math.min(currentIdx, Math.max(activeSteps.length - 1, 0));
+  const currentStep = activeSteps[safeIdx];
+  const isLast = safeIdx === activeSteps.length - 1;
+  const isFirst = safeIdx === 0;
+
+  if (steps.length === 0) {
+    return <div style={{ padding: 16, color: "#9ca3af", textAlign: "center" }}>Нет шагов</div>;
+  }
+
+  return (
+    <div style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 16, background: "#fff" }}>
+      <AntSteps
+        current={safeIdx}
+        size="small"
+        items={activeSteps.map(s => ({ title: s.title || s.id }))}
+        style={{ marginBottom: 20 }}
+      />
+      {currentStep && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+          {currentStep.description && <p style={{ color: "#6b7280", margin: 0 }}>{currentStep.description}</p>}
+          {(currentStep.fields || []).map(field => (
+            <WizardField
+              key={field.name}
+              field={field}
+              value={values[field.name] ?? ""}
+              onChange={(v) => setValues({ ...values, [field.name]: v })}
+            />
+          ))}
+          {currentStep.testConnection && (
+            <WizardTestConnection spec={currentStep.testConnection} values={values} ctx={ctx} />
+          )}
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "space-between", paddingTop: 16, borderTop: "1px solid #f3f4f6" }}>
+        <AntButton disabled={isFirst} onClick={() => setCurrentIdx(i => Math.max(i - 1, 0))}>
+          ← Назад
+        </AntButton>
+        {isLast ? (
+          <AntButton type="primary" onClick={() => onSubmit && onSubmit(values)}>
+            Создать
+          </AntButton>
+        ) : (
+          <AntButton type="primary" onClick={() => setCurrentIdx(i => Math.min(i + 1, activeSteps.length - 1))}>
+            Далее →
+          </AntButton>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function WizardField({ field, value, onChange }) {
+  const { Text: TextType } = Typography;
+  const common = {
+    value: value ?? "",
+    onChange: (e) => onChange(e?.target ? e.target.value : e),
+    placeholder: field.placeholder,
+    size: "middle",
+    style: { width: "100%" },
+  };
+  let input;
+  if (field.type === "select" && Array.isArray(field.options)) {
+    input = (
+      <Select
+        value={value ?? undefined}
+        onChange={onChange}
+        placeholder={field.placeholder || "—"}
+        style={{ width: "100%" }}
+        options={field.options.map(opt => {
+          const v = typeof opt === "object" ? opt.value : opt;
+          const label = typeof opt === "object" ? opt.label : opt;
+          return { value: v, label };
+        })}
+      />
+    );
+  } else if (field.type === "textarea") {
+    input = <Input.TextArea {...common} rows={3} />;
+  } else if (field.type === "number") {
+    input = <InputNumber value={value} onChange={onChange} style={{ width: "100%" }} placeholder={field.placeholder} />;
+  } else if (field.type === "boolean") {
+    input = <input type="checkbox" checked={Boolean(value)} onChange={(e) => onChange(e.target.checked)} />;
+  } else {
+    input = <Input {...common} />;
+  }
+  return (
+    <div>
+      <label style={{ display: "block", fontSize: 12, fontWeight: 500, marginBottom: 4 }}>
+        {field.label || field.name}
+        {field.required && <span style={{ color: "#dc2626" }}> *</span>}
+      </label>
+      {input}
+      {field.hint && <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>{field.hint}</div>}
+    </div>
+  );
+}
+
+function WizardTestConnection({ spec, values, ctx }) {
+  const [state, setState] = useStateHook({ status: "idle" });
+  const run = async () => {
+    setState({ status: "loading" });
+    try {
+      if (typeof ctx?.testConnection !== "function") {
+        setState({ status: "error", message: "ctx.testConnection не реализован" });
+        return;
+      }
+      const r = await ctx.testConnection(spec.intent, values);
+      if (r?.ok) setState({ status: "ok", message: r.message || "Соединение успешно" });
+      else setState({ status: "error", message: r?.message || "Ошибка" });
+    } catch (err) {
+      setState({ status: "error", message: err?.message || String(err) });
+    }
+  };
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
+      <AntButton onClick={run} loading={state.status === "loading"}>
+        {spec.label || "Test Connection"}
+      </AntButton>
+      {state.status === "ok" && <span style={{ color: "#059669", fontSize: 12 }}>✓ {state.message}</span>}
+      {state.status === "error" && <span style={{ color: "#dc2626", fontSize: 12 }}>✗ {state.message}</span>}
+    </div>
+  );
+}
+
+/**
+ * PropertyPopover — native AntD Popover с key-value списком.
+ */
+function AntdPropertyPopover({ node, ctx }) {
+  const value = node?.value != null ? node.value : node;
+  // node.value может отсутствовать если используется через body-atom binding.
+  // В этом случае value — сам node (fallback). Реальный case для field-primitive hint
+  // через binding: renderer передаст value как prop.
+  const entries = (value && typeof value === "object" && !Array.isArray(value))
+    ? Object.entries(value).filter(([k]) => k !== "type" && k !== "maxInline" && k !== "summary")
+    : [];
+  if (entries.length === 0) {
+    return <span style={{ color: "#9ca3af", fontSize: 12, fontStyle: "italic" }}>Нет properties</span>;
+  }
+  const summary = node?.summary || `${entries.length} properties`;
+  const content = (
+    <div style={{ maxHeight: 320, overflowY: "auto", minWidth: 260 }}>
+      {entries.map(([k, v]) => (
+        <div key={k} style={{ display: "flex", gap: 12, padding: "2px 0", fontSize: 12 }}>
+          <span style={{ flex: "0 0 auto", minWidth: 100, color: "#6b7280", fontFamily: "ui-monospace, monospace" }}>{k}</span>
+          <span style={{ flex: 1, fontFamily: "ui-monospace, monospace", wordBreak: "break-word" }}>
+            {formatPopoverValue(v)}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+  return (
+    <AntPopover content={content} title={summary} trigger="click" placement="bottomLeft">
+      <Tag style={{ cursor: "pointer" }}>⋯ {summary}</Tag>
+    </AntPopover>
+  );
+}
+
+function formatPopoverValue(v) {
+  if (v == null) return "—";
+  if (typeof v === "boolean") return String(v);
+  if (typeof v === "object") {
+    try { return JSON.stringify(v).slice(0, 80); } catch { return String(v); }
+  }
+  return String(v);
+}
+
+/**
+ * ChipList — native AntD Tag'и вместо built-in span'ов.
+ */
+function AntdChipList({ node, ctx }) {
+  // node.value fallback к node если renderer передаёт value как node
+  const value = node?.value != null ? node.value : (Array.isArray(node) ? node : null);
+  const items = Array.isArray(value) ? value : (Array.isArray(node) ? node : []);
+  const variant = node?.variant || "tag";
+  const maxVisible = node?.maxVisible ?? 5;
+  const emptyLabel = node?.emptyLabel ?? "Нет";
+  if (items.length === 0) {
+    return <span style={{ color: "#9ca3af", fontSize: 12, fontStyle: "italic" }}>{emptyLabel}</span>;
+  }
+  const visible = items.slice(0, maxVisible);
+  const overflow = items.length - visible.length;
+  const tagColor = variant === "policy" ? "gold" : variant === "role" ? "purple" : "default";
+  return (
+    <span style={{ display: "inline-flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}>
+      {visible.map((item, i) => {
+        const label = typeof item === "object" ? (item.label || item.name || JSON.stringify(item)) : String(item);
+        const icon = typeof item === "object" ? item.icon : undefined;
+        const onClick = node?.onItemClick ? () => node.onItemClick(item) : undefined;
+        return (
+          <Tag
+            key={i}
+            color={typeof item === "object" && item.color ? item.color : tagColor}
+            style={onClick ? { cursor: "pointer" } : undefined}
+            onClick={onClick}
+            closable={!!node?.onDetach}
+            onClose={node?.onDetach ? () => node.onDetach(item, i) : undefined}
+          >
+            {icon && <span style={{ marginRight: 4 }}>{icon}</span>}
+            {label}
+          </Tag>
+        );
+      })}
+      {overflow > 0 && <span style={{ color: "#6b7280", fontSize: 11 }}>+{overflow}</span>}
+    </span>
+  );
+}
+
+// React hooks binding (обходим обязательный import для минимальности
+// изменений — React уже в scope через jsx transform).
+import { useState as useStateHook } from "react";
+
+/**
  * Statistic — финансовая метрика (value + prefix/suffix + trend).
  * Доменный код декларирует: { kind: "statistic", value, prefix, suffix, trend }
  * trend: "up" | "down" | null → зелёная/красная стрелка
@@ -750,6 +1077,10 @@ export const antdAdapter = {
       statistic: true,
       heading: true, text: true, badge: true, avatar: true, paper: true,
       breadcrumbs: true,
+      dataGrid: { sort: true, filter: true, pagination: true },
+      wizard: { steps: true, testConnection: true },
+      propertyPopover: true,
+      chipList: { variants: ["tag", "policy", "role"] },
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
@@ -787,6 +1118,10 @@ export const antdAdapter = {
     chart: AntdChart,
     sparkline: AntdSparkline,
     breadcrumbs: AntdBreadcrumbs,
+    dataGrid: AntdDataGrid,
+    wizard: AntdWizard,
+    propertyPopover: AntdPropertyPopover,
+    chipList: AntdChipList,
   },
   icon: {
     resolve: resolveAntdIcon,
