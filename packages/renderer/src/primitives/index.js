@@ -13,6 +13,8 @@ import Breadcrumbs from "./Breadcrumbs.jsx";
 import SchemaEditor from "./SchemaEditor.jsx";
 import DataGrid from "./DataGrid.jsx";
 import PermissionMatrix from "./PermissionMatrix.jsx";
+import PropertyPopover from "./PropertyPopover.jsx";
+import ChipList from "./ChipList.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -27,6 +29,8 @@ export { default as Breadcrumbs } from "./Breadcrumbs.jsx";
 export { default as SchemaEditor } from "./SchemaEditor.jsx";
 export { default as DataGrid } from "./DataGrid.jsx";
 export { default as PermissionMatrix } from "./PermissionMatrix.jsx";
+export { default as PropertyPopover } from "./PropertyPopover.jsx";
+export { default as ChipList } from "./ChipList.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -63,4 +67,6 @@ export const PRIMITIVES = {
   schemaEditor: SchemaEditor,
   dataGrid: DataGrid,
   permissionMatrix: PermissionMatrix,
+  propertyPopover: PropertyPopover,
+  chipList: ChipList,
 };
