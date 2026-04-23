@@ -1,4 +1,22 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import ChipList from "./ChipList.jsx";
+
+/** Pluralization как collection-key (lowercase first): "Dispatcher" → "dispatchers". */
+function pluralizeEn(entity) {
+  if (!entity) return "";
+  const first = entity.charAt(0).toLowerCase();
+  const rest = entity.slice(1);
+  const base = first + rest;
+  if (/[sxz]$/.test(base) || /(ch|sh)$/.test(base)) return base + "es";
+  return base + "s";
+}
+
+/** Pluralization как header-label (сохраняет регистр): "Dispatcher" → "Dispatchers". */
+function pluralizeLabel(entity) {
+  if (!entity) return "";
+  if (/[sxz]$/.test(entity) || /(ch|sh)$/.test(entity)) return entity + "es";
+  return entity + "s";
+}
 
 /**
  * DataGrid — enhanced table primitive с sort / per-column filter /
@@ -41,8 +59,38 @@ export default function DataGrid({ node, ctx }) {
   // SDK сам подтянет коллекцию из world по convention (same как list /
   // card-list source).
   const items = resolveItems(node, ctx);
-  const columns = Array.isArray(node?.columns) ? node.columns : [];
+  const authoredColumns = Array.isArray(node?.columns) ? node.columns : [];
   const emptyLabel = node?.emptyLabel ?? "Нет данных";
+
+  // Pattern-derived row-associations (inline-chip-association). Добавляем chip-колонки
+  // после authored columns, перед actions. idempotent: если автор уже задал column
+  // с тем же key, pattern-колонку пропускаем.
+  const columns = useMemo(() => {
+    const rowAssocs = Array.isArray(ctx?.rowAssociations) ? ctx.rowAssociations : [];
+    if (rowAssocs.length === 0) return authoredColumns;
+    const authoredKeys = new Set(authoredColumns.map(c => c?.key).filter(Boolean));
+    const chipCols = rowAssocs
+      .filter(assoc => assoc && assoc.junction && assoc.foreignKey)
+      .map(assoc => {
+        const key = `assoc_${String(assoc.junction).toLowerCase()}`;
+        return {
+          key,
+          label: assoc.otherEntity ? pluralizeLabel(assoc.otherEntity) : assoc.junction,
+          kind: "chipAssociation",
+          assoc,
+          source: assoc.source,
+        };
+      })
+      .filter(col => !authoredKeys.has(col.key));
+    // Actions-колонку (если есть) держим последней — chip cols вставляем перед ней.
+    const actionIdx = authoredColumns.findIndex(c => c?.kind === "actions");
+    if (actionIdx === -1) return [...authoredColumns, ...chipCols];
+    return [
+      ...authoredColumns.slice(0, actionIdx),
+      ...chipCols,
+      ...authoredColumns.slice(actionIdx),
+    ];
+  }, [authoredColumns, ctx?.rowAssociations]);
 
   const [sortBy, setSortBy] = useState(null); // {key, dir: "asc"|"desc"}
   const [filters, setFilters] = useState({}); // {key: string}
@@ -174,9 +222,13 @@ export default function DataGrid({ node, ctx }) {
               >
                 {visibleColumns.map(col => (
                   <td key={col.key} style={{ ...bodyCellStyle, textAlign: col.align || "left" }}>
-                    {col.kind === "actions"
-                      ? <ActionCell item={item} col={col} ctx={ctx} />
-                      : <CellValue value={item[col.key]} col={col} />}
+                    {col.kind === "actions" ? (
+                      <ActionCell item={item} col={col} ctx={ctx} />
+                    ) : col.kind === "chipAssociation" ? (
+                      <ChipCell item={item} col={col} ctx={ctx} />
+                    ) : (
+                      <CellValue value={item[col.key]} col={col} />
+                    )}
                   </td>
                 ))}
               </tr>
@@ -337,6 +389,88 @@ function ActionCell({ item, col, ctx }) {
     </span>
   );
 }
+
+/**
+ * ChipCell — cell-renderer для column.kind === "chipAssociation" (pattern
+ * inline-chip-association). Резолвит junction-записи по `col.assoc.foreignKey`
+ * относительно row-item.id, затем подтягивает связанные other-entity записи
+ * для labels. Рендерит ChipList с «+» для attach и «×» для detach.
+ *
+ * Intents: col.assoc.attachIntent / detachIntent передаются через ctx.exec.
+ * Для attach сейчас ограничиваемся triggering intent'а (runtime сам откроет
+ * capture — form / dialog — исходя из confirmation). Полноценный picker —
+ * follow-up работа.
+ */
+function ChipCell({ item, col, ctx }) {
+  const assoc = col?.assoc;
+  if (!assoc?.junction || !assoc.foreignKey || !ctx?.world) {
+    return <span style={mutedStyle}>—</span>;
+  }
+  const junctionKey = pluralizeEn(assoc.junction);
+  const junctionItems = (ctx.world[junctionKey] || []).filter(
+    j => j && j[assoc.foreignKey] === item.id,
+  );
+
+  // Резолв other-entity по otherField (например Dispatcher.id через DispatcherAssignment.dispatcherId).
+  const otherKey = assoc.otherEntity ? pluralizeEn(assoc.otherEntity) : null;
+  const otherCollection = otherKey ? (ctx.world[otherKey] || []) : null;
+  const chips = junctionItems.map((j, idx) => {
+    const otherId = assoc.otherField ? j[assoc.otherField] : null;
+    let label = otherId || j.id || `#${idx}`;
+    if (otherCollection && otherId) {
+      const other = otherCollection.find(o => o.id === otherId);
+      if (other) label = other.name || other.title || other.label || otherId;
+    }
+    return { id: j.id, junctionRow: j, label, name: label };
+  });
+
+  const handleDetach = chips.length > 0 && assoc.detachIntent && ctx.exec ? (chip) => {
+    ctx.exec(assoc.detachIntent, { id: chip.junctionRow?.id, [assoc.foreignKey]: item.id });
+  } : undefined;
+
+  const handleAdd = assoc.attachIntent && ctx.exec ? () => {
+    ctx.exec(assoc.attachIntent, { [assoc.foreignKey]: item.id });
+  } : undefined;
+
+  return (
+    <span
+      style={{ display: "inline-flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      <ChipList
+        value={chips}
+        variant="tag"
+        onDetach={handleDetach}
+        emptyLabel=""
+        ctx={ctx}
+      />
+      {handleAdd && (
+        <button
+          type="button"
+          onClick={handleAdd}
+          aria-label={`Add ${assoc.otherEntity || "item"}`}
+          title={`Добавить ${assoc.otherEntity || ""}`.trim()}
+          style={chipAddButtonStyle}
+        >
+          +
+        </button>
+      )}
+    </span>
+  );
+}
+
+const chipAddButtonStyle = {
+  width: 20,
+  height: 20,
+  padding: 0,
+  border: "1px dashed var(--idf-border, #d1d5db)",
+  borderRadius: 10,
+  background: "transparent",
+  color: "var(--idf-text-muted, #6b7280)",
+  fontSize: 13,
+  lineHeight: 1,
+  cursor: "pointer",
+};
 
 /**
  * ActionMenu — kebab-icon (⋯) open'ит inline dropdown со списком

@@ -1,10 +1,40 @@
-import { resolveParams } from "../eval.js";
+import { resolveParams, evalCondition } from "../eval.js";
 import { getAdaptedComponent } from "../adapters/registry.js";
 import Icon from "../adapters/Icon.jsx";
 
+/**
+ * Evaluate action-gate для spec.intentId. Если gate активен — возвращает
+ * { blocked: true, tooltip, enabledBy }. Pattern lifecycle-gated-destructive
+ * кладёт gates в ctx.actionGates (через ArchetypeDetail, ArchetypeCatalog и т.д.).
+ */
+function resolveGate(spec, ctx, item) {
+  const gates = ctx?.actionGates;
+  if (!Array.isArray(gates) || gates.length === 0) return null;
+  const gate = gates.find(g => g?.intentId === spec?.intentId);
+  if (!gate) return null;
+  // Нет target-item'а — gate не применим (blockedWhen ссылается на item.*).
+  const target = item ?? ctx?.target;
+  if (!target) return null;
+  try {
+    const blocked = evalCondition(gate.blockedWhen, {
+      item: target,
+      viewer: ctx.viewer,
+      world: ctx.world,
+    });
+    if (!blocked) return null;
+    return { blocked: true, tooltip: gate.tooltip, enabledBy: gate.enabledBy };
+  } catch {
+    return null;
+  }
+}
+
 export default function IntentButton({ spec, ctx, item }) {
+  const gate = resolveGate(spec, ctx, item);
+  const isBlocked = !!gate?.blocked;
+
   const handleClick = (e) => {
     e.stopPropagation();
+    if (isBlocked) return;
     if (spec.opens === "overlay") {
       ctx.openOverlay(spec.overlayKey, { item });
       return;
@@ -41,7 +71,12 @@ export default function IntentButton({ spec, ctx, item }) {
   // используем его, иначе built-in inline-styled fallback.
   const Adapted = getAdaptedComponent("button", "intent");
   if (Adapted) {
-    return <Adapted spec={spec} onClick={handleClick} />;
+    // Gate: если active — disabled + tooltip-override. Адаптер читает
+    // disabled и spec.title (fallback label) или data-tooltip.
+    const effectiveSpec = isBlocked
+      ? { ...spec, title: gate.tooltip, gatedBy: gate.enabledBy }
+      : spec;
+    return <Adapted spec={effectiveSpec} onClick={handleClick} disabled={isBlocked} />;
   }
 
   // Fallback: inline-стилизованная кнопка. Сохраняется для случаев без
@@ -54,15 +89,17 @@ export default function IntentButton({ spec, ctx, item }) {
   return (
     <button
       onClick={handleClick}
-      title={label}
+      disabled={isBlocked}
+      title={isBlocked ? gate.tooltip : label}
       style={{
         padding: showLabel ? "6px 12px" : "6px 10px",
         borderRadius: 6,
         border: "1px solid var(--idf-border)",
         background: "var(--idf-card)",
-        color: "var(--idf-text)",
+        color: isBlocked ? "var(--idf-text-muted)" : "var(--idf-text)",
         fontSize: 13,
-        cursor: "pointer",
+        cursor: isBlocked ? "not-allowed" : "pointer",
+        opacity: isBlocked ? 0.55 : 1,
         fontWeight: 500,
         fontFamily: "system-ui, sans-serif",
         display: "inline-flex",

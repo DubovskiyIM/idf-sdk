@@ -21,7 +21,11 @@ export default function ArchetypeCatalog({ slots, ctx: parentCtx }) {
     openOverlay,
     viewState,
     setViewState,
-  }), [parentCtx, openOverlay, viewState, setViewState]);
+    // Pattern-derived row-associations (inline-chip-association). DataGrid
+    // и другие table-primitives читают ctx.rowAssociations и добавляют
+    // chip-колонку per junction-ассоциацию.
+    rowAssociations: slots?.rowAssociations || [],
+  }), [parentCtx, openOverlay, viewState, setViewState, slots]);
 
   return (
     <div style={{

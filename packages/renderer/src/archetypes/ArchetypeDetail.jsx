@@ -97,7 +97,10 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
     openOverlay,
     viewState,
     setViewState,
-  }), [parentCtx, openOverlay, viewState, setViewState]);
+    // Pattern-derived action-gates (lifecycle-gated-destructive и т.п.). IntentButton
+    // читает ctx.actionGates и eval'ит blockedWhen по target → disabled+tooltip.
+    actionGates: slots?.actionGates || [],
+  }), [parentCtx, openOverlay, viewState, setViewState, slots]);
 
   // Ownership check: editEdge показываем только если viewer владеет
   // сущностью. Кристаллизатор уже генерирует toolbar-conditions через
