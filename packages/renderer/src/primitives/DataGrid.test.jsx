@@ -173,6 +173,90 @@ describe("DataGrid — row click navigation", () => {
   });
 });
 
+describe("DataGrid — action column (col.kind='actions')", () => {
+  const actionsCol = {
+    key: "_actions",
+    label: "Actions",
+    kind: "actions",
+    actions: [
+      { intent: "grantRole", label: "Grant", params: { user: "item.name" } },
+      { intent: "revokeRole", label: "Revoke", params: { user: "item.name" }, danger: true },
+    ],
+  };
+
+  it("рендерит buttons для каждого action в каждой row", () => {
+    const columns2 = [{ key: "name", label: "Name" }, actionsCol];
+    const { container } = render(<DataGrid node={{ type: "dataGrid", items: sample, columns: columns2 }} ctx={{ exec: vi.fn() }} />);
+    const grantBtns = container.querySelectorAll("button");
+    const grantLabels = Array.from(grantBtns).filter(b => b.textContent === "Grant");
+    expect(grantLabels.length).toBe(sample.length);
+  });
+
+  it("click → ctx.exec с resolved params (item.X)", () => {
+    const exec = vi.fn();
+    const columns2 = [{ key: "name", label: "Name" }, actionsCol];
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns: columns2 }} ctx={{ exec }} />);
+    const grantBtn = screen.getAllByText("Grant")[0];
+    fireEvent.click(grantBtn);
+    expect(exec).toHaveBeenCalledWith("grantRole", { user: "prod_lake" });
+  });
+
+  it("click не триггерит onItemClick (stopPropagation)", () => {
+    const onItemClick = vi.fn();
+    const exec = vi.fn();
+    const columns2 = [{ key: "name", label: "Name" }, actionsCol];
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: sample, columns: columns2, onItemClick }}
+        ctx={{ exec }}
+      />
+    );
+    fireEvent.click(screen.getAllByText("Grant")[0]);
+    expect(exec).toHaveBeenCalled();
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it("action.params route.X резолвится через ctx.routeParams", () => {
+    const exec = vi.fn();
+    const col = {
+      ...actionsCol,
+      actions: [{ intent: "grantRole", label: "Grant", params: { user: "item.name", metalake: "route.metalakeId" } }],
+    };
+    const columns2 = [{ key: "name", label: "Name" }, col];
+    render(
+      <DataGrid
+        node={{ type: "dataGrid", items: sample, columns: columns2 }}
+        ctx={{ exec, routeParams: { metalakeId: "m_prod" } }}
+      />
+    );
+    fireEvent.click(screen.getAllByText("Grant")[0]);
+    expect(exec).toHaveBeenCalledWith("grantRole", { user: "prod_lake", metalake: "m_prod" });
+  });
+
+  it("action.disabled как function — disabled button", () => {
+    const exec = vi.fn();
+    const col = {
+      ...actionsCol,
+      actions: [{ intent: "grantRole", label: "Grant", params: {}, disabled: (item) => item.name === "prod_lake" }],
+    };
+    const columns2 = [{ key: "name", label: "Name" }, col];
+    render(<DataGrid node={{ type: "dataGrid", items: sample, columns: columns2 }} ctx={{ exec }} />);
+    const buttons = screen.getAllByText("Grant");
+    expect(buttons[0].disabled).toBe(true);  // prod_lake
+    expect(buttons[1].disabled).toBe(false); // dev_lake
+  });
+
+  it("action column не sortable / не filterable (skipped)", () => {
+    const columns2 = [{ key: "name", label: "Name", sortable: true }, actionsCol];
+    const { container } = render(
+      <DataGrid node={{ type: "dataGrid", items: sample, columns: columns2 }} ctx={{ exec: vi.fn() }} />
+    );
+    const actionsHead = Array.from(container.querySelectorAll("th")).find(t => t.textContent.includes("Actions"));
+    expect(actionsHead.getAttribute("aria-sort")).toBe("none");
+    expect(actionsHead.style.cursor).toBe("default");
+  });
+});
+
 describe("DataGrid — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;
