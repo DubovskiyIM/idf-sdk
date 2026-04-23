@@ -122,13 +122,24 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // body — formSpec (fields для ArchetypeForm), остальные слоты пустые.
       // Create-mode (backlog §8.2): body строится из intent.parameters,
       // без scan'а всех полей ontology (editable определяется creatorIntent'ом).
-      const formSpec = proj.mode === "create"
-        ? buildCreateFormSpec(proj, INTENTS, ONTOLOGY)
-        : buildFormSpec(proj, INTENTS, ONTOLOGY, "self");
+      //
+      // bodyOverride (G23, Keycloak Stage 5): author может задать authored body-node
+      // (обычно wizard-spec), который целиком заменяет derived formBody. Формат тот
+      // же, что в catalog bodyOverride — renderer-agnostic JSON, SlotRenderer делегирует.
+      const hasBodyOverride = proj?.bodyOverride && typeof proj.bodyOverride === "object";
+      let body;
+      if (hasBodyOverride) {
+        body = proj.bodyOverride;
+      } else {
+        const formSpec = proj.mode === "create"
+          ? buildCreateFormSpec(proj, INTENTS, ONTOLOGY)
+          : buildFormSpec(proj, INTENTS, ONTOLOGY, "self");
+        body = { type: "formBody", ...formSpec, mode: proj.mode || "edit" };
+      }
       slots = {
         header: [],
         toolbar: [],
-        body: { type: "formBody", ...formSpec, mode: proj.mode || "edit" },
+        body,
         context: [],
         fab: [],
         overlay: [],
