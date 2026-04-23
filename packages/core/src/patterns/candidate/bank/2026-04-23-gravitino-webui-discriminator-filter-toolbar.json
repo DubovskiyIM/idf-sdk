@@ -1,0 +1,78 @@
+{
+  "id": "discriminator-filter-toolbar",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "entity-field",
+        "field": "type",
+        "valueType": "enum",
+        "cardinality": ">=3"
+      },
+      {
+        "kind": "intent-effect",
+        "α": "replace",
+        "target": "view.<field>Filter"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "toolbar",
+    "description": "Segmented buttons над catalog-списком по значениям discriminator-поля (type). Multi-select или single-select режим; All-button сбрасывает фильтр. Применяется поверх одной коллекции, в отличие от tabs-split-by-type."
+  },
+  "rationale": {
+    "hypothesis": "Когда discriminator-поле имеет 3-6 значений и каждое осмысленно само по себе, toolbar-segmented быстрее для сканирования и сравнения, чем dropdown-facet, и легитимнее чем tabs (tabs намекают на полную смену контекста).",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Catalogs toolbar: Relational/Messaging/Fileset/Model — фильтрует один список, не разбивает на 4 вкладки",
+        "reliability": "high"
+      },
+      {
+        "source": "github-issues",
+        "description": "Open/Closed segmented button над issues list",
+        "reliability": "high"
+      },
+      {
+        "source": "linear",
+        "description": "Priority/Status segmented filters в top toolbar issue list",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "notion",
+        "description": "Database views (Table/Board/Calendar) — tabs, а не toolbar, потому что меняется layout не фильтр",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "invest",
+        "projection": "asset_catalog",
+        "reason": "Asset.type: stock/bond/etf/crypto — 4 дискретных класса"
+      },
+      {
+        "domain": "delivery",
+        "projection": "menu_item_catalog",
+        "reason": "MenuItem.category даёт 3-5 сегментов"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "booking",
+        "projection": "booking_catalog",
+        "reason": "Booking.status это lifecycle, не тип — phase-aware-cta важнее filter-toolbar"
+      },
+      {
+        "domain": "messenger",
+        "projection": "message_feed",
+        "reason": "Chronological feed, discriminator irrelevant"
+      }
+    ]
+  }
+}

@@ -1,0 +1,74 @@
+{
+  "id": "readonly-system-managed-projection",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "sub-entity-exists",
+        "child": "<Entity>",
+        "parent": "<Parent>"
+      },
+      {
+        "kind": "intent-count",
+        "α": "add|remove|replace",
+        "entity": "<Entity>",
+        "value": 0,
+        "description": "нет mutation-intent'ов в UI для этой сущности"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "sections",
+    "description": "Projection рендерится как read-only секция внутри detail родителя: list без primary-CTA, без row-action menu, без bulk-select. Явная label «managed externally» / «read-only» в header. Клик в row открывает read-only detail."
+  },
+  "rationale": {
+    "hypothesis": "Когда часть доменной модели управляется извне (REST API, external system, auto-generated), но должна быть видна для ownership/context, UI должен явно сигнализировать «здесь ничего не сделать, только посмотреть». Без такого сигнала пользователь ищет кнопки Create/Edit и воспринимает их отсутствие как баг.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Functions — tab в schema detail без create/edit/delete; управление только через REST API",
+        "reliability": "high"
+      },
+      {
+        "source": "kubernetes-dashboard",
+        "description": "System pods (kube-system) показаны read-only",
+        "reliability": "medium"
+      },
+      {
+        "source": "aws-console",
+        "description": "AWS-managed policies — read-only, в отличие от customer-managed",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "github",
+        "description": "Repository commits — read-only в UI, но пользователь знает про git push; явный label не нужен",
+        "reliability": "medium"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "compliance",
+        "projection": "audit_log_section",
+        "reason": "Audit log managed системой, read-only tab в detail"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "sales",
+        "projection": "listing_catalog",
+        "reason": "Full CRUD у owner"
+      },
+      {
+        "domain": "booking",
+        "projection": "booking_catalog",
+        "reason": "Active create/edit intents"
+      }
+    ]
+  }
+}

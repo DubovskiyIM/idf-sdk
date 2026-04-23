@@ -10753,5 +10753,912 @@ export const CANDIDATE_PATTERNS = [
         "description": "Булевы/derived trust-поля автора элемента (verified, new, tier) выносятся бейджами на карточку в ленте, а не только в детальный профиль. Fee"
       }
     ]
+  },
+  {
+    "id": "cascading-dropdown-multiadd",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "detail",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "intent-creates",
+          "entity": "<Junction>"
+        },
+        {
+          "kind": "entity-field",
+          "field": "objectType",
+          "valueType": "enum",
+          "description": "discriminator на добавляемом элементе"
+        },
+        {
+          "kind": "field-role-present",
+          "role": "privileges-depend-on-type",
+          "description": "shape полей зависит от выбора на предыдущем шаге"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "overlay.form",
+      "description": "Форма add-item с цепочкой dropdown: objectType → specific object (фильтрованный по type) → privileges/options checkboxes (список определяется objectType). Add-row в summary table внизу модалки; submit создаёт N junction-entries разом."
+    },
+    "rationale": {
+      "hypothesis": "Когда junction несёт payload, зависящий от типа связанного объекта (privileges для Table ≠ privileges для Schema), flat form заставил бы показывать все возможные privileges и валидировать исключения; dependent dropdown делает invalid states невыразимыми в UI.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Create Role: dependent dropdown object type → specific object → privileges, add-row summary",
+          "reliability": "high"
+        },
+        {
+          "source": "aws-iam-policy-editor",
+          "description": "Service → Actions (фильтр по service) → Resources — cascading",
+          "reliability": "high"
+        },
+        {
+          "source": "postgres-grant-ui",
+          "description": "Grant UI в DBeaver: object type → object → privilege matrix",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "google-drive-share",
+          "description": "Share dialog: один role dropdown — privileges одинаковые независимо от resource type",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "compliance",
+          "projection": "role_detail",
+          "reason": "SecurableObject: objectType → specific control/JE → privileges"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "conversation_participants",
+          "reason": "Participant add — single type, без privilege matrix"
+        },
+        {
+          "domain": "planning",
+          "projection": "poll_detail",
+          "reason": "Vote не несёт type-dependent payload"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-cascading-dropdown-multiadd.json",
+        "slot": "overlay.form",
+        "primarySource": "gravitino-webui",
+        "description": "Форма add-item с цепочкой dropdown: objectType → specific object (фильтрованный по type) → privileges/options checkboxes (список определяетс"
+      }
+    ]
+  },
+  {
+    "id": "composite-type-input-builder",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "detail",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "entity-field",
+          "field": "type",
+          "valueType": "dsl",
+          "description": "поле с recursive-parameterized DSL (decimal(p,s), list<T>, map<K,V>)"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "overlay.form.row",
+      "description": "Selector базового типа; при выборе parametric-type поле разворачивается в nested-inputs (char: length; decimal: precision + scale; list: recursive type-picker; struct: add-row name+type). Результат сериализуется в DSL-строку (e.g. `map<string, list<int>>`)."
+    },
+    "rationale": {
+      "hypothesis": "Recursive DSL-тип невозможно ввести как plain string без опечаток и невозможно выразить flat-dropdown'ом. Структурный builder гарантирует well-formed output и делает generic-типы видимыми как структура, а не как синтаксис.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Column type selector — разворачивается в composite-input для list/map/struct/union",
+          "reliability": "high"
+        },
+        {
+          "source": "bigquery-console",
+          "description": "RECORD/REPEATED type builder с nested rows",
+          "reliability": "high"
+        },
+        {
+          "source": "graphql-playground",
+          "description": "Schema type editor с recursive composition",
+          "reliability": "medium"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "airtable",
+          "description": "Field type — flat enum (single/multi select), без composition",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "workflow",
+          "projection": "node_detail",
+          "reason": "Node input schema — nested type definitions"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "booking",
+          "projection": "service_detail",
+          "reason": "Simple scalar fields, никакого DSL"
+        },
+        {
+          "domain": "sales",
+          "projection": "listing_detail",
+          "reason": "Plain enum-полей достаточно"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-composite-type-input-builder.json",
+        "slot": "overlay.form.row",
+        "primarySource": "gravitino-webui",
+        "description": "Selector базового типа; при выборе parametric-type поле разворачивается в nested-inputs (char: length; decimal: precision + scale; list: rec"
+      }
+    ]
+  },
+  {
+    "id": "discriminator-filter-toolbar",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "entity-field",
+          "field": "type",
+          "valueType": "enum",
+          "cardinality": ">=3"
+        },
+        {
+          "kind": "intent-effect",
+          "α": "replace",
+          "target": "view.<field>Filter"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "toolbar",
+      "description": "Segmented buttons над catalog-списком по значениям discriminator-поля (type). Multi-select или single-select режим; All-button сбрасывает фильтр. Применяется поверх одной коллекции, в отличие от tabs-split-by-type."
+    },
+    "rationale": {
+      "hypothesis": "Когда discriminator-поле имеет 3-6 значений и каждое осмысленно само по себе, toolbar-segmented быстрее для сканирования и сравнения, чем dropdown-facet, и легитимнее чем tabs (tabs намекают на полную смену контекста).",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Catalogs toolbar: Relational/Messaging/Fileset/Model — фильтрует один список, не разбивает на 4 вкладки",
+          "reliability": "high"
+        },
+        {
+          "source": "github-issues",
+          "description": "Open/Closed segmented button над issues list",
+          "reliability": "high"
+        },
+        {
+          "source": "linear",
+          "description": "Priority/Status segmented filters в top toolbar issue list",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "notion",
+          "description": "Database views (Table/Board/Calendar) — tabs, а не toolbar, потому что меняется layout не фильтр",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "invest",
+          "projection": "asset_catalog",
+          "reason": "Asset.type: stock/bond/etf/crypto — 4 дискретных класса"
+        },
+        {
+          "domain": "delivery",
+          "projection": "menu_item_catalog",
+          "reason": "MenuItem.category даёт 3-5 сегментов"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "booking",
+          "projection": "booking_catalog",
+          "reason": "Booking.status это lifecycle, не тип — phase-aware-cta важнее filter-toolbar"
+        },
+        {
+          "domain": "messenger",
+          "projection": "message_feed",
+          "reason": "Chronological feed, discriminator irrelevant"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-discriminator-filter-toolbar.json",
+        "slot": "toolbar",
+        "primarySource": "gravitino-webui",
+        "description": "Segmented buttons над catalog-списком по значениям discriminator-поля (type). Multi-select или single-select режим; All-button сбрасывает фи"
+      }
+    ]
+  },
+  {
+    "id": "inline-chip-association",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "m2m-junction",
+          "description": "entity с objectId+objectType+referenceId (например TagAssociation)"
+        },
+        {
+          "kind": "intent-creates",
+          "entity": "<AssociationEntity>"
+        },
+        {
+          "kind": "intent-effect",
+          "α": "remove",
+          "target": "entities",
+          "description": "парный unassociate"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "body.row",
+      "description": "В каждой строке list-архетипа рендерится horizontal chip-группа ассоциированных объектов + «+» chip открывает picker для associate, «×» на chip делает remove. Один UI для многих разных m2m-связей (tags, policies, labels)."
+    },
+    "rationale": {
+      "hypothesis": "M2M associations обычно нужно увидеть и изменить в контексте родительской строки, не переходя в detail; chips в строке дают scan-and-act без навигации. Consistent UX для всех tag-like ассоциаций снижает cognitive load.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Tags и Policies показаны как chips в catalog/table list с Associate и X — shared UI для двух разных m2m",
+          "reliability": "high"
+        },
+        {
+          "source": "github-issues",
+          "description": "Labels на issue-row — chips с hover X",
+          "reliability": "high"
+        },
+        {
+          "source": "linear",
+          "description": "Labels inline на issue в list view",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "gmail",
+          "description": "Recipients на email list не показаны chips — irrelevant для строки-summary",
+          "reliability": "medium"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "sales",
+          "projection": "listing_catalog",
+          "reason": "Listing↔Category как chips с add/remove"
+        },
+        {
+          "domain": "lifequest",
+          "projection": "task_catalog",
+          "reason": "Task↔Sphere labels inline"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "conversation_feed",
+          "reason": "Participants это не тонкая ассоциация, а core entity — нужен avatar-cluster, не chips"
+        },
+        {
+          "domain": "booking",
+          "projection": "booking_detail",
+          "reason": "Single-slot FK, не m2m"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-inline-chip-association.json",
+        "slot": "body.row",
+        "primarySource": "gravitino-webui",
+        "description": "В каждой строке list-архетипа рендерится horizontal chip-группа ассоциированных объектов + «+» chip открывает picker для associate, «×» на c"
+      }
+    ]
+  },
+  {
+    "id": "inline-verification-action",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "intent-effect",
+          "α": "replace",
+          "target": "<entity>.connectionStatus",
+          "description": "intent меняет verification-state без побочных эффектов"
+        },
+        {
+          "kind": "intent-confirmation",
+          "value": "click"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "overlay.form.footer",
+      "description": "Кнопка «Test» / «Verify» внутри create/edit формы, которая запускает non-mutating проверку (ping connection, validate credentials) и показывает результат inline без закрытия формы. Submit остаётся disabled или warning-помечен пока verify не прошёл."
+    },
+    "rationale": {
+      "hypothesis": "Для config-heavy entity (external connection, webhook) validation pipeline «submit → backend error → fix → resubmit» теряет введённые поля или создаёт полу-конфигурированный record. Inline verify даёт тест без commit, сохраняя состояние формы.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Create Catalog step 2 — Test Connection inline, валидирует до submit",
+          "reliability": "high"
+        },
+        {
+          "source": "vscode-ssh-config",
+          "description": "Test SSH before save в remote-ssh extension",
+          "reliability": "medium"
+        },
+        {
+          "source": "stripe-webhook",
+          "description": "Send test event в webhook config",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "google-forms",
+          "description": "Form fields не нуждаются в inline validation — no external system to probe",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "invest",
+          "projection": "portfolio_create",
+          "reason": "Broker-connect test до первого sync"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "reflect",
+          "projection": "mood_entry_create",
+          "reason": "Нет external system для verify"
+        },
+        {
+          "domain": "lifequest",
+          "projection": "habit_create",
+          "reason": "Pure domain entity без внешних деп"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-inline-verification-action.json",
+        "slot": "overlay.form.footer",
+        "primarySource": "gravitino-webui",
+        "description": "Кнопка «Test» / «Verify» внутри create/edit формы, которая запускает non-mutating проверку (ping connection, validate credentials) и показыв"
+      }
+    ]
+  },
+  {
+    "id": "lifecycle-gated-destructive",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "detail",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "entity-field",
+          "field": "inUse",
+          "valueType": "boolean"
+        },
+        {
+          "kind": "intent-effect",
+          "α": "replace",
+          "target": "<entity>.inUse"
+        },
+        {
+          "kind": "intent-effect",
+          "α": "remove",
+          "target": "entities",
+          "irreversibility": "high"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "primaryCTA",
+      "description": "Destructive intent grayed out с tooltip-объяснением, пока не выполнен парный disable-intent (inUse→false). Две phases: first disable, then delete."
+    },
+    "rationale": {
+      "hypothesis": "Двухфазное удаление превращает irreversible-destructive в reversible-deactivate + irreversible-drop — пользователь получает окно отката после disable без потери данных и явный сигнал о том, что объект скоро исчезнет.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Metalake/Catalog delete disabled пока inUse=true; после disable становится доступным с typed-confirm",
+          "reliability": "high"
+        },
+        {
+          "source": "aws-rds",
+          "description": "Termination protection flag: drop instance требует снятия protection сначала",
+          "reliability": "high"
+        },
+        {
+          "source": "github",
+          "description": "Archive repository → затем Delete: archive возвращается одним кликом, delete уже нет",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "gmail",
+          "description": "Delete email — одна phase, trash работает как undo окно вместо gated disable",
+          "reliability": "medium"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "invest",
+          "projection": "portfolio_detail",
+          "reason": "Portfolio с isActive flag перед delete"
+        },
+        {
+          "domain": "delivery",
+          "projection": "merchant_detail",
+          "reason": "Merchant disable перед удалением сохраняет order history consistency"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "message_detail",
+          "reason": "Message delete — single phase, no lifecycle intermediate state"
+        },
+        {
+          "domain": "reflect",
+          "projection": "mood_entry_detail",
+          "reason": "Journal entry не имеет inUse concept"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-lifecycle-gated-destructive.json",
+        "slot": "primaryCTA",
+        "primarySource": "gravitino-webui",
+        "description": "Destructive intent grayed out с tooltip-объяснением, пока не выполнен парный disable-intent (inUse→false). Две phases: first disable, then d"
+      }
+    ]
+  },
+  {
+    "id": "multi-step-create-wizard",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "intent-creates",
+          "entity": "<mainEntity>"
+        },
+        {
+          "kind": "entity-field",
+          "fieldCount": ">=6",
+          "description": "entity с ≥6 обязательных полей или ≥3 логических группы полей"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "overlay",
+      "description": "Create-flow разбит на N шагов по семантическим группам (например: provider→config для Catalog; columns→partitions→sortOrders→distribution→properties для Table). Stepper с назад/далее, валидация per-step, finish submit на последнем."
+    },
+    "rationale": {
+      "hypothesis": "Когда entity имеет >6 полей или поля имеют зависимости (step 2 зависит от выбора step 1 — provider определяет shape config), single-screen form создаёт cognitive overload и заставляет валидировать всё одновременно. Wizard декомпозирует решения и даёт progressive disclosure.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Create Catalog: 2 шага (provider → config); Create Table: 5 шагов (columns → partitions → sortOrders → distribution → properties)",
+          "reliability": "high"
+        },
+        {
+          "source": "stripe-connect",
+          "description": "Onboarding wizard (account type → business → banking → review)",
+          "reliability": "high"
+        },
+        {
+          "source": "aws-console",
+          "description": "Launch EC2: 7-step wizard с валидацией per step",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "gravitino-webui",
+          "description": "Create Metalake: 1 шаг с 4 полями — wizard overkill для простых entity",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "workflow",
+          "projection": "workflow_catalog",
+          "reason": "Workflow create: nodes → edges → triggers — естественные фазы"
+        },
+        {
+          "domain": "invest",
+          "projection": "portfolio_catalog",
+          "reason": "Portfolio create: риск-профиль → аллокация → цели — dependent steps"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "message_composer",
+          "reason": "Send message: one field, wizard лишний"
+        },
+        {
+          "domain": "reflect",
+          "projection": "mood_entry_catalog",
+          "reason": "Mood entry: 2-3 поля, single form"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-multi-step-create-wizard.json",
+        "slot": "overlay",
+        "primarySource": "gravitino-webui",
+        "description": "Create-flow разбит на N шагов по семантическим группам (например: provider→config для Catalog; columns→partitions→sortOrders→distribution→pr"
+      }
+    ]
+  },
+  {
+    "id": "properties-popover-on-count",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "entity-field",
+          "field": "properties",
+          "valueType": "map"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "body.cell",
+      "description": "В list-колонке для map/object-поля показывается count («5 properties»); hover раскрывает popover с key-value таблицей. В create/edit форме — pre-filled defaults с editable override."
+    },
+    "rationale": {
+      "hypothesis": "Free-form key-value bag слишком разный между entity и занимает слишком много места в colum чтобы быть inline. Count даёт scan-signal (есть/нет), popover даёт on-demand expansion без навигации в detail.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Properties column в Catalog/Schema/Table списках — count с hover-popover",
+          "reliability": "high"
+        },
+        {
+          "source": "kubernetes-dashboard",
+          "description": "Labels/Annotations count с hover-expand",
+          "reliability": "high"
+        },
+        {
+          "source": "docker-desktop",
+          "description": "Environment variables count с popover",
+          "reliability": "medium"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "notion-db",
+          "description": "Properties как top-level columns — когда они semantic, а не bag",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "workflow",
+          "projection": "node_catalog",
+          "reason": "Node.config как opaque map"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "invest",
+          "projection": "portfolio_catalog",
+          "reason": "Structured fields, не bag"
+        },
+        {
+          "domain": "messenger",
+          "projection": "message_feed",
+          "reason": "Нет map-поля"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-properties-popover-on-count.json",
+        "slot": "body.cell",
+        "primarySource": "gravitino-webui",
+        "description": "В list-колонке для map/object-поля показывается count («5 properties»); hover раскрывает popover с key-value таблицей. В create/edit форме —"
+      }
+    ]
+  },
+  {
+    "id": "readonly-system-managed-projection",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "catalog",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "sub-entity-exists",
+          "child": "<Entity>",
+          "parent": "<Parent>"
+        },
+        {
+          "kind": "intent-count",
+          "α": "add|remove|replace",
+          "entity": "<Entity>",
+          "value": 0,
+          "description": "нет mutation-intent'ов в UI для этой сущности"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "sections",
+      "description": "Projection рендерится как read-only секция внутри detail родителя: list без primary-CTA, без row-action menu, без bulk-select. Явная label «managed externally» / «read-only» в header. Клик в row открывает read-only detail."
+    },
+    "rationale": {
+      "hypothesis": "Когда часть доменной модели управляется извне (REST API, external system, auto-generated), но должна быть видна для ownership/context, UI должен явно сигнализировать «здесь ничего не сделать, только посмотреть». Без такого сигнала пользователь ищет кнопки Create/Edit и воспринимает их отсутствие как баг.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Functions — tab в schema detail без create/edit/delete; управление только через REST API",
+          "reliability": "high"
+        },
+        {
+          "source": "kubernetes-dashboard",
+          "description": "System pods (kube-system) показаны read-only",
+          "reliability": "medium"
+        },
+        {
+          "source": "aws-console",
+          "description": "AWS-managed policies — read-only, в отличие от customer-managed",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "github",
+          "description": "Repository commits — read-only в UI, но пользователь знает про git push; явный label не нужен",
+          "reliability": "medium"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "compliance",
+          "projection": "audit_log_section",
+          "reason": "Audit log managed системой, read-only tab в detail"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "sales",
+          "projection": "listing_catalog",
+          "reason": "Full CRUD у owner"
+        },
+        {
+          "domain": "booking",
+          "projection": "booking_catalog",
+          "reason": "Active create/edit intents"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-readonly-system-managed-projection.json",
+        "slot": "sections",
+        "primarySource": "gravitino-webui",
+        "description": "Projection рендерится как read-only секция внутри detail родителя: list без primary-CTA, без row-action menu, без bulk-select. Явная label «"
+      }
+    ]
+  },
+  {
+    "id": "reverse-association-browser",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "detail",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "m2m-junction",
+          "description": "junction entity с (refId, objectId, objectType)"
+        },
+        {
+          "kind": "entity-field",
+          "field": "associatedObjectsCount",
+          "description": "denormalized-count на reference entity"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "sections",
+      "description": "На detail reference-entity (Tag, Policy) секция «Associated objects» показывает обратный обход m2m: все objects с этим tag'ом, сгруппированные по objectType. Click на count в list-ячейке тоже ведёт сюда."
+    },
+    "rationale": {
+      "hypothesis": "M2M доступна в двух направлениях; UI обычно показывает одно (catalog→tags), но governance/audit-вопросы часто идут в обратную сторону (какие объекты используют эту policy?). Reverse browser закрывает вторую половину без отдельной query-UI.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Click на Tag/Policy → страница «все объекты с этой меткой», сгруппировано по типу",
+          "reliability": "high"
+        },
+        {
+          "source": "aws-iam",
+          "description": "Policy detail показывает «Attached entities» (users/groups/roles)",
+          "reliability": "high"
+        },
+        {
+          "source": "github-labels",
+          "description": "Label page показывает issues с этим label",
+          "reliability": "high"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "instagram",
+          "description": "Hashtag page — feed постов, но это не governance-usecase, а discovery",
+          "reliability": "medium"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "sales",
+          "projection": "category_detail",
+          "reason": "Category detail → все Listings в категории"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "user_detail",
+          "reason": "User→Messages это core ownership, не m2m-ассоциация"
+        },
+        {
+          "domain": "booking",
+          "projection": "service_detail",
+          "reason": "Service→Bookings — core composition, покрывается subcollections"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-reverse-association-browser.json",
+        "slot": "sections",
+        "primarySource": "gravitino-webui",
+        "description": "На detail reference-entity (Tag, Policy) секция «Associated objects» показывает обратный обход m2m: все objects с этим tag'ом, сгруппированн"
+      }
+    ]
+  },
+  {
+    "id": "template-instantiation-split-panel",
+    "version": 1,
+    "status": "candidate",
+    "archetype": "detail",
+    "trigger": {
+      "requires": [
+        {
+          "kind": "intent-creates",
+          "entity": "<Instance>"
+        },
+        {
+          "kind": "sub-entity-exists",
+          "child": "<Instance>",
+          "parent": "<Template>",
+          "foreignKey": "templateId"
+        }
+      ]
+    },
+    "structure": {
+      "slot": "overlay",
+      "description": "Split-panel modal: слева — read-only preview template-полей (script, params); справа — editable override-конфигурация с placeholder-substitution ({{var}}). Submit создаёт Instance со snapshot конфигурации."
+    },
+    "rationale": {
+      "hypothesis": "Run-from-template требует показать «что зафиксировано шаблоном» рядом с «что я меняю на этот запуск». Split-panel делает ссылку на исходник явной, снижает ошибки перезаписи и даёт audit trail в визуальной форме.",
+      "evidence": [
+        {
+          "source": "gravitino-webui",
+          "description": "Run Job: слева read-only template script, справа editable configuration с {{placeholder}}",
+          "reliability": "high"
+        },
+        {
+          "source": "gitlab-ci-runner",
+          "description": "Run pipeline from template — preview + override vars",
+          "reliability": "high"
+        },
+        {
+          "source": "jupyter-nbconvert",
+          "description": "Parameterized notebook run — template + params panel",
+          "reliability": "medium"
+        }
+      ],
+      "counterexample": [
+        {
+          "source": "figma-components",
+          "description": "Instance override — inline в canvas, не split-panel, потому что context — visual",
+          "reliability": "high"
+        }
+      ]
+    },
+    "falsification": {
+      "shouldMatch": [
+        {
+          "domain": "workflow",
+          "projection": "execution_create",
+          "reason": "Run workflow from template — params override preview"
+        }
+      ],
+      "shouldNotMatch": [
+        {
+          "domain": "messenger",
+          "projection": "message_composer",
+          "reason": "Нет template-instance отношения"
+        },
+        {
+          "domain": "reflect",
+          "projection": "mood_entry_create",
+          "reason": "Нет параметризации"
+        }
+      ]
+    },
+    "sources": [
+      {
+        "file": "2026-04-23-gravitino-webui-template-instantiation-split-panel.json",
+        "slot": "overlay",
+        "primarySource": "gravitino-webui",
+        "description": "Split-panel modal: слева — read-only preview template-полей (script, params); справа — editable override-конфигурация с placeholder-substitu"
+      }
+    ]
   }
 ];

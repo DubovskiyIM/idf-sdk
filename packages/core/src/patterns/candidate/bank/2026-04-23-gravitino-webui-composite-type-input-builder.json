@@ -1,0 +1,68 @@
+{
+  "id": "composite-type-input-builder",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "detail",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "entity-field",
+        "field": "type",
+        "valueType": "dsl",
+        "description": "поле с recursive-parameterized DSL (decimal(p,s), list<T>, map<K,V>)"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "overlay.form.row",
+    "description": "Selector базового типа; при выборе parametric-type поле разворачивается в nested-inputs (char: length; decimal: precision + scale; list: recursive type-picker; struct: add-row name+type). Результат сериализуется в DSL-строку (e.g. `map<string, list<int>>`)."
+  },
+  "rationale": {
+    "hypothesis": "Recursive DSL-тип невозможно ввести как plain string без опечаток и невозможно выразить flat-dropdown'ом. Структурный builder гарантирует well-formed output и делает generic-типы видимыми как структура, а не как синтаксис.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Column type selector — разворачивается в composite-input для list/map/struct/union",
+        "reliability": "high"
+      },
+      {
+        "source": "bigquery-console",
+        "description": "RECORD/REPEATED type builder с nested rows",
+        "reliability": "high"
+      },
+      {
+        "source": "graphql-playground",
+        "description": "Schema type editor с recursive composition",
+        "reliability": "medium"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "airtable",
+        "description": "Field type — flat enum (single/multi select), без composition",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "workflow",
+        "projection": "node_detail",
+        "reason": "Node input schema — nested type definitions"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "booking",
+        "projection": "service_detail",
+        "reason": "Simple scalar fields, никакого DSL"
+      },
+      {
+        "domain": "sales",
+        "projection": "listing_detail",
+        "reason": "Plain enum-полей достаточно"
+      }
+    ]
+  }
+}

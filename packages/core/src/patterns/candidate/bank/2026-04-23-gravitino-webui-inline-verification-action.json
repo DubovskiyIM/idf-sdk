@@ -1,0 +1,72 @@
+{
+  "id": "inline-verification-action",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "catalog",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "intent-effect",
+        "α": "replace",
+        "target": "<entity>.connectionStatus",
+        "description": "intent меняет verification-state без побочных эффектов"
+      },
+      {
+        "kind": "intent-confirmation",
+        "value": "click"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "overlay.form.footer",
+    "description": "Кнопка «Test» / «Verify» внутри create/edit формы, которая запускает non-mutating проверку (ping connection, validate credentials) и показывает результат inline без закрытия формы. Submit остаётся disabled или warning-помечен пока verify не прошёл."
+  },
+  "rationale": {
+    "hypothesis": "Для config-heavy entity (external connection, webhook) validation pipeline «submit → backend error → fix → resubmit» теряет введённые поля или создаёт полу-конфигурированный record. Inline verify даёт тест без commit, сохраняя состояние формы.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Create Catalog step 2 — Test Connection inline, валидирует до submit",
+        "reliability": "high"
+      },
+      {
+        "source": "vscode-ssh-config",
+        "description": "Test SSH before save в remote-ssh extension",
+        "reliability": "medium"
+      },
+      {
+        "source": "stripe-webhook",
+        "description": "Send test event в webhook config",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "google-forms",
+        "description": "Form fields не нуждаются в inline validation — no external system to probe",
+        "reliability": "high"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "invest",
+        "projection": "portfolio_create",
+        "reason": "Broker-connect test до первого sync"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "reflect",
+        "projection": "mood_entry_create",
+        "reason": "Нет external system для verify"
+      },
+      {
+        "domain": "lifequest",
+        "projection": "habit_create",
+        "reason": "Pure domain entity без внешних деп"
+      }
+    ]
+  }
+}

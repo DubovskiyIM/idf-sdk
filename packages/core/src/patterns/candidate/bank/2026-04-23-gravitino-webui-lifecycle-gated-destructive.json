@@ -1,0 +1,83 @@
+{
+  "id": "lifecycle-gated-destructive",
+  "version": 1,
+  "status": "candidate",
+  "archetype": "detail",
+  "trigger": {
+    "requires": [
+      {
+        "kind": "entity-field",
+        "field": "inUse",
+        "valueType": "boolean"
+      },
+      {
+        "kind": "intent-effect",
+        "α": "replace",
+        "target": "<entity>.inUse"
+      },
+      {
+        "kind": "intent-effect",
+        "α": "remove",
+        "target": "entities",
+        "irreversibility": "high"
+      }
+    ]
+  },
+  "structure": {
+    "slot": "primaryCTA",
+    "description": "Destructive intent grayed out с tooltip-объяснением, пока не выполнен парный disable-intent (inUse→false). Две phases: first disable, then delete."
+  },
+  "rationale": {
+    "hypothesis": "Двухфазное удаление превращает irreversible-destructive в reversible-deactivate + irreversible-drop — пользователь получает окно отката после disable без потери данных и явный сигнал о том, что объект скоро исчезнет.",
+    "evidence": [
+      {
+        "source": "gravitino-webui",
+        "description": "Metalake/Catalog delete disabled пока inUse=true; после disable становится доступным с typed-confirm",
+        "reliability": "high"
+      },
+      {
+        "source": "aws-rds",
+        "description": "Termination protection flag: drop instance требует снятия protection сначала",
+        "reliability": "high"
+      },
+      {
+        "source": "github",
+        "description": "Archive repository → затем Delete: archive возвращается одним кликом, delete уже нет",
+        "reliability": "high"
+      }
+    ],
+    "counterexample": [
+      {
+        "source": "gmail",
+        "description": "Delete email — одна phase, trash работает как undo окно вместо gated disable",
+        "reliability": "medium"
+      }
+    ]
+  },
+  "falsification": {
+    "shouldMatch": [
+      {
+        "domain": "invest",
+        "projection": "portfolio_detail",
+        "reason": "Portfolio с isActive flag перед delete"
+      },
+      {
+        "domain": "delivery",
+        "projection": "merchant_detail",
+        "reason": "Merchant disable перед удалением сохраняет order history consistency"
+      }
+    ],
+    "shouldNotMatch": [
+      {
+        "domain": "messenger",
+        "projection": "message_detail",
+        "reason": "Message delete — single phase, no lifecycle intermediate state"
+      },
+      {
+        "domain": "reflect",
+        "projection": "mood_entry_detail",
+        "reason": "Journal entry не имеет inUse concept"
+      }
+    ]
+  }
+}
