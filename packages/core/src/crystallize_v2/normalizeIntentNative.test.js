@@ -150,4 +150,40 @@ describe("normalizeIntentsMap", () => {
     const out = normalizeIntentsMap(INTENTS);
     expect(out).toBe(INTENTS);
   });
+
+  it("flat α:create+target → intent.creates + particles.effects (scaffold-path)", () => {
+    // scaffold-path (studio PM chat) отдаёт intent flat: { α, target, parameters }
+    // deriveProjections читает creators из intent.creates и mutators из
+    // particles.effects. Без synthesis R1/R3 не срабатывают.
+    const out = normalizeIntentNative({
+      α: "create",
+      target: "Task",
+      parameters: [{ name: "title", type: "text" }],
+    });
+    expect(out.creates).toBe("Task");
+    expect(out.particles.effects).toEqual([{ target: "Task", op: "create", α: "create" }]);
+    expect(out.particles.entities).toEqual(["task: Task"]);
+  });
+
+  it("flat α:replace+target — effects op:replace, без creates", () => {
+    const out = normalizeIntentNative({
+      α: "replace",
+      target: "Task.status",
+    });
+    expect(out.creates).toBeUndefined();
+    expect(out.particles.effects).toEqual([
+      { target: "Task.status", op: "replace", α: "replace" },
+    ]);
+    expect(out.particles.entities).toEqual(["task: Task"]);
+  });
+
+  it("author уже задал effects — synthesis не перезаписывает", () => {
+    const out = normalizeIntentNative({
+      α: "create",
+      target: "Task",
+      particles: { effects: [{ α: "create", target: "task.custom" }] },
+    });
+    expect(out.particles.effects).toEqual([{ α: "create", target: "task.custom" }]);
+    expect(out.creates).toBe("Task");
+  });
 });
