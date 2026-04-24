@@ -17,7 +17,7 @@ import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildWitnessChildren, findHeroImageWitness } from "./witnessItemChildren.js";
 
-export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
+export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default", opts = {}) {
   // projection.gating (UI-gap #6) — onboarding prerequisites: шаги к
   // разблокировке проекции. Node-shape { title, steps }, Array<step>
   // с { id, label, icon?, done?, cta? }. Renderer рендерит GatingPanel
@@ -96,7 +96,7 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
       control: inferControlType(p, ONTOLOGY),
     })).map(p => enrichWithOptions(p, ONTOLOGY));
 
-    let wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
+    let wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY, projections: opts.projections });
     if (wrapped === null) continue;
 
     // Strategy: override control type

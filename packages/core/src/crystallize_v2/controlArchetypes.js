@@ -25,6 +25,41 @@ const SYSTEM_FIELDS = new Set(["id", "createdAt", "updatedAt", "deletedAt"]);
  * @param {object} context — { ontology, projection }
  * @returns {Array} merged parameters [...pathParams, ...entityFields]
  */
+/**
+ * G-K-12: для α=replace intents look up authored `<entityLower>_edit`
+ * projection в context.projections. Если задекларировано с bodyOverride
+ * (Wizard / TabbedForm / etc) — return spec для overlay.bodyOverride.
+ *
+ * Author может определить edit-flow inline в `<entity>_edit` projection
+ * вместо использования synthetic edit (от generateEditProjections).
+ *
+ * Returns null если: intent не replace, нет projections в context,
+ * нет authored <entityLower>_edit, или нет bodyOverride.
+ */
+function lookupEditBodyOverride(intent, context) {
+  const isReplace = intent?.alpha === "replace"
+    || (intent?.particles?.effects || []).some(e => e?.α === "replace");
+  if (!isReplace) return null;
+
+  const projections = context?.projections;
+  if (!projections || typeof projections !== "object") return null;
+
+  let mainEntity = intent.target;
+  if (!mainEntity) {
+    const e0 = (intent.particles?.entities || [])[0];
+    if (typeof e0 === "string") {
+      const parts = e0.split(":");
+      mainEntity = (parts[1] || parts[0]).trim();
+    }
+  }
+  if (!mainEntity) return null;
+
+  const entityLower = mainEntity[0].toLowerCase() + mainEntity.slice(1);
+  const editProj = projections[`${entityLower}_edit`];
+  if (!editProj?.bodyOverride) return null;
+  return editProj.bodyOverride;
+}
+
 function mergeEntityFieldsForReplace(intent, parameters, context) {
   const isReplace = intent?.alpha === "replace"
     || (intent?.particles?.effects || []).some(e => e?.α === "replace");
@@ -241,18 +276,27 @@ function registerBuiltins() {
       // реальные поля, а не только идентификаторы.
       const mergedParameters = mergeEntityFieldsForReplace(intent, parameters, context);
 
+      // G-K-12: для α=replace look up authored <entityLower>_edit projection
+      // с bodyOverride (Wizard / TabbedForm / etc). Если задекларировано —
+      // pass на overlay.bodyOverride, renderer FormModal dispatch'нет на
+      // соответствующий primitive вместо flat parameters list.
+      const editBodyOverride = lookupEditBodyOverride(intent, context);
+
+      const overlay = {
+        type: "formModal",
+        key,
+        intentId,
+        title: intent.name,
+        witnessPanel: (intent.particles.witnesses || [])
+          .filter(w => typeof w === "string" && w.includes("."))
+          .map(w => ({ type: "text", bind: w })),
+        parameters: mergedParameters,
+      };
+      if (editBodyOverride) overlay.bodyOverride = editBodyOverride;
+
       return {
         trigger: { ...baseButton, opens: "overlay", overlayKey: key },
-        overlay: {
-          type: "formModal",
-          key,
-          intentId,
-          title: intent.name,
-          witnessPanel: (intent.particles.witnesses || [])
-            .filter(w => typeof w === "string" && w.includes("."))
-            .map(w => ({ type: "text", bind: w })),
-          parameters: mergedParameters,
-        },
+        overlay,
         antagonist: intent.antagonist,
       };
     },

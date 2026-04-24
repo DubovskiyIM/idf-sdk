@@ -168,7 +168,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
       // Wizard-архетип: steps пробрасываются as-is, рендер управляется ArchetypeWizard.
       slots = { kind: "wizard", steps: proj.steps || [], projection: proj };
     } else {
-      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape);
+      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape, { projections: allProjections });
     }
 
     // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.

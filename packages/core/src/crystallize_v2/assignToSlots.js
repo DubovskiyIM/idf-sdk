@@ -17,15 +17,15 @@ import {
 } from "./assignToSlotsShared.js";
 import { getIntentIcon } from "./getIntentIcon.js";
 
-export function assignToSlots(INTENTS, projection, ONTOLOGY, strategy, shape = "default") {
+export function assignToSlots(INTENTS, projection, ONTOLOGY, strategy, shape = "default", opts = {}) {
   const kind = projection.kind;
-  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape);
-  if (kind === "detail") return assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy);
+  if (kind === "catalog") return assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape, opts);
+  if (kind === "detail") return assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opts);
   if (kind === "wizard") return { kind: "wizard", steps: projection.steps || [], projection };
-  return assignToSlotsFeed(INTENTS, projection, ONTOLOGY);
+  return assignToSlotsFeed(INTENTS, projection, ONTOLOGY, opts);
 }
 
-function assignToSlotsFeed(INTENTS, projection, ONTOLOGY) {
+function assignToSlotsFeed(INTENTS, projection, ONTOLOGY, opts = {}) {
   const slots = {
     header: [],
     toolbar: [],
@@ -96,7 +96,7 @@ function assignToSlotsFeed(INTENTS, projection, ONTOLOGY) {
       control: inferControlType(p, ONTOLOGY),
     })).map(p => enrichWithOptions(p, ONTOLOGY));
 
-    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
+    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY, projections: opts.projections });
     if (wrapped === null) continue; // confirmation: auto
 
     const isPerItem = isPerItemIntent(intent, projection);
