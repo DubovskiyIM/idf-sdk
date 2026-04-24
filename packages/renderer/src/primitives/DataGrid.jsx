@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import RowAssociationChips, { pluralizeAsLabel } from "./RowAssociationChips.jsx";
+import { Badge } from "./atoms.jsx";
 import { evalFilter } from "@intent-driven/core";
 import { evalCondition, evalIntentCondition } from "../eval.js";
 
@@ -211,6 +212,8 @@ export default function DataGrid({ node, ctx }) {
                       <ActionCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "chipAssociation" ? (
                       <ChipCell item={item} col={col} ctx={ctx} />
+                    ) : col.kind === "badge" ? (
+                      <BadgeCell item={item} col={col} ctx={ctx} />
                     ) : (
                       <CellValue value={item[col.key]} col={col} />
                     )}
@@ -417,6 +420,35 @@ function ActionCell({ item, col, ctx }) {
       })}
     </span>
   );
+}
+
+/**
+ * BadgeCell — cell-renderer для column.kind === "badge". Делегирует в
+ * shared primitive Badge (atoms.jsx) с поддержкой `col.colorMap` и
+ * `col.toneMap`. Используется для статус-полей (sync.status, health.status,
+ * connection.status) в status-driven admin UIs (ArgoCD / Gravitino /
+ * Keycloak).
+ *
+ * Shape:
+ *   { key: "syncStatus", kind: "badge", colorMap: {
+ *       Synced: "success", OutOfSync: "warning", Unknown: "neutral"
+ *   } }
+ *
+ * `colorMap` — alias `toneMap` для semantic-tone-vocabulary Badge primitive
+ * (success/warning/danger/info/neutral/default). colorMap читается первым,
+ * fallback на toneMap для обратной совместимости.
+ */
+function BadgeCell({ item, col, ctx }) {
+  const val = item?.[col.key];
+  if (val == null || val === "") return <span style={mutedStyle}>—</span>;
+  const toneMap = col.colorMap || col.toneMap;
+  const node = {
+    bind: col.key,
+    toneMap,
+    // если у колонки задан tone без mapping — применяем как global override
+    color: col.color,
+  };
+  return <Badge node={node} ctx={ctx || {}} item={item} />;
 }
 
 /**
