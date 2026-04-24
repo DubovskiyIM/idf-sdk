@@ -130,9 +130,14 @@ export default {
       if (body.type === "dataGrid") return slots; // author / earlier pattern
       if (body.layout === "grid") return slots;    // grid-card-layout
       if (projection?.bodyOverride) return slots;   // author-override preserved
-      // catalog-action-cta (или похожий) уже решил что делать с per-row
-      // intents — не перезаписываем native-format scaffold body.
-      if (Array.isArray(body.item?.intents) && body.item.intents.length > 0) return slots;
+
+      // G-K-22: preferDataGrid switch override'ит avoid-trespass guard.
+      // Default — оставляем list+actions (catalog-action-cta wins).
+      // Если ontology.features.preferDataGrid: true — синтезируем DataGrid
+      // с actions-column из item.intents (admin-CRUD use case).
+      const preferDataGrid = ontology?.features?.preferDataGrid === true;
+      const itemIntents = Array.isArray(body.item?.intents) ? body.item.intents : [];
+      if (itemIntents.length > 0 && !preferDataGrid) return slots;
 
       const mainEntity = projection?.mainEntity;
       const entity = ontology?.entities?.[mainEntity];
@@ -143,6 +148,30 @@ export default {
         .map(w => deriveColumn(w, entity))
         .filter(Boolean);
       if (columns.length === 0) return slots;
+
+      // G-K-22: actions-column из item.intents — конвертация format'ов.
+      // catalog-action-cta использует {intentId, opens, overlayKey, icon};
+      // ActionCell expect {intent, label, params, danger}. ActionCell
+      // auto-detect form-confirmation (G-K-24) → openOverlay сама.
+      if (itemIntents.length > 0) {
+        const labelFor = (id) => id.startsWith("update") ? "Изменить"
+          : id.startsWith("remove") ? "Удалить"
+          : id.startsWith("read")   ? "Открыть"
+          : id;
+        columns.push({
+          key: "_actions",
+          kind: "actions",
+          label: "",
+          display: "auto",
+          actions: itemIntents.map(it => ({
+            intent: it.intentId,
+            label: it.label || labelFor(it.intentId),
+            params: { id: "item.id" },
+            danger: it.intentId.startsWith("remove"),
+            ...(it.opens === "overlay" ? { opens: "overlay", overlayKey: it.overlayKey } : {}),
+          })),
+        });
+      }
 
       const newBody = {
         type: "dataGrid",
