@@ -14,6 +14,7 @@ import mapFilterCatalog from "./catalog/map-filter-catalog.js";
 import rowContextualActionsMenu from "./catalog/row-contextual-actions-menu.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
+import bidirectionalCanvasTreeSelection from "./cross/bidirectional-canvas-tree-selection.js";
 
 // Promoted в stable (2026-04-20, B2):
 //   rating-aggregate-hero       → stable/detail/
@@ -21,6 +22,9 @@ import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 //   response-cost-before-action → stable/feed/
 // Promoted в stable (2026-04-23, Gravitino dogfood):
 //   catalog-default-datagrid    → stable/catalog/ (with structure.apply)
+// Added 2026-04-24 (Selfai workflow-editor dogfood):
+//   bidirectional-canvas-tree-selection → candidate/cross/ (matching-only,
+//   ждёт trigger.kind `co-selection-group-entity` + renderer primitive contract)
 
 export {
   categoryTreeWithCounter,
@@ -29,6 +33,7 @@ export {
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,
+  bidirectionalCanvasTreeSelection,
 };
 
 export const CURATED_CANDIDATES = [
@@ -38,4 +43,5 @@ export const CURATED_CANDIDATES = [
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,
+  bidirectionalCanvasTreeSelection,
 ];

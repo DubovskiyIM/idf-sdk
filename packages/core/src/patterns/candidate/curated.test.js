@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 6 паттернов (catalog-default-datagrid promoted в stable 2026-04-23)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(6);
+  it("в curated bank ровно 7 паттернов (2026-04-24 Selfai dogfood: +bidirectional-canvas-tree-selection в cross/)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(7);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -66,8 +66,8 @@ describe("curated candidate bank — registry integration", () => {
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
     expect(stableCount).toBe(36);
-    // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
-    expect(candidateCount).toBeGreaterThanOrEqual(6);
+    // Curated (7) прошли validatePattern; manifest-свалка может добавить >0.
+    expect(candidateCount).toBeGreaterThanOrEqual(7);
     // Проверка, что каждый curated действительно в registry.
     for (const pattern of CURATED_CANDIDATES) {
       expect(registry.getPattern(pattern.id)).toBeTruthy();
@@ -83,10 +83,11 @@ describe("curated candidate bank — registry integration", () => {
     resetDefaultRegistry();
   });
 
-  it("curated archetypes распределены по catalog/detail (feed-паттерны promoted в stable)", () => {
+  it("curated archetypes распределены по catalog/detail/cross (feed-паттерны promoted в stable)", () => {
     const archetypes = new Set(CURATED_CANDIDATES.map(p => p.archetype));
     expect(archetypes.has("catalog")).toBe(true);
     expect(archetypes.has("detail")).toBe(true);
+    expect(archetypes.has("cross")).toBe(true);
     // feed-паттерны (response-cost-before-action) promoted в stable 2026-04-20.
   });
 });
