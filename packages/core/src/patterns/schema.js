@@ -12,6 +12,7 @@ const VALID_KINDS = new Set([
   "entity-field", "intent-effect", "intent-creates", "entity-kind",
   "has-role", "field-role-present", "sub-entity-exists",
   "intent-confirmation", "intent-count",
+  "self-reference-or-explicit",
 ]);
 
 /**
@@ -164,6 +165,22 @@ function evaluateRequirement(req, intents, ontology, mainEntity) {
         const fields = getEntityFields(ontology, name);
         return fkName in fields;
       });
+    }
+
+    // G-K-26: для hierarchy-tree-nav. True если entity:
+    //   (a) self-reference: поле с references === entity, ИЛИ
+    //   (b) explicit `entity.hierarchy: true` declaration
+    // Используется вместо sub-entity-exists для tightening trigger
+    // (FK-chain ≠ hierarchy).
+    case "self-reference-or-explicit": {
+      const target = resolveVar(req.entity, mainEntity);
+      if (!target || !ontology?.entities) return false;
+      const entity = ontology.entities[target];
+      if (!entity) return false;
+      if (entity.hierarchy === true) return true;
+      const fields = typeof entity.fields === "object" && !Array.isArray(entity.fields)
+        ? entity.fields : {};
+      return Object.values(fields).some(def => def?.references === target);
     }
 
     case "intent-confirmation": {

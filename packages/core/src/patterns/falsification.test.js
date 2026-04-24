@@ -241,21 +241,39 @@ describe("Pattern Bank Falsification", () => {
     });
   });
 
-  // ─── hierarchy-tree-nav (Gravitino) ───
+  // ─── hierarchy-tree-nav (G-K-26: tightened to self-ref OR explicit) ───
   describe("hierarchy-tree-nav", () => {
-    it("shouldMatch: workflow/workflow_detail (3-level: Workflow→Node→NodeResult)", () => {
-      // Добавляем workflow domain inline
+    it("shouldMatch: folder с self-reference parentId references Folder (true tree)", () => {
+      const fsOntology = {
+        entities: {
+          Folder: { fields: { id: { type: "text" }, parentId: { type: "text", references: "Folder" }, name: { type: "text" } } },
+        },
+      };
+      const intents = [{ id: "view", particles: { entities: ["f: Folder"], effects: [] } }];
+      const matched = registry.matchPatterns(intents, fsOntology, { kind: "detail", mainEntity: "Folder" });
+      expect(matched.some(p => p.id === "hierarchy-tree-nav")).toBe(true);
+    });
+    it("shouldMatch: explicit entity.hierarchy:true declaration", () => {
+      const ontology = {
+        entities: {
+          Section: { hierarchy: true, fields: { name: { type: "text" } } },
+        },
+      };
+      const intents = [{ id: "view", particles: { entities: ["s: Section"], effects: [] } }];
+      const matched = registry.matchPatterns(intents, ontology, { kind: "detail", mainEntity: "Section" });
+      expect(matched.some(p => p.id === "hierarchy-tree-nav")).toBe(true);
+    });
+    it("shouldNotMatch: workflow без self-ref (G-K-26: FK-chain ≠ hierarchy)", () => {
       const wfOntology = {
         entities: {
           Workflow: { fields: { id: { type: "text" }, name: { type: "text" } } },
-          Node: { fields: { id: { type: "text" }, workflowId: { type: "text" }, type: { type: "select" } } },
-          Edge: { fields: { id: { type: "text" }, workflowId: { type: "text" } } },
-          NodeResult: { fields: { id: { type: "text" }, nodeId: { type: "text" }, status: { type: "select" } } },
+          Node: { fields: { id: { type: "text" }, workflowId: { type: "text" } } },
+          NodeResult: { fields: { id: { type: "text" }, nodeId: { type: "text" } } },
         },
       };
       const intents = [{ id: "view", particles: { entities: ["w: Workflow"], effects: [] } }];
       const matched = registry.matchPatterns(intents, wfOntology, { kind: "detail", mainEntity: "Workflow" });
-      expect(matched.some(p => p.id === "hierarchy-tree-nav")).toBe(true);
+      expect(matched.some(p => p.id === "hierarchy-tree-nav")).toBe(false);
     });
     it("shouldNotMatch: messenger/chat_view (flat)", () => {
       expect(match("messenger", "chat_view", registry).some(p => p.id === "hierarchy-tree-nav")).toBe(false);
