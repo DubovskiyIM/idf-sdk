@@ -4,23 +4,33 @@ export default {
   status: "stable",
   archetype: null,  // cross-archetype — shell-level pattern
   trigger: {
+    // G-K-26: requires для self-recursive | explicit hierarchy.
+    // Старое sub-entity-exists требовало child с FK на mainEntity, что
+    // false-positive matched любой FK-chain (e-commerce/Keycloak/etc).
     requires: [
-      { kind: "sub-entity-exists", foreignKeyTo: "$mainEntity" },
+      { kind: "self-reference-or-explicit", entity: "$mainEntity" },
     ],
     match(intents, ontology, projection) {
-      // Deep hierarchy: mainEntity → child → grandchild (≥3 levels of FK chain)
+      // G-K-26 (post-Keycloak dogfood): trigger ужесточён. FK-chain ≥2
+      // уровней — слишком aggressive (Realm→Client→ClientScope,
+      // Category→Product→LineItem, etc — все matched, treeNav-mess).
+      // Реальная hierarchy = self-reference (parentId на entity)
+      // ИЛИ explicit `entity.hierarchy: true` declaration автором.
       if (!ontology?.entities) return false;
       const mainEntity = projection?.mainEntity;
       if (!mainEntity) return false;
+      const entity = ontology.entities[mainEntity];
+      if (!entity) return false;
 
-      // Ищем child entities с FK на mainEntity
-      const children = findChildEntities(ontology, mainEntity);
-      if (children.length === 0) return false;
+      // (1) Explicit author signal
+      if (entity.hierarchy === true) return true;
 
-      // Ищем grandchild entities с FK на child
-      for (const child of children) {
-        const grandchildren = findChildEntities(ontology, child);
-        if (grandchildren.length > 0) return true;
+      // (2) Self-reference: поле с references === mainEntity (parentId,
+      // managerId, replyToId, и т.п.). Это NESTED-records, реальный tree.
+      const fields = typeof entity.fields === "object" && !Array.isArray(entity.fields)
+        ? entity.fields : {};
+      for (const def of Object.values(fields)) {
+        if (def?.references === mainEntity) return true;
       }
       return false;
     },
@@ -39,13 +49,24 @@ export default {
      * Idempotent: если `slots.sidebar[0].type === "treeNav"` — no-op.
      */
     apply(slots, context) {
-      const { ontology, mainEntity } = context || {};
+      const { ontology, mainEntity, projection } = context || {};
       if (!mainEntity || !ontology?.entities) return slots;
 
+      // G-K-26 (post-Keycloak dogfood): apply opt-in only. Pattern может
+      // match (witness OK), но НЕ инжектит treeNav в sidebar без
+      // author-signal:
+      //   - ontology.features.hierarchyTreeNav === true (domain-wide), ИЛИ
+      //   - projection.patterns.enabled.includes("hierarchy-tree-nav")
+      //     (per-projection)
+      // Без этого — apply NO-op (pattern matched, но rendering — opt-in
+      // как требует author).
+      const featureOptIn = ontology?.features?.hierarchyTreeNav === true;
+      const projectionOptIn = Array.isArray(projection?.patterns?.enabled)
+        && projection.patterns.enabled.includes("hierarchy-tree-nav");
+      if (!featureOptIn && !projectionOptIn) return slots;
+
       const levels = buildHierarchyLevels(ontology, mainEntity);
-      // Минимум 2 уровня (parent → child) — trigger уже проверил 3+,
-      // но apply делает defensive check на случай вызова напрямую.
-      if (levels.length < 2) return slots;
+      if (levels.length < 1) return slots;
 
       const existing = slots?.sidebar || [];
       if (existing[0]?.type === "treeNav") return slots;
@@ -63,21 +84,26 @@ export default {
     },
   },
   rationale: {
-    hypothesis: "Когда сущности формируют цепочку владения ≥3 уровней, flat navigation теряет контекст пути. Tree визуализирует иерархию.",
+    hypothesis: "Hierarchy визуализация уместна для self-recursive структур (folder.parentId, group.parentId, comment.replyToId) или явно declared author'ом hierarchy. Flat FK-chain (Category→Product→LineItem, Realm→Client→Scope) — НЕ hierarchy: каждое child — independent entity, не nested records того же типа.",
     evidence: [
-      { source: "gravitino-webui", description: "Metalake → Catalog → Schema → Table — 4 уровня, left tree panel", reliability: "high" },
-      { source: "aws-console", description: "IAM / S3 / Glue — hierarchical resource browser", reliability: "high" },
+      { source: "gravitino-webui", description: "Tree panel был оправдан только при declared hierarchy=true в metalake_detail authored projection (post-2026-04-24)", reliability: "high" },
+      { source: "filesystem browser", description: "folder.parentId references folder — natural recursive tree", reliability: "high" },
+      { source: "comment threads (Reddit, HN)", description: "comment.parentId references comment — nested replies", reliability: "high" },
     ],
     counterexample: [
-      { source: "twitter", description: "Flat feed — tree бессмысленна", reliability: "high" },
+      { source: "e-commerce category-product", description: "Category→Product — это catalog filter, не tree (Product не Category)", reliability: "high" },
+      { source: "Keycloak Realm-Client-User", description: "Каждый — independent CRUD entity, не recursive. Was over-matched до G-K-26", reliability: "high" },
     ],
   },
   falsification: {
     shouldMatch: [
-      { domain: "workflow", projection: "workflow_detail", reason: "Workflow → Node → NodeResult — 3 levels" },
+      { domain: "filesystem", projection: "folder_detail", reason: "Folder.parentId references Folder — true recursive tree" },
+      { domain: "groups", projection: "group_detail", reason: "Group.parentId references Group (nested groups)" },
     ],
     shouldNotMatch: [
-      { domain: "messenger", projection: "chat_view", reason: "Flat message list, нет deep hierarchy" },
+      { domain: "messenger", projection: "chat_view", reason: "Flat message list, нет hierarchy" },
+      { domain: "ecommerce", projection: "category_list", reason: "Category→Product — classification, не hierarchy" },
+      { domain: "keycloak", projection: "realm_list", reason: "Realm→Client→Scope — independent CRUD entities, не recursive (G-K-26)" },
     ],
   },
 };

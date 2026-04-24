@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import pattern from "./hierarchy-tree-nav.js";
 
 const gravitinoOntology = {
+  features: { hierarchyTreeNav: true },
   entities: {
     Metalake: { fields: { id: { type: "text" } } },
     Catalog: { fields: { id: { type: "text" }, metalakeId: { type: "entityRef" } } },
@@ -74,7 +75,9 @@ describe("hierarchy-tree-nav.structure.apply", () => {
   });
 
   it("depth ограничен 5 уровнями (защита от циклов)", () => {
+    // G-K-26: добавлен features.hierarchyTreeNav для opt-in apply
     const deepOntology = {
+      features: { hierarchyTreeNav: true },
       entities: {
         L0: { fields: {} },
         L1: { fields: { l0Id: { type: "entityRef" } } },
