@@ -1,5 +1,77 @@
 # @intent-driven/importer-openapi
 
+## 0.14.0
+
+### Minor Changes
+
+- 1ebf978: feat(importer-openapi): extractInlineArrays — inline array-of-object как child-коллекция
+
+  K8s CRD и audit-log API часто содержат inline массивы объектов, которые не выносятся в отдельный top-level schema с path-collection:
+
+  - `Application.status.resources[]` (K8s Deployment/Service/Pod список)
+  - `Application.status.conditions[]` (audit-log: type/status/lastTransitionTime/message)
+
+  Стандартный importer мапил их в `{ type: "json" }` и терял структуру items. Host (ArgoCD) вынуждался декларировать синтетические `Resource` / `ApplicationCondition` entities с синтетическим FK на parent.
+
+  `extractInlineArrays` ищет такие inline-массивы и аннотирует parent entity:
+
+  ```js
+  entity.inlineCollections = [
+    {
+      fieldName: "resources",
+      path: ["status", "resources"],
+      itemName: "ResourceStatus",           // из items.$ref, если был
+      itemFields: { kind: { type: "string" }, ... },
+    },
+  ];
+  ```
+
+  Renderer (следующий PR) читает `inlineCollections[]` и рендерит child-коллекцию **без** FK-lookup — items резолвятся прямо из `parent[path[0]][path[1]]`.
+
+  **Поведение:**
+
+  - Сканирует только raw schemas из `spec.components.schemas` (path-derived stubs пропускаются).
+  - Resolves `items.$ref` через `flattenSchema` (доступ к spec сохранён).
+  - `array-of-primitive` игнорируются (только object-items).
+  - Default `minItemFields: 2` — single-field objects не считаются коллекцией.
+  - `maxDepth: 3` — хватает для `status.resources[]` и `spec.source.helm.parameters[]`.
+  - Nested scan по prefixes: `status` / `spec` / `data` / `metadata` (K8s паттерн), top-level всегда.
+  - Opt-out: `opts.extractInlineArrays: false`.
+
+  **Closes:** backlog §10.4a (ArgoCD G-A-4a). Разблокирует renderer inline-children primitive + resourceTree/conditionsTimeline dispatchers (§10.4b+c).
+
+  **Тесты:** 11 новых (9 unit + 2 integration). Суммарно 167/167 green в пакете.
+
+- c6d3689: feat(importer-openapi): preserve $ref field type в propertyToField (10.6)
+
+  Ранее propertyToField видел property с `{ $ref: "#/..." }` и fallback'ил
+  в `type: "string"` потому что `schema.type` был undefined. Это теряло
+  семантику nested object полей (K8s pattern: `metadata: $ref v1.ObjectMeta`,
+  `spec: $ref ApplicationSpec`, `status: $ref ApplicationStatus`).
+
+  Fix: propertyToField принимает `opts.spec` для recursive $ref resolution
+  через flattenSchema. Возвращает:
+
+  - `type: "json"` если $ref → object-schema (nested object / array of
+    objects / allOf-flattened composition)
+  - `type: "string"` / `"number"` / etc. если $ref → primitive schema
+  - `type: "json"` fallback для unresolved $ref без spec (безопаснее чем
+    string, поскольку $ref семантически всегда на другую schema)
+
+  Для array-of-$ref: `type: "json"` + `itemsType: "object"` hint для
+  downstream renderer.
+
+  schemaToEntity теперь принимает `opts.spec` и прокидывает в
+  propertyToField. importOpenApi автоматически передаёт spec.
+
+  Backward compat: propertyToField без opts работает как раньше для
+  не-$ref случаев (primitive types / inline object). Изменяется только
+  поведение для unresolved $ref (был string, стал json — более корректно).
+
+  Closes ArgoCD G-A-6 / backlog §10.6 (Swagger 2.0 → OpenAPI 3.0
+  конверсия через swagger2openapi теряла тип-info для $ref-полей; host
+  SEMANTIC_AUGMENT workaround теперь может быть уменьшен).
+
 ## 0.13.0
 
 ### Minor Changes
