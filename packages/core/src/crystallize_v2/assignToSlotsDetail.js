@@ -29,7 +29,7 @@ const SYSTEM_SUB_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt",
 ]);
 
-export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
+export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opts = {}) {
   const slots = {
     header: [],
     toolbar: [],
@@ -129,7 +129,7 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy) {
       continue;
     }
 
-    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY });
+    const wrapped = wrapByConfirmation(intent, id, parameters, { projection, ontology: ONTOLOGY, projections: opts.projections });
     if (wrapped === null) continue;
     if (wrapped.type === "composerEntry") continue;
 
