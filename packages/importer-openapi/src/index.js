@@ -8,6 +8,7 @@ import {
   rewriteReferencesByAliases,
   rewriteIntentTargetsByAliases,
 } from "./mergeRepresentationDuplicates.js";
+import { mergeK8sCrdDuplicates } from "./mergeK8sCrdDuplicates.js";
 import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
 import { parse as parseYaml } from "yaml";
@@ -20,6 +21,7 @@ export {
   mergeRepresentationDuplicates,
   rewriteReferencesByAliases,
   rewriteIntentTargetsByAliases,
+  mergeK8sCrdDuplicates,
   markEmbeddedTypes,
   inferFieldRole,
   inferFieldRolesForEntities,
