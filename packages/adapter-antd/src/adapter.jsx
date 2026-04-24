@@ -1310,6 +1310,12 @@ export const antdAdapter = {
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
+    // §23 axiom 5 / bidirectional-canvas-tree-selection: adapter декларирует,
+    // поддерживают ли его canvas/map primitives external selection state
+    // (через CoSelectionProvider). false → fallback на readonly tree→canvas
+    // highlight без back-propagation. AntD не имеет native canvas-primitive
+    // — opt-in, когда появится.
+    interaction: { externalSelection: false },
   },
   parameter: {
     text: AntdTextInput,

@@ -71,6 +71,7 @@ export {
   CoSelectionContext,
   useCoSelection,
   useCoSelectionActive,
+  useCoSelectionEnabled,
 } from "./coSelection.jsx";
 
 // Утилиты
