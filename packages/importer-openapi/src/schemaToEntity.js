@@ -1,3 +1,5 @@
+import { flattenSchema } from "./flattenSchema.js";
+
 const TYPE_MAP = {
   string: "string",
   integer: "number",
@@ -29,22 +31,65 @@ function inferRole(name, type, format) {
   return undefined;
 }
 
-export function propertyToField(name, schema) {
-  const format = schema.format;
-  let type = TYPE_MAP[schema.type] ?? "string";
+/**
+ * 10.6 ArgoCD gap closed: если propSchema — $ref (или резолвится в
+ * object через allOf/oneOf), возвращаем эффективный shape для определения
+ * type'а. Без этого все K8s nested object поля ($ref на ObjectMeta /
+ * ApplicationSpec / ApplicationStatus) fallback'ились в "string" потому
+ * что schema.type был undefined на unresolved $ref.
+ *
+ * opts.spec — root OpenAPI spec для resolveRef.
+ */
+function resolveEffectiveSchema(schema, spec) {
+  if (!schema || typeof schema !== "object") return schema;
+  if (!spec) return schema;
+  const hasComposition = schema.$ref
+    || schema.allOf || schema.oneOf || schema.anyOf;
+  if (!hasComposition) return schema;
+  try {
+    return flattenSchema(schema, spec) || schema;
+  } catch {
+    return schema;
+  }
+}
+
+export function propertyToField(name, schema, opts = {}) {
+  const effective = resolveEffectiveSchema(schema, opts.spec);
+  const source = effective || schema;
+
+  // Array-of-$ref: preserve "json" если items имеет $ref/composition
+  let itemsShape = null;
+  if (source.type === "array" && source.items) {
+    itemsShape = resolveEffectiveSchema(source.items, opts.spec);
+  }
+
+  const format = source.format;
+  let type = TYPE_MAP[source.type] ?? "string";
+
+  // $ref'd object без explicit type но с properties → "json"
+  if (!source.type && source.properties) type = "json";
+  // $ref цикл прервал flatten → null, fallback "json" чтобы не потерять
+  if (!source.type && schema.$ref) type = "json";
+
   if (format === "date-time" || format === "date") type = "datetime";
 
   const role = inferRole(name, type, format);
   const field = { type };
   if (role) field.role = role;
-  if (schema.readOnly || role === "date-witness" || name === "id") field.readOnly = true;
-  if (schema.default !== undefined) field.default = schema.default;
-  if (Array.isArray(schema.enum)) field.values = schema.enum;
+  if (source.readOnly || role === "date-witness" || name === "id") field.readOnly = true;
+  if (source.default !== undefined) field.default = source.default;
+  if (Array.isArray(source.enum)) field.values = source.enum;
+
+  // array item-shape hint для downstream renderer'ов
+  if (type === "json" && source.type === "array" && itemsShape) {
+    field.itemsType = itemsShape.type === "object" || itemsShape.properties
+      ? "object" : (itemsShape.type || "any");
+  }
 
   return field;
 }
 
-export function schemaToEntity(name, schema) {
+export function schemaToEntity(name, schema, opts = {}) {
   // Ожидает flattened schema (caller должен flattenSchema'ить раньше для
   // allOf/oneOf). Раньше требовало `type === "object"` strict; теперь
   // принимает schema без explicit type если есть properties — результат
@@ -55,7 +100,7 @@ export function schemaToEntity(name, schema) {
 
   const fields = {};
   for (const [propName, propSchema] of Object.entries(schema.properties)) {
-    fields[propName] = propertyToField(propName, propSchema);
+    fields[propName] = propertyToField(propName, propSchema, opts);
   }
 
   const ownerField = Object.keys(schema.properties).find((k) =>

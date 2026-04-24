@@ -49,7 +49,9 @@ export function importOpenApi(spec, opts = {}) {
   const schemas = spec.components?.schemas ?? {};
   for (const [name, schema] of Object.entries(schemas)) {
     const flat = flattenSchema(schema, spec);
-    const entity = schemaToEntity(name, flat);
+    // Pass spec через opts для 10.6 — propertyToField резолвит $ref в
+    // nested properties (K8s `metadata/spec/status: $ref: ObjectMeta/...`).
+    const entity = schemaToEntity(name, flat, { spec });
     if (entity) entities[name] = entity;
   }
 
