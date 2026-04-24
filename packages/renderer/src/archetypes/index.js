@@ -5,6 +5,7 @@ export { default as ArchetypeDetail } from "./ArchetypeDetail.jsx";
 export { default as ArchetypeFeed } from "./ArchetypeFeed.jsx";
 export { default as ArchetypeForm } from "./ArchetypeForm.jsx";
 export { default as ArchetypeWizard } from "./ArchetypeWizard.jsx";
+export { default as AgentConsole } from "./AgentConsole/AgentConsole.jsx";
 export { default as InlineSetter } from "./InlineSetter.jsx";
 export { default as ProgressWidget } from "./ProgressWidget.jsx";
 export { default as SubCollectionSection } from "./SubCollectionSection.jsx";
