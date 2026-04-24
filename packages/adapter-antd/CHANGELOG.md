@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.1
+
+### Patch Changes
+
+- 491d8a3: AntdOverflowMenu: stopPropagation на trigger и menu items. Без фикса клик по ⋮ в Card бабблит до row-onClick → navigate открывает detail, меню вообще не открывается. Теперь ведёт себя как SDK-fallback InlineOverflowMenu (containers.jsx).
+
 ## 1.8.0
 
 ### Minor Changes
