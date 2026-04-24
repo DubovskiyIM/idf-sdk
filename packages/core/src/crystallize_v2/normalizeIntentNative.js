@@ -147,6 +147,55 @@ function inferConfirmation(intent, normalizedParameters) {
   return null;
 }
 
+/**
+ * Компилирует author-form precondition в canonical conditions:
+ *   { "Order.status": ["pending"] }        → ["Order.status = 'pending'"]
+ *   { "Order.status": ["pending","paid"] } → ["Order.status IN ('pending','paid')"]
+ *   { "Order.status": "pending" }          → ["Order.status = 'pending'"]
+ *   { "Book.archived": false }             → ["Book.archived = false"]
+ *
+ * LHS должен иметь форму `Entity.field` — совпадает с parser'ом в
+ * evalIntentCondition. Нестрогие форматы (array/literal rhs) тихо
+ * пропускаются: автор или просто забыл, или не знает.
+ */
+export function compilePreconditionToConditions(precondition) {
+  if (!precondition || typeof precondition !== "object" || Array.isArray(precondition)) {
+    return [];
+  }
+  const out = [];
+  for (const [lhs, rhs] of Object.entries(precondition)) {
+    if (!lhs || typeof lhs !== "string" || !lhs.includes(".")) continue;
+    if (Array.isArray(rhs)) {
+      const vals = rhs
+        .filter(v => typeof v === "string" || typeof v === "number" || typeof v === "boolean")
+        .map(formatLiteral);
+      if (vals.length === 0) continue;
+      if (vals.length === 1) {
+        out.push(`${lhs} = ${vals[0]}`);
+      } else {
+        out.push(`${lhs} IN (${vals.join(",")})`);
+      }
+    } else if (typeof rhs === "string") {
+      out.push(`${lhs} = ${formatLiteral(rhs)}`);
+    } else if (typeof rhs === "number" || typeof rhs === "boolean") {
+      out.push(`${lhs} = ${rhs}`);
+    } else if (rhs === null) {
+      out.push(`${lhs} = null`);
+    }
+    // object-form { op, value } — TODO если понадобится
+  }
+  return out;
+}
+
+function formatLiteral(v) {
+  if (typeof v === "string") return `'${v.replace(/'/g, "\\'")}'`;
+  return String(v);
+}
+
+function dedupeStrings(arr) {
+  return Array.from(new Set(arr));
+}
+
 export function normalizeIntentNative(intent) {
   if (!intent || typeof intent !== "object") return intent;
 
@@ -206,6 +255,26 @@ export function normalizeIntentNative(intent) {
   if (inferredConf && !newParticles.confirmation) {
     newParticles = { ...newParticles, confirmation: inferredConf };
     particlesMutated = true;
+  }
+
+  // 5. intent.precondition (author-form, object-shape) → particles.conditions
+  // (canonical string-form который ожидают buildItemConditions и
+  // evalIntentCondition). Maps:
+  //   { "Entity.field": "val" }         → "Entity.field = 'val'"
+  //   { "Entity.field": ["v1"] }        → "Entity.field = 'v1'"
+  //   { "Entity.field": ["v1","v2"] }   → "Entity.field IN ('v1','v2')"
+  //   { "Entity.field": true/false/num } → "Entity.field = true"
+  //
+  // Добавляется К существующим particles.conditions, не заменяет — автор
+  // может комбинировать высокоуровневое precondition с сырыми conditions.
+  const compiled = compilePreconditionToConditions(intent.precondition);
+  if (compiled.length > 0) {
+    const existing = Array.isArray(newParticles.conditions) ? newParticles.conditions : [];
+    const merged = dedupeStrings([...existing, ...compiled]);
+    if (merged.length !== existing.length) {
+      newParticles = { ...newParticles, conditions: merged };
+      particlesMutated = true;
+    }
   }
 
   if (!particlesMutated && newParameters === intent.parameters && !intentMutated) {
