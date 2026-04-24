@@ -186,4 +186,102 @@ describe("normalizeIntentsMap", () => {
     expect(out.particles.effects).toEqual([{ α: "create", target: "task.custom" }]);
     expect(out.creates).toBe("Task");
   });
+
+  describe("intent.precondition → particles.conditions", () => {
+    it("single-value array → equality", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: { "Order.status": ["pending"] },
+      });
+      expect(out.particles.conditions).toContain("Order.status = 'pending'");
+    });
+
+    it("multi-value array → IN", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: { "Order.status": ["pending", "paid"] },
+      });
+      expect(out.particles.conditions).toContain("Order.status IN ('pending','paid')");
+    });
+
+    it("scalar string → equality", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: { "Order.status": "pending" },
+      });
+      expect(out.particles.conditions).toContain("Order.status = 'pending'");
+    });
+
+    it("boolean rhs", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Book.archived",
+        precondition: { "Book.archived": false },
+      });
+      expect(out.particles.conditions).toContain("Book.archived = false");
+    });
+
+    it("мульти-field precondition", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: {
+          "Order.status": ["pending"],
+          "Order.archived": false,
+        },
+      });
+      expect(out.particles.conditions).toEqual(
+        expect.arrayContaining([
+          "Order.status = 'pending'",
+          "Order.archived = false",
+        ])
+      );
+    });
+
+    it("merges с existing particles.conditions (без дублей)", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        particles: { conditions: ["Order.ownerId = me.id"] },
+        precondition: { "Order.status": ["pending"] },
+      });
+      expect(out.particles.conditions).toEqual([
+        "Order.ownerId = me.id",
+        "Order.status = 'pending'",
+      ]);
+    });
+
+    it("precondition дубль с existing conditions — не дублируется", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        particles: { conditions: ["Order.status = 'pending'"] },
+        precondition: { "Order.status": ["pending"] },
+      });
+      expect(
+        out.particles.conditions.filter(c => c === "Order.status = 'pending'")
+      ).toHaveLength(1);
+    });
+
+    it("невалидный LHS (без точки) — skip", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: { status: ["pending"] },
+      });
+      expect(out.particles.conditions).toBeUndefined();
+    });
+
+    it("null precondition — no-op", () => {
+      const out = normalizeIntentNative({
+        α: "replace",
+        target: "Order.status",
+        precondition: null,
+      });
+      expect(out.particles.conditions).toBeUndefined();
+    });
+  });
 });
