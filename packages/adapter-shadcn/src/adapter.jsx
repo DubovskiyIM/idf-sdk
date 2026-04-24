@@ -691,6 +691,8 @@ export const shadcnAdapter = {
       chipList: { variants: ["tag", "policy", "role"] },
     },
     shell: { modal: true, tabs: true, sidebar: true },
+    // bidirectional-canvas-tree-selection: shadcn/doodle-адаптер без canvas primitive.
+    interaction: { externalSelection: false },
   },
   parameter: {
     text: ShadcnTextInput,

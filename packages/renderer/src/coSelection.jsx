@@ -32,6 +32,7 @@
  */
 
 import React, { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { getCapability } from "./adapters/registry.js";
 
 const NOOP_CONTEXT = {
   selection: null,
@@ -121,6 +122,30 @@ export function useCoSelection() {
 export function useCoSelectionActive() {
   const ctx = useContext(CoSelectionContext);
   return ctx.__isProvider === true;
+}
+
+/**
+ * Canonical gate для canvas/map-primitives: включать ли bidirectional
+ * binding с shared selection state. True iff:
+ *   (а) CoSelectionProvider смонтирован (иначе некого уведомлять), И
+ *   (б) current adapter declares `capabilities.interaction.externalSelection: true`
+ *
+ * Когда false:
+ *   - Provider смонтирован, но adapter не поддерживает → tree→canvas readonly
+ *     highlight, без back-propagation от canvas-selection к tree-state.
+ *   - Provider не смонтирован → обе projections работают изолированно.
+ *
+ * Adapter opt-in: пока ни один из 4 bundled-адаптеров (antd/mantine/apple/shadcn)
+ * не декларирует `externalSelection: true` — ждут native canvas-primitive
+ * с selection-прокидыванием. Custom adapter'ы могут включить самостоятельно.
+ */
+export function useCoSelectionEnabled() {
+  const active = useCoSelectionActive();
+  if (!active) return false;
+  const cap = getCapability("interaction", "externalSelection");
+  // Unknown capability (null) — для backward-compat считаем false: co-selection
+  // opt-in, а не opt-out (безопаснее не включать ненадёжное binding).
+  return cap === true;
 }
 
 function normalize(value) {

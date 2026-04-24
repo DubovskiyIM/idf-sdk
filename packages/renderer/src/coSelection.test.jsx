@@ -6,7 +6,9 @@ import {
   CoSelectionContext,
   useCoSelection,
   useCoSelectionActive,
+  useCoSelectionEnabled,
 } from "./coSelection.jsx";
+import { registerUIAdapter } from "./adapters/registry.js";
 
 afterEach(cleanup);
 
@@ -297,4 +299,83 @@ describe("CoSelectionContext — two peer-consumers синхронизируют
     expect(canvasSnapshot.current.selection).toEqual({ entityType: "Cube", ids: ["c1", "c2"] });
     expect(canvasSnapshot.current.isSelected("Cube", "c1")).toBe(true);
   });
+});
+
+describe("useCoSelectionEnabled — capability gate для canvas/map primitives", () => {
+  function EnabledProbe({ sink }) {
+    sink.current = useCoSelectionEnabled();
+    return null;
+  }
+
+  it("false без провайдера, даже если adapter declares externalSelection", () => {
+    registerUIAdapter({
+      name: "test-canvas",
+      capabilities: { interaction: { externalSelection: true } },
+    });
+    const sink = { current: null };
+    render(<EnabledProbe sink={sink} />);
+    expect(sink.current).toBe(false);
+  });
+
+  it("false когда провайдер есть, но adapter NOT declares (default)", () => {
+    registerUIAdapter({
+      name: "test-no-ext",
+      capabilities: { interaction: { externalSelection: false } },
+    });
+    const sink = { current: null };
+    render(<CoSelectionProvider><EnabledProbe sink={sink} /></CoSelectionProvider>);
+    expect(sink.current).toBe(false);
+  });
+
+  it("true iff провайдер + adapter externalSelection === true", () => {
+    registerUIAdapter({
+      name: "test-canvas-ok",
+      capabilities: { interaction: { externalSelection: true } },
+    });
+    const sink = { current: null };
+    render(<CoSelectionProvider><EnabledProbe sink={sink} /></CoSelectionProvider>);
+    expect(sink.current).toBe(true);
+  });
+
+  it("false когда capability отсутствует (unknown — opt-in)", () => {
+    registerUIAdapter({
+      name: "test-no-cap",
+      capabilities: { shell: { modal: true } }, // нет interaction-блока
+    });
+    const sink = { current: null };
+    render(<CoSelectionProvider><EnabledProbe sink={sink} /></CoSelectionProvider>);
+    expect(sink.current).toBe(false);
+  });
+
+  it("false когда adapter вообще без capabilities", () => {
+    registerUIAdapter({ name: "test-no-caps" });
+    const sink = { current: null };
+    render(<CoSelectionProvider><EnabledProbe sink={sink} /></CoSelectionProvider>);
+    expect(sink.current).toBe(false);
+  });
+});
+
+describe("bundled adapters — externalSelection capability", () => {
+  // Все 4 bundled-адаптера opt-out (false) — нет native canvas с selection-
+  // прокидыванием. Проверяет, что declaration присутствует (не null/undefined).
+  const fixtures = [
+    { name: "antd-like", caps: { interaction: { externalSelection: false } } },
+    { name: "mantine-like", caps: { interaction: { externalSelection: false } } },
+    { name: "apple-like", caps: { interaction: { externalSelection: false } } },
+    { name: "shadcn-like", caps: { interaction: { externalSelection: false } } },
+  ];
+
+  for (const fx of fixtures) {
+    it(`${fx.name}: capability присутствует как false (opt-in когда появится canvas-primitive)`, () => {
+      registerUIAdapter({ name: fx.name, capabilities: fx.caps });
+      const sink = { current: null };
+      render(<CoSelectionProvider><EnabledProbeForFixture sink={sink} /></CoSelectionProvider>);
+      expect(sink.current).toBe(false);
+    });
+  }
+
+  function EnabledProbeForFixture({ sink }) {
+    sink.current = useCoSelectionEnabled();
+    return null;
+  }
 });
