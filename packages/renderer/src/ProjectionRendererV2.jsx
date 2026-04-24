@@ -62,6 +62,7 @@ export default function ProjectionRendererV2({
   theme,
   artifacts,
   allProjections,
+  validationStrict = false,
 }) {
   // §27 authoring-env: override имеет приоритет над artifact (dev-only).
   const baseArtifact = artifactOverride || artifact;
@@ -86,15 +87,24 @@ export default function ProjectionRendererV2({
     }
   }
 
+  // G-K-23: validation default = soft-warn (console.warn + render продолжает).
+  // Strict mode opt-in через `validationStrict` prop — hard-fail с red box
+  // (для CI / studio authoring environment где invalidity критична).
   const validation = validateArtifact(effectiveArtifact);
   if (!validation.ok) {
-    return (
-      <div style={{ padding: 20, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8 }}>
-        <div style={{ fontWeight: 600, color: "#dc2626", marginBottom: 8 }}>Артефакт не валиден</div>
-        <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: "#7f1d1d" }}>
-          {validation.errors.map((e, i) => <li key={i}>{e}</li>)}
-        </ul>
-      </div>
+    if (validationStrict) {
+      return (
+        <div style={{ padding: 20, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8 }}>
+          <div style={{ fontWeight: 600, color: "#dc2626", marginBottom: 8 }}>Артефакт не валиден</div>
+          <ul style={{ margin: 0, paddingLeft: 20, fontSize: 12, color: "#7f1d1d" }}>
+            {validation.errors.map((e, i) => <li key={i}>{e}</li>)}
+          </ul>
+        </div>
+      );
+    }
+    console.warn(
+      `[ProjectionRendererV2] artifact "${effectiveArtifact.projection}" имеет ${validation.errors.length} validation error(s) — render продолжается (soft-warn). Pass validationStrict={true} для hard-fail.`,
+      validation.errors
     );
   }
 
