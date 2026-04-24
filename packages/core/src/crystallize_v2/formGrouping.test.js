@@ -153,6 +153,50 @@ describe("generateEditProjections", () => {
     const edits = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
     expect(edits.chat_view_edit).toBeUndefined();
   });
+
+  it("G-K-12: editBodyOverride на detail-projection наследуется в <id>_edit", () => {
+    const wizardSpec = {
+      type: "wizard",
+      steps: [
+        { id: "basic", title: "Основное", fields: [{ name: "username", type: "string" }] },
+        { id: "profile", title: "Профиль", fields: [{ name: "bio", type: "textarea" }] },
+      ],
+      onSubmit: { intent: "updateUser" },
+    };
+    const projWithEditOverride = {
+      user_profile: {
+        kind: "detail",
+        mainEntity: "User",
+        editBodyOverride: wizardSpec,
+      },
+    };
+    const edits = generateEditProjections(INTENTS, projWithEditOverride, ONTOLOGY);
+    expect(edits.user_profile_edit).toBeDefined();
+    expect(edits.user_profile_edit.bodyOverride).toEqual(wizardSpec);
+    expect(edits.user_profile_edit.kind).toBe("form");
+  });
+
+  it("G-K-12: без editBodyOverride — bodyOverride не задан (flat formBody)", () => {
+    const edits = generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY);
+    // user_profile_edit существует (из PROJECTIONS.user_profile), но без override
+    if (edits.user_profile_edit) {
+      expect(edits.user_profile_edit.bodyOverride).toBeUndefined();
+    }
+  });
+
+  it("G-K-12: editBodyOverride = non-object игнорируется (paranoia guard)", () => {
+    const projBadOverride = {
+      user_profile: {
+        kind: "detail",
+        mainEntity: "User",
+        editBodyOverride: "not-an-object",
+      },
+    };
+    const edits = generateEditProjections(INTENTS, projBadOverride, ONTOLOGY);
+    if (edits.user_profile_edit) {
+      expect(edits.user_profile_edit.bodyOverride).toBeUndefined();
+    }
+  });
 });
 
 describe("buildFormSpec", () => {
