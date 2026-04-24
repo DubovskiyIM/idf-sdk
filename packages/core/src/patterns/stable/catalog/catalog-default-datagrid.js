@@ -168,6 +168,12 @@ export default {
             label: it.label || labelFor(it.intentId),
             params: { id: "item.id" },
             danger: it.intentId.startsWith("remove"),
+            // Propagate buildItemConditions (precondition + ownership + phase).
+            // Без этого pay_order остаётся в меню заказа со status='paid' —
+            // ActionCell фильтрует по conditions только если они переданы.
+            ...(Array.isArray(it.conditions) && it.conditions.length > 0
+              ? { conditions: it.conditions }
+              : {}),
             ...(it.opens === "overlay" ? { opens: "overlay", overlayKey: it.overlayKey } : {}),
           })),
         });

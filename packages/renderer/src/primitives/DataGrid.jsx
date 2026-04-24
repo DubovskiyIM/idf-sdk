@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import RowAssociationChips, { pluralizeAsLabel } from "./RowAssociationChips.jsx";
 import { evalFilter } from "@intent-driven/core";
-import { evalCondition } from "../eval.js";
+import { evalCondition, evalIntentCondition } from "../eval.js";
 
 /**
  * DataGrid — enhanced table primitive с sort / per-column filter /
@@ -372,8 +372,23 @@ function triggerAction(a, item, ctx) {
   }
 }
 
+/**
+ * Фильтр actions по per-row conditions (buildItemConditions: ownership /
+ * precondition / phase-transition). action.conditions — array of string
+ * вида "Entity.field = 'value'" (compiled из intent.precondition в
+ * normalizeIntentNative, или добавлено из intent.particles.conditions).
+ * Пустой/undefined conditions = действие всегда видно.
+ */
+function filterActionsByConditions(actions, item, ctx) {
+  return actions.filter(a => {
+    if (!Array.isArray(a?.conditions) || a.conditions.length === 0) return true;
+    return a.conditions.every(c => evalIntentCondition(c, item, ctx?.viewer));
+  });
+}
+
 function ActionCell({ item, col, ctx }) {
-  const actions = Array.isArray(col.actions) ? col.actions : [];
+  const rawActions = Array.isArray(col.actions) ? col.actions : [];
+  const actions = filterActionsByConditions(rawActions, item, ctx);
   if (actions.length === 0) return <span style={mutedStyle}>—</span>;
 
   const mode = col.display === "inline" || col.display === "menu"
