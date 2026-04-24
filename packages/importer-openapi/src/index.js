@@ -12,6 +12,7 @@ import { mergeK8sCrdDuplicates } from "./mergeK8sCrdDuplicates.js";
 import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
 import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
+import { extractInlineArrays } from "./extractInlineArrays.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -27,6 +28,7 @@ export {
   inferFieldRole,
   inferFieldRolesForEntities,
   canonicalizeGrpcOperationId,
+  extractInlineArrays,
 };
 
 export function parseSpec(source) {
@@ -119,6 +121,16 @@ export function importOpenApi(spec, opts = {}) {
   //    Opt-out: opts.inferFieldRoles = false.
   if (opts.inferFieldRoles !== false) {
     finalEntities = inferFieldRolesForEntities(finalEntities);
+  }
+
+  // 7) extractInlineArrays (ArgoCD G-A-4a, backlog §10.4a): inline
+  //    array-of-object поля (K8s status.resources[] / status.conditions[] /
+  //    audit-log timelines) получают entity.inlineCollections[] metadata.
+  //    Renderer читает и рендерит child-коллекцию без FK-lookup (items
+  //    из parent[path]). Работает по raw schemas из spec.components.schemas.
+  //    Opt-out: opts.extractInlineArrays = false.
+  if (opts.extractInlineArrays !== false) {
+    finalEntities = extractInlineArrays(finalEntities, spec);
   }
 
   return {
