@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.48.0
+
+### Minor Changes
+
+- 7e3f8a4: Добавлен archetype `AgentConsole` + `useSSE` hook для LLM-агентов через tool-use loop в runtime. TimelineItem поддерживает 6 variants (thinking/effect/observation/pause/error/done) с русскоязычными REASON_LABELS для rejected-preapproval кейсов. Используется в invest-tenant'е Fold SaaS.
+
 ## 0.47.0
 
 ### Minor Changes
