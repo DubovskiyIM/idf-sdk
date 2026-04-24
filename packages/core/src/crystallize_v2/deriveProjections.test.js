@@ -307,7 +307,67 @@ describe("deriveProjections", () => {
       expect(result.listing_detail.mainEntity).toBe("Listing");
     });
 
-    it("no detail if only 1 mutator", () => {
+    it("R3c: read-only detail для R1b catalog (referenced, no creators, no mutators)", () => {
+      // Сценарий из Fold shop: host filter'ит INTENTS по customer.canExecute
+      // → остаётся только list_book, create/update/delete_book отфильтрованы.
+      // Book всё ещё упомянут в CartItem.bookId FK → R1b catalog (readonly).
+      // Без R3c нет book_detail → клик в каталоге не навигируется. С R3c
+      // read-only detail появляется, onItemClick в catalog'е указывает на него.
+      const ONT = {
+        entities: {
+          Book: { fields: { title: { type: "text" } } },
+          CartItem: {
+            fields: {
+              bookId: { type: "entityRef", entity: "Book", required: true },
+              quantity: { type: "number" },
+            },
+          },
+        },
+      };
+      const INTENTS = {
+        list_books: { α: "read", target: "Book" },
+      };
+      const result = deriveProjections(INTENTS, ONT);
+      // R1b: Book referenced by CartItem.bookId → readonly catalog
+      expect(result.book_list).toBeDefined();
+      expect(result.book_list.readonly).toBe(true);
+      // R3c: read-only detail — catalog без mutators
+      expect(result.book_detail).toBeDefined();
+      expect(result.book_detail.readonly).toBe(true);
+      expect(result.book_detail.idParam).toBe("bookId");
+      const witness = result.book_detail.derivedBy?.find(w => w.ruleId === "R3c");
+      expect(witness?.input.source).toBe("R1b-readonly-catalog");
+    });
+
+    it("R3c не переписывает R3: >1 mutators → обычный editable detail", () => {
+      // Regression: убедиться что R3c elif не тригерится когда R3 уже сработал.
+      const ONT = { entities: { Task: { fields: { status: { type: "text" } } } } };
+      const INTENTS = {
+        create_task: {
+          name: "Создать",
+          creates: "Task",
+          particles: { effects: [{ α: "add", target: "Task" }] },
+        },
+        update_status: {
+          name: "Обновить",
+          particles: { effects: [{ α: "replace", target: "Task.status" }] },
+        },
+      };
+      const result = deriveProjections(INTENTS, ONT);
+      expect(result.task_detail).toBeDefined();
+      expect(result.task_detail.readonly).toBeUndefined();
+      const r3 = result.task_detail.derivedBy?.find(w => w.ruleId === "R3");
+      expect(r3).toBeDefined();
+      const r3c = result.task_detail.derivedBy?.find(w => w.ruleId === "R3c");
+      expect(r3c).toBeUndefined();
+    });
+
+    it("R3c: read-only detail когда catalog есть, но mutators = 1 (только creator)", () => {
+      // R3 (writable detail) требует > 1 mutator. Раньше при ровно 1 mutator'е
+      // (только creator) detail не генерился — клик по row в catalog'е был
+      // мёртвый. R3c закрывает дыру: catalog существует → генерируем read-only
+      // detail для row-click навигации. Renderer читает projection.readonly и
+      // прячет edit/delete CTA.
       const INTENTS = {
         create_listing: {
           name: "Создать",
@@ -322,7 +382,12 @@ describe("deriveProjections", () => {
         },
       };
       const result = deriveProjections(INTENTS, ONTOLOGY);
-      expect(result.listing_detail).toBeUndefined();
+      expect(result.listing_detail).toBeDefined();
+      expect(result.listing_detail.kind).toBe("detail");
+      expect(result.listing_detail.readonly).toBe(true);
+      expect(result.listing_detail.idParam).toBe("listingId");
+      const witness = result.listing_detail.derivedBy?.find(w => w.ruleId === "R3c");
+      expect(witness).toBeDefined();
     });
   });
 

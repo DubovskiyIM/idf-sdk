@@ -24,6 +24,7 @@ import {
   witnessR2FeedOverride,
   witnessR3Detail,
   witnessR3bSingletonDetail,
+  witnessR3cReadOnlyDetail,
   witnessR4SubCollection,
   witnessR6FieldUnion,
   witnessR7OwnerFilter,
@@ -321,6 +322,26 @@ export function deriveProjections(intents, ontology) {
         witnesses,
         derivedBy: detailDerivedBy,
       };
+    } else if (projections[`${lower}_list`]) {
+      // R3c: Read-only detail — catalog существует (R1 или R1b), но
+      // mutators нет. Без detail-проекции row-click в catalog'е некуда
+      // не ведёт (navGraph не строит item-click edge). Кейс: read-only
+      // роль (customer видит list_book, но update/delete — только staff;
+      // host filter'ит INTENTS по role.canExecute ДО crystallize). Detail
+      // генерируется с `readonly: true`, renderer скрывает CTA-toolbar.
+      const catalog = projections[`${lower}_list`];
+      const source = catalog.readonly ? "R1b-readonly-catalog" : "R1-catalog-no-mutators";
+      const detailDerivedBy = [witnessR3cReadOnlyDetail(entityName, source)];
+      if (r6Witness) detailDerivedBy.push(r6Witness);
+      projections[`${lower}_detail`] = {
+        kind: "detail",
+        mainEntity: entityName,
+        entities: [entityName],
+        readonly: true,
+        idParam: `${lower}Id`,
+        witnesses,
+        derivedBy: detailDerivedBy,
+      };
     }
   }
 
@@ -420,6 +441,10 @@ export function deriveProjections(intents, ontology) {
     if (typeof ownerField !== "string") continue;  // R3b требует single ownerField
     const detailId = `${lower}_detail`;
     if (!projections[detailId]) continue;  // R3 должен был вывести base detail
+    // Skip если base detail — read-only (R3c, без mutator'ов). R3b singleton
+    // генерирует my_*_detail как owner-scoped edit surface — без mutator'ов
+    // бессмыслен.
+    if (projections[detailId].readonly) continue;
     const mutatorIds = analysis.mutators[entityName] || [];
     projections[`my_${lower}_detail`] = {
       kind: "detail",
