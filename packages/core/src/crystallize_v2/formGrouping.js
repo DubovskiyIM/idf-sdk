@@ -99,6 +99,16 @@ export function generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY) {
 
     const uniqueIntentIds = [...new Set(fieldEntries.map(e => e.intentId))];
 
+    // G-K-12: author может задать `proj.editBodyOverride` на parent
+    // detail-projection — bodyOverride переносится в синтезированный
+    // `<id>_edit` form-projection. Unblocks TabbedForm / Wizard / custom
+    // layouts в edit-mode (раньше работало только для create-mode через
+    // explicit `<entity>_create` + `mode: "create"` + `bodyOverride`).
+    const inherited = {};
+    if (proj.editBodyOverride && typeof proj.editBodyOverride === "object") {
+      inherited.bodyOverride = proj.editBodyOverride;
+    }
+
     editProjections[editProjId] = {
       name: (proj.name || projId) + ": редактирование",
       kind: "form",
@@ -108,6 +118,7 @@ export function generateEditProjections(INTENTS, PROJECTIONS, ONTOLOGY) {
       routeEntities: [],
       sourceProjection: projId,
       editIntents: uniqueIntentIds,
+      ...inherited,
     };
   }
 
