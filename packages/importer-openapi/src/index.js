@@ -10,6 +10,7 @@ import {
 } from "./mergeRepresentationDuplicates.js";
 import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
+import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -23,6 +24,7 @@ export {
   markEmbeddedTypes,
   inferFieldRole,
   inferFieldRolesForEntities,
+  canonicalizeGrpcOperationId,
 };
 
 export function parseSpec(source) {

@@ -1,3 +1,5 @@
+import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
+
 const SKIPPED_PREFIXES = new Set(["api", "v1", "v2", "v3"]);
 
 /**
@@ -232,7 +234,15 @@ export function pathToIntent(method, path, operation, opts = {}) {
   }
 
   if (operation.operationId) {
-    name = operation.operationId;
+    // G-A-7 (ArgoCD): grpc-gateway генерирует operationId как
+    // `<Entity>Service_<VerbNoun>` (ApplicationService_Create). IDF авторинг
+    // ожидает canonical `<verb><Entity>` (createApplication). Host ранее
+    // поддерживал INTENT_RENAME table. Opt-out через
+    // opts.canonicalizeGrpcOperationIds=false.
+    const canonical = opts.canonicalizeGrpcOperationIds !== false
+      ? canonicalizeGrpcOperationId(operation.operationId)
+      : null;
+    name = canonical || operation.operationId;
   }
 
   // Native IDF format — для deriveProjections совместимости.
