@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/renderer",
-  "version": "0.46.0",
+  "version": "0.47.0",
   "description": "Intent-Driven Frontend — renderer: primitives, archetypes, controls, adapter registry",
   "type": "module",
   "main": "./dist/index.cjs",
