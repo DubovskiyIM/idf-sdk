@@ -1,5 +1,12 @@
 # @intent-driven/cli
 
+## 1.4.28
+
+### Patch Changes
+
+- Updated dependencies [c50a3db]
+  - @intent-driven/core@0.60.0
+
 ## 1.4.27
 
 ### Patch Changes
