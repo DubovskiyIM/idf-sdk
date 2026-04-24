@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { render, cleanup, fireEvent } from "@testing-library/react";
 import SubCollectionSection from "./SubCollectionSection.jsx";
 
@@ -263,5 +263,110 @@ describe("SubCollectionSection — groupBy (polymorphic reverseM2mBrowse)", () =
     expect(text).toContain("users");
     expect(text).not.toContain("Catalog (1)");
     expect(text).not.toContain("Table (2)");
+  });
+});
+
+describe("SubCollectionSection — renderAs.type=permissionMatrix (P-K-D)", () => {
+  const USER_TARGET = { id: "u_alice" };
+  const ROLE_MAPPINGS = [
+    { id: "rm1", userId: "u_alice", type: "realm",  name: "admin",       privileges: ["manage"], inheritedFrom: "direct" },
+    { id: "rm2", userId: "u_alice", type: "realm",  name: "view-users",  privileges: ["view"],   inheritedFrom: "composite:admin" },
+    { id: "rm3", userId: "u_alice", type: "client", name: "backend",     privileges: ["invoke"], inheritedFrom: "group:Admins" },
+    { id: "rm4", userId: "u_bob",   type: "realm",  name: "x",           privileges: ["x"],      inheritedFrom: "direct" },
+  ];
+  const section = {
+    title: "Role mappings",
+    source: "roleMappings",
+    foreignKey: "userId",
+    renderAs: { type: "permissionMatrix" },
+  };
+
+  it("рендерит PermissionMatrix для Alice's 3 записей (Bob отфильтрован)", () => {
+    const ctx = { world: { roleMappings: ROLE_MAPPINGS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={USER_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).toContain("admin");
+    expect(container.textContent).toContain("view-users");
+    expect(container.textContent).toContain("backend");
+    expect(container.textContent).toContain("через composite");
+    expect(container.textContent).toContain("через группу");
+    expect(container.textContent).toContain("Role mappings (3)");
+  });
+
+  it("пустой items — section не рендерится", () => {
+    const ctx = { world: { roleMappings: [] }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={USER_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).not.toContain("Role mappings");
+  });
+});
+
+describe("SubCollectionSection — renderAs.type=credentialEditor (P-K-C)", () => {
+  const USER_TARGET = { id: "u_alice" };
+  const CREDENTIALS = [
+    { id: "cr1", userId: "u_alice", type: "password", userLabel: "Основной",  createdDate: 1700000000000, algorithm: "argon2id" },
+    { id: "cr2", userId: "u_alice", type: "otp",      userLabel: "Authy",     createdDate: 1705000000000, algorithm: "SHA-256", digits: 6, period: 30 },
+    { id: "cr3", userId: "u_bob",   type: "password", userLabel: "Bob's",     createdDate: 1700000000000, algorithm: "argon2id" },
+  ];
+
+  it("рендерит CredentialEditor — Alice видит свои 2 credentials, Bob отфильтрован", () => {
+    const section = {
+      title: "Credentials",
+      source: "credentials",
+      foreignKey: "userId",
+      renderAs: { type: "credentialEditor" },
+    };
+    const ctx = { world: { credentials: CREDENTIALS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={USER_TARGET} ctx={ctx} />
+    );
+    expect(container.textContent).toContain("Основной");
+    expect(container.textContent).toContain("Authy");
+    expect(container.textContent).not.toContain("Bob's");
+    expect(container.textContent).toContain("Credentials (2)");
+  });
+
+  it("readOnly=false + actionIntents — onAction exec'ится с intent", () => {
+    const exec = vi.fn();
+    const section = {
+      title: "Credentials",
+      source: "credentials",
+      foreignKey: "userId",
+      renderAs: {
+        type: "credentialEditor",
+        readOnly: false,
+        actionIntents: { rotate: "resetUserPassword", delete: "removeCredential" },
+      },
+    };
+    const ctx = { world: { credentials: CREDENTIALS }, viewer: { id: "u1" }, exec };
+    const { container } = render(
+      <SubCollectionSection section={section} target={USER_TARGET} ctx={ctx} />
+    );
+    const rotateBtn = [...container.querySelectorAll("button")]
+      .find(b => b.textContent === "Сбросить пароль");
+    expect(rotateBtn).toBeTruthy();
+    fireEvent.click(rotateBtn);
+    expect(exec).toHaveBeenCalledWith(
+      "resetUserPassword",
+      expect.objectContaining({ credentialId: "cr1" }),
+    );
+  });
+
+  it("readOnly=true (default) — action buttons hidden", () => {
+    const section = {
+      title: "Credentials",
+      source: "credentials",
+      foreignKey: "userId",
+      renderAs: { type: "credentialEditor" },
+    };
+    const ctx = { world: { credentials: CREDENTIALS }, viewer: { id: "u1" } };
+    const { container } = render(
+      <SubCollectionSection section={section} target={USER_TARGET} ctx={ctx} />
+    );
+    const labels = [...container.querySelectorAll("button")].map(b => b.textContent);
+    expect(labels).not.toContain("Сбросить пароль");
+    expect(labels).not.toContain("Удалить");
   });
 });

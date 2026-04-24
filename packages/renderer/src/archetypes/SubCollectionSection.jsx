@@ -5,6 +5,27 @@ import { evalIntentCondition, evalCondition, resolve } from "../eval.js";
 import Icon from "../adapters/Icon.jsx";
 import { getAdaptedComponent } from "../adapters/registry.js";
 import { EventTimeline } from "../primitives/eventTimeline.jsx";
+import PermissionMatrix from "../primitives/PermissionMatrix.jsx";
+import CredentialEditor from "../primitives/CredentialEditor.jsx";
+
+/**
+ * SectionCard — consistent wrapper для specialized sections (permission
+ * matrix, credential editor, event timeline). Title + count count-header,
+ * body — primitive content.
+ */
+function SectionCard({ title, count, children }) {
+  return (
+    <div style={{ padding: 16 }}>
+      <div style={{
+        fontSize: 11, fontWeight: 600, textTransform: "uppercase",
+        letterSpacing: "0.06em", color: "var(--idf-text-muted)", marginBottom: 12,
+      }}>
+        {title}{typeof count === "number" ? ` (${count})` : ""}
+      </div>
+      {children}
+    </div>
+  );
+}
 
 /**
  * Apply section-level filter (backlog §4.7). Поддержка двух форм:
@@ -135,6 +156,42 @@ export default function SubCollectionSection({ section, target, ctx }) {
     result = applySort(result, sectionSort);
     return result;
   }, [ctx.world, collectionKey, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer]);
+
+  // Section-kind dispatchers (P-K-D / P-K-C, 2026-04-24): renderAs.type →
+  // specialized primitive. Items передаются как value; action-callback'и
+  // проксируются в ctx.exec.
+  if (section.renderAs?.type === "permissionMatrix") {
+    if (items.length === 0) return null;
+    return (
+      <SectionCard title={title} count={items.length}>
+        <PermissionMatrix
+          value={items}
+          privileges={section.renderAs.privileges}
+          readOnly={section.renderAs.readOnly !== false}
+          ctx={ctx}
+        />
+      </SectionCard>
+    );
+  }
+  if (section.renderAs?.type === "credentialEditor") {
+    if (items.length === 0) return null;
+    const actionIntentMap = section.renderAs.actionIntents || {};
+    const handleAction = (action, credential) => {
+      const intent = actionIntentMap[action];
+      if (!intent || !ctx?.exec) return;
+      ctx.exec(intent, { id: credential.id, credentialId: credential.id });
+    };
+    return (
+      <SectionCard title={title} count={items.length}>
+        <CredentialEditor
+          value={items}
+          readOnly={section.renderAs.readOnly !== false}
+          actionsByType={section.renderAs.actionsByType}
+          onAction={section.renderAs.readOnly === false ? handleAction : undefined}
+        />
+      </SectionCard>
+    );
+  }
 
   // Temporal sub-entity (v0.14): если section.renderAs.type === "eventTimeline",
   // рендерим через EventTimeline primitive, пропуская default path.
