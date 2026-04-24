@@ -11,6 +11,7 @@ import {
 import { mergeK8sCrdDuplicates } from "./mergeK8sCrdDuplicates.js";
 import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
+import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -25,6 +26,7 @@ export {
   markEmbeddedTypes,
   inferFieldRole,
   inferFieldRolesForEntities,
+  canonicalizeGrpcOperationId,
 };
 
 export function parseSpec(source) {
