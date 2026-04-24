@@ -64,6 +64,15 @@ export { parameters };
 export * from "./navigation/index.js";
 export { validateArtifact } from "./validation/validateArtifact.js";
 
+// Co-selection — shared selection state между peer-projections
+// (см. bidirectional-canvas-tree-selection pattern, candidate/cross/).
+export {
+  CoSelectionProvider,
+  CoSelectionContext,
+  useCoSelection,
+  useCoSelectionActive,
+} from "./coSelection.jsx";
+
 // Утилиты
 export * from "./hooks.js";
 export {
