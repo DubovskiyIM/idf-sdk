@@ -206,6 +206,30 @@ export function witnessR3Detail(entityName, mutators) {
 }
 
 /**
+ * R3c: read-only detail. Используется когда catalog существует (R1/R1b),
+ * но у роли / в INTENTS нет mutator'ов на этой entity. Без R3c клик по
+ * карточке в catalog'е некуда не ведёт — navGraph не строит item-click
+ * edge в отсутствии detail проекции. С R3c detail появляется как read-only
+ * page (renderer убирает edit/delete CTA на основании projection.readonly).
+ *
+ * Применимость:
+ *  - read-only роль (customer видит list_book, но update_book/delete_book —
+ *    только для staff; INTENTS отфильтрованы host'ом по role.canExecute)
+ *  - view-only домен (каталог ссылочных сущностей без CRUD: справочник стран,
+ *    список продуктов-witness и т.п.)
+ */
+export function witnessR3cReadOnlyDetail(entityName, source) {
+  return {
+    basis: "crystallize-rule",
+    reliability: "rule-based",
+    ruleId: "R3c",
+    input: { entity: entityName, mutators: [], source },
+    output: { kind: "detail", mainEntity: entityName, readonly: true },
+    rationale: `catalog(${entityName}) существует (${source}), но |mutators(${entityName})| = 0 → read-only detail для row-click навигации`,
+  };
+}
+
+/**
  * R3b: owner-scoped singleton detail. my_<entity>_detail без idParam
  * с owner-фильтром. Применяется когда entity.singleton === true И
  * ownerField (single string).

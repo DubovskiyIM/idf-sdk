@@ -105,15 +105,25 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(r3.rationale).toContain(">");
   });
 
-  it("R3: не срабатывает при |mutators| ≤ 1 → проекции detail нет и witness нет", () => {
+  it("R3: не срабатывает при |mutators| ≤ 1 → R3c подхватывает как read-only detail", () => {
     // Единственный intent, один effect → mutators.Category = [add_category], count=1.
+    // R3 требует > 1 mutator для writable detail. Раньше detail вообще не
+    // создавался, но тогда клик по карточке в каталоге был мёртвый.
+    // Теперь R3c генерит read-only detail (renderer прячет edit/delete CTA).
     const INTENTS = {
       add_category: { creates: "Category", particles: { effects: [{ α: "create", target: "category" }] } },
     };
     const ONTOLOGY = { entities: { Category: { fields: { name: { type: "text" } } } } };
     const projections = deriveProjections(INTENTS, ONTOLOGY);
 
-    expect(projections.category_detail).toBeUndefined();
+    expect(projections.category_detail).toBeDefined();
+    expect(projections.category_detail.readonly).toBe(true);
+    // R3 witness НЕ должен присутствовать — он требует >1 mutator.
+    const r3 = projections.category_detail.derivedBy?.find(w => w.ruleId === "R3");
+    expect(r3).toBeUndefined();
+    // R3c witness должен быть.
+    const r3c = projections.category_detail.derivedBy?.find(w => w.ruleId === "R3c");
+    expect(r3c).toBeDefined();
   });
 
   it("R7: my_*_list witness ссылается на sourceCatalog и ownerField", () => {
@@ -413,7 +423,9 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     expect(projections.my_deal_detail).toBeUndefined();
   });
 
-  it("R3b: не срабатывает если base detail (R3) не был выведен (mutator=1)", () => {
+  it("R3b: не срабатывает если base detail (R3) не был выведен (mutator=1, R3c создал read-only)", () => {
+    // R3b требует writable base detail (R3 path). R3c создаёт read-only
+    // detail, которого R3b не подхватывает (нужен full editable).
     const INTENTS = {
       create_solo: { creates: "Solo", particles: { effects: [{ α: "create", target: "solo" }] } },
     };
@@ -428,7 +440,10 @@ describe("proj.derivedBy — crystallize-rule witnesses на уровне derive
     };
     const projections = deriveProjections(INTENTS, ONTOLOGY);
 
-    expect(projections.solo_detail).toBeUndefined();
+    // R3c создал base detail (read-only).
+    expect(projections.solo_detail).toBeDefined();
+    expect(projections.solo_detail.readonly).toBe(true);
+    // R3b (singleton my_*_detail) не сработал — ждёт R3-based detail, не R3c.
     expect(projections.my_solo_detail).toBeUndefined();
   });
 
