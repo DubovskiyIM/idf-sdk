@@ -736,6 +736,8 @@ export const appleAdapter = {
       chipList: { variants: ["tag", "policy", "role"] },
     },
     shell: { modal: true, tabs: true, sidebar: true },
+    // bidirectional-canvas-tree-selection: Apple-адаптер без canvas primitive.
+    interaction: { externalSelection: false },
   },
   parameter: {
     text: AppleTextInput,

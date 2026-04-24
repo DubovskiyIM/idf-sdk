@@ -797,6 +797,10 @@ export const mantineAdapter = {
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
+    // bidirectional-canvas-tree-selection: Mantine не имеет native canvas/map
+    // primitives — SVG-fallback в renderer. False → readonly tree→canvas
+    // highlight без back-propagation.
+    interaction: { externalSelection: false },
   },
   parameter: {
     text: MantineTextInput,
