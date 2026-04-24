@@ -473,26 +473,42 @@ function AntdIntentButton({ spec, onClick, disabled }) {
 function AntdOverflowMenu({ items, triggerIcon, triggerLabel }) {
   if (!items || items.length === 0) return null;
 
+  // AntD Menu item onClick получает { key, domEvent, keyPath, ... }.
+  // stopPropagation на domEvent — иначе клик по пункту меню bubbles
+  // до родительской Card и триггерит navigate-to-detail.
   const menuItems = items.map((item) => {
     if (item.divider) return { type: "divider", key: item.key };
     return {
       key: item.key,
       label: item.label,
       icon: item.icon ? <Icon emoji={item.icon} size={14} /> : undefined,
-      onClick: item.onClick,
+      onClick: ({ domEvent } = {}) => {
+        domEvent?.stopPropagation?.();
+        item.onClick?.();
+      },
     };
   });
 
+  // Wrap trigger span'ом со stopPropagation на click/mousedown —
+  // иначе клик по ⋮ поднимается до Card row-click → ctx.navigate
+  // открывает detail page вместо dropdown'а. SDK'шный InlineOverflowMenu
+  // fallback делает то же самое (containers.jsx L383).
   return (
-    <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
-      <AntButton
-        type="text"
-        shape="circle"
-        size="large"
-        title={triggerLabel || "Ещё"}
-        icon={<Icon emoji={triggerIcon || "⋯"} size={16} />}
-      />
-    </Dropdown>
+    <span
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      style={{ display: "inline-flex" }}
+    >
+      <Dropdown menu={{ items: menuItems }} trigger={["click"]} placement="bottomRight">
+        <AntButton
+          type="text"
+          shape="circle"
+          size="large"
+          title={triggerLabel || "Ещё"}
+          icon={<Icon emoji={triggerIcon || "⋯"} size={16} />}
+        />
+      </Dropdown>
+    </span>
   );
 }
 
