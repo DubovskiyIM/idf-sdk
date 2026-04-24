@@ -158,6 +158,170 @@ describe("evaluateTrigger", () => {
   });
 });
 
+describe("evaluateTrigger — co-selection-group-entity", () => {
+  // Helpers — canonical group-entity ontology shapes.
+  const ontologyCanonical = {
+    entities: {
+      Node: { fields: { id: { type: "text" } } },
+      Group: {
+        fields: {
+          id: { type: "text" },
+          name: { type: "text" },
+          nodeIds: { type: "entityRefArray", references: "Node" },
+          parentGroupId: { type: "entityRef", references: "Group" },
+        },
+      },
+    },
+  };
+
+  // Shorthand ontology — entityRef + array flag.
+  const ontologyShorthand = {
+    entities: {
+      Cube: { fields: { id: { type: "text" } } },
+      RuleFolder: {
+        fields: {
+          name: { type: "text" },
+          cubeIds: { entityRef: "Cube", many: true },
+          parentFolderId: { entityRef: "RuleFolder" },
+        },
+      },
+    },
+  };
+
+  // type: "entityRef[]" variant.
+  const ontologyBracket = {
+    entities: {
+      Pin: { fields: {} },
+      Folder: {
+        fields: {
+          pinIds: { type: "entityRef[]", references: "Pin" },
+          parent: { references: "Folder" },
+        },
+      },
+    },
+  };
+
+  const triggerAuto = { requires: [{ kind: "co-selection-group-entity", entity: "$mainEntity" }] };
+
+  it("matches canonical group-entity (entityRefArray + self-ref)", () => {
+    expect(evaluateTrigger(triggerAuto, [], ontologyCanonical, { mainEntity: "Group" })).toBe(true);
+  });
+
+  it("matches shorthand form (entityRef + many + parent via entityRef)", () => {
+    expect(evaluateTrigger(triggerAuto, [], ontologyShorthand, { mainEntity: "RuleFolder" })).toBe(true);
+  });
+
+  it("matches type:\"entityRef[]\" variant", () => {
+    expect(evaluateTrigger(triggerAuto, [], ontologyBracket, { mainEntity: "Folder" })).toBe(true);
+  });
+
+  it("fails when no array-ref field (Node sam без children)", () => {
+    expect(evaluateTrigger(triggerAuto, [], ontologyCanonical, { mainEntity: "Node" })).toBe(false);
+  });
+
+  it("fails when array-ref present но нет self-reference (flat group, not hierarchy)", () => {
+    const flat = {
+      entities: {
+        Member: { fields: {} },
+        FlatGroup: { fields: { memberIds: { type: "entityRefArray", references: "Member" } } },
+      },
+    };
+    expect(evaluateTrigger(triggerAuto, [], flat, { mainEntity: "FlatGroup" })).toBe(false);
+  });
+
+  it("fails when self-ref present но нет array-ref (hierarchy без membership)", () => {
+    const onlyTree = {
+      entities: {
+        TreeNode: { fields: { parentId: { references: "TreeNode" } } },
+      },
+    };
+    expect(evaluateTrigger(triggerAuto, [], onlyTree, { mainEntity: "TreeNode" })).toBe(false);
+  });
+
+  it("fails when references scalar а не array (singleton FK не считается членством)", () => {
+    const scalarFk = {
+      entities: {
+        Node: { fields: {} },
+        NotGroup: {
+          fields: {
+            nodeId: { type: "entityRef", references: "Node" }, // scalar, not array
+            parentId: { references: "NotGroup" },
+          },
+        },
+      },
+    };
+    expect(evaluateTrigger(triggerAuto, [], scalarFk, { mainEntity: "NotGroup" })).toBe(false);
+  });
+
+  it("fails when array flag true но references отсутствует", () => {
+    const bogus = {
+      entities: {
+        G: {
+          fields: {
+            tags: { array: true }, // flag без target — не считается entity-ref
+            parentId: { references: "G" },
+          },
+        },
+      },
+    };
+    expect(evaluateTrigger(triggerAuto, [], bogus, { mainEntity: "G" })).toBe(false);
+  });
+
+  it("fails when entity отсутствует в ontology", () => {
+    expect(evaluateTrigger(triggerAuto, [], ontologyCanonical, { mainEntity: "Ghost" })).toBe(false);
+  });
+
+  it("explicit memberField + parentField — happy path", () => {
+    const trigger = {
+      requires: [{
+        kind: "co-selection-group-entity",
+        entity: "Group",
+        memberField: "nodeIds",
+        parentField: "parentGroupId",
+      }],
+    };
+    expect(evaluateTrigger(trigger, [], ontologyCanonical, { mainEntity: "Group" })).toBe(true);
+  });
+
+  it("explicit memberField указан не на array-поле — fails", () => {
+    const trigger = {
+      requires: [{
+        kind: "co-selection-group-entity",
+        entity: "Group",
+        memberField: "name", // text, не array-ref
+        parentField: "parentGroupId",
+      }],
+    };
+    expect(evaluateTrigger(trigger, [], ontologyCanonical, { mainEntity: "Group" })).toBe(false);
+  });
+
+  it("explicit parentField не self-reference — fails", () => {
+    const trigger = {
+      requires: [{
+        kind: "co-selection-group-entity",
+        entity: "Group",
+        memberField: "nodeIds",
+        parentField: "nodeIds", // array-ref на Node, не self-ref
+      }],
+    };
+    expect(evaluateTrigger(trigger, [], ontologyCanonical, { mainEntity: "Group" })).toBe(false);
+  });
+
+  it("validatePattern принимает co-selection-group-entity kind", () => {
+    const pattern = {
+      id: "x", version: 1, status: "candidate", archetype: "cross",
+      trigger: { requires: [{ kind: "co-selection-group-entity", entity: "$mainEntity" }] },
+      structure: { slot: "cross-projection", description: "test" },
+      rationale: { hypothesis: "test", evidence: [{ source: "test", description: "test", reliability: "high" }] },
+      falsification: {
+        shouldMatch: [{ domain: "d", projection: "p", reason: "r" }],
+        shouldNotMatch: [{ domain: "d", projection: "p2", reason: "r" }],
+      },
+    };
+    expect(() => validatePattern(pattern)).not.toThrow();
+  });
+});
+
 describe("evaluateTriggerExplained", () => {
   const ontology = {
     entities: {

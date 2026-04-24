@@ -13,6 +13,7 @@ const VALID_KINDS = new Set([
   "has-role", "field-role-present", "sub-entity-exists",
   "intent-confirmation", "intent-count",
   "self-reference-or-explicit",
+  "co-selection-group-entity",
 ]);
 
 /**
@@ -185,6 +186,60 @@ function evaluateRequirement(req, intents, ontology, mainEntity) {
 
     case "intent-confirmation": {
       return intents.some(i => i.particles?.confirmation === req.confirmation);
+    }
+
+    // Trigger для `bidirectional-canvas-tree-selection` и прочих
+    // co-selection паттернов: mainEntity — group-entity, которая (а)
+    // содержит массив entity-refs на target-сущность (визуальные члены
+    // группы — ноды canvas/map/flow), и (б) имеет self-reference для
+    // иерархии (дерево папок).
+    //
+    // Supported ontology shapes для `memberField`:
+    //   { type: "entityRefArray", references: "Target" }
+    //   { type: "entityRef[]", references: "Target" }
+    //   { references: "Target", array: true }
+    //   { references: "Target", multi: true }
+    //   { entityRef: "Target", array: true }
+    //   { entityRef: "Target", many: true }
+    //
+    // Supported shapes для `parentField` (self-reference):
+    //   { references: "<entityName>" } | { entityRef: "<entityName>" }
+    //
+    // Оба поля могут быть auto-detected (scan по fields), либо заданы
+    // явно через `req.memberField` / `req.parentField`.
+    case "co-selection-group-entity": {
+      const target = resolveVar(req.entity, mainEntity);
+      if (!target || !ontology?.entities) return false;
+      const entity = ontology.entities[target];
+      if (!entity) return false;
+      const fields = typeof entity.fields === "object" && !Array.isArray(entity.fields)
+        ? entity.fields : {};
+      const entries = Object.entries(fields);
+      if (!entries.length) return false;
+
+      const isArrayRef = (def) => {
+        if (!def || typeof def !== "object") return false;
+        const type = def.type;
+        if (type === "entityRefArray" || type === "entityRef[]") return true;
+        const flagged = def.array === true || def.multi === true || def.many === true;
+        const refTarget = def.references || def.entityRef;
+        return flagged && typeof refTarget === "string" && refTarget.length > 0;
+      };
+      const isSelfRef = (def) => {
+        if (!def || typeof def !== "object") return false;
+        const refTarget = def.references || def.entityRef;
+        return refTarget === target;
+      };
+
+      const memberOk = req.memberField
+        ? (fields[req.memberField] && isArrayRef(fields[req.memberField]))
+        : entries.some(([, def]) => isArrayRef(def));
+      if (!memberOk) return false;
+
+      const parentOk = req.parentField
+        ? (fields[req.parentField] && isSelfRef(fields[req.parentField]))
+        : entries.some(([, def]) => isSelfRef(def));
+      return !!parentOk;
     }
 
     case "intent-count": {
