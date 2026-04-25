@@ -1,5 +1,65 @@
 # Changelog
 
+## 0.71.0
+
+### Minor Changes
+
+- 2eb4524: Паттерн `diff-preview-before-irreversible` (stable, cross, Sprint 1 P0 #5).
+
+  Расширяет `irreversible-confirm`: когда у mainEntity есть dual-state пара полей
+  (current/target, live/desired, before/after, fieldRole current-state/desired-state)
+  и intent с irreversibility === "high", добавляет `showDiff: true` + `diffFields`
+  в confirmDialog overlay.
+
+  Эталоны: ArgoCD rollback dialog (YAML diff), GitHub PR merge, Terraform plan output.
+  20 тестов (trigger.match ×7, structure.apply ×6, helpers ×4, schema ×3).
+
+- 93c6cf3: feat(patterns): form-yaml-dual-surface — toggle Form / YAML editor для declarative resources (closes G-A-7)
+
+  Promote из argocd-pattern-batch (rancher-manager candidate, 2026-04-24). **Закрывает backlog §10 G-A-7** (yamlEditor archetype в ArgoCD host). Declarative resources имеют bimodal аудиторию: новички — guided form, power-users — YAML manifest. Dual-surface с toggle решает задачу без выбора.
+
+  **Trigger**: form/detail + entity с yaml/manifest fields (type=yaml|json|manifest, fieldRole=manifest|spec|template), entity.resourceClass (k8s/helm/terraform), или K8s convention (apiVersion + kind + metadata).
+
+  **Apply**: form → slots.form.renderAs={type:"formYamlDualSurface"}; detail → slots.body.renderAs={type:"formYamlDualSurface"}. Author-override: no-op если renderAs задан.
+
+- 84d6001: feat(patterns): generator-preview-matrix — preview N generated instances перед bulk commit
+
+  Promote'ится из argocd-pattern-batch (2026-04-25, Sprint 1 P0 #6). **Закрывает backlog §10 G-A-3** (ApplicationSet generator preview gate): template-entity с bulk-creation intent получает preview-матрицу перед confirm'ом вместо «слепого» применения.
+
+  **Trigger**: detail + mainEntity имеет template-like field (name ∈ {template, spec, definition, generator, blueprint} ИЛИ fieldRole === "template") + поле generated output (name matches /generated|instances|applications|jobs|outputs/ ИЛИ fieldRole === "generated-instances") + хотя бы один bulk-creation intent (creates содержит [] ИЛИ intent.bulk === true ИЛИ creates !== mainEntity).
+
+  **Apply**: добавляет overlay `{ id: "generator_preview", type: "generatorMatrix", templateField, instancesField, columns, source }` к `slots.overlays`. Columns выводятся из generated-entity (name/namespace/cluster/status/id в порядке PREFERRED_COLUMNS) или fallback ["name", "id"]. No-op если overlay уже задан. Author-override: `projection.generatorPreview: false`.
+
+  **Эталоны**: ArgoCD ApplicationSet (generator → N Applications), GitHub Actions matrix (strategy.matrix), Jenkins build matrix, Terraform plan (preview gate).
+
+  Stable count: 39 → 40. 30 новых тестов (detectTemplateField × 8, detectGeneratedField × 5, trigger.match × 9, structure.apply × 8).
+
+- 8131d17: feat(patterns): global-scope-picker — header scope-switcher для multi-tenant/cluster admin
+
+  Новый stable pattern (Sprint 1 P0 #7). Promote'ится из rancher-manager-global-scope-picker candidate (argocd-pattern-batch 2026-04-24). Связан с ArgoCD dogfood backlog §10 G-A-1.
+
+  **Гипотеза**: Когда 80%+ namespaced projection'ов живут под одним discriminator (tenant/cluster/workspace/realm), sidebar-фильтр требует O(n) кликов при переключении контекста. Header-picker даёт O(1) переключение — глобальный scope применяется ко всем view автоматически.
+
+  **Trigger**: ontology содержит ≥1 scope entity (isScope: true | kind: "reference" | naming convention: Tenant/Cluster/Workspace/Realm/Namespace/Project/Environment/Organization) AND ≥3 других entities имеют FK-зависимость (field `<scopeLower>Id` | `references === scopeName` | entityRef с именем содержащим scopeLower). OR: `projection.scope` явно задан.
+
+  **Apply**: дополняет `slots.header` полем `scopePicker: { entity, label, source }`. No-op если scopePicker уже задан (author-override) или scope entity не найдена.
+
+  **Эталоны**: Rancher Manager (cluster picker), ArgoCD (project filter), Kubernetes Dashboard (namespace picker), Keycloak (realm switcher), Grafana (org switcher).
+
+  **Falsification**: shouldMatch: argocd/applications_list (Project kind=reference), keycloak/clients_list (Realm isScope=true). shouldNotMatch: lifequest/dashboard (single-user), planning/my_polls (<3 scoped entities).
+
+  21 тест (trigger × 8, structure.apply × 9, helpers × 4). Bump stable count: 39 → 40.
+
+  Helpers экспортированы для reuse: `findScopeEntity`, `countScopedEntities`, `humanize`.
+
+- 56d08ce: feat(patterns): spec-vs-status-panels — двухпанельный split declarative/observed state
+
+  Promote'ится из flux-weave-gitops candidate (2026-04-24) в рамках ArgoCD dogfood sprint. В декларативных reconciliation-системах (GitOps, K8s, Terraform, Flux/ArgoCD) пользователю критично различать «что я задекларировал» (spec) vs «что контроллер применил» (status/observed). Плоский detail скрывает drift.
+
+  **Trigger**: detail + mainEntity имеет ≥1 spec-like поле (fieldRole==="spec" OR имя в spec-словаре: sourceRef, targetRevision, path, interval, chartVersion, desired...) AND ≥1 status-like поле (fieldRole==="status" OR имя в status-словаре: conditions, lastAppliedRevision, phase, health, syncStatus, message...).
+
+  **Apply**: выставляет `body.layout = "spec-status-split"` + `body.specFields` + `body.statusFields`. Author-override: no-op если `body.layout` уже задан. Экспортирует `_helpers: { detectSpecFields, detectStatusFields }` для тестов и reuse.
+
 ## 0.70.0
 
 ### Minor Changes
