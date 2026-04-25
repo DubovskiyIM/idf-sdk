@@ -39,22 +39,31 @@ function looksLikeStatusField(fieldName, fieldDef) {
 
 /**
  * Проверяет, что сущность имеет self-referential FK — поле, ссылающееся на
- * сам entity. Признаки:
- *   - field.type === "foreignKey" && field.refs === entityName
- *   - имя поля начинается с "parent" + camelCase (parentResourceId, parentNodeId)
- *   - поле "parentId" + entityName совпадает с параметром
+ * сам entity. Признаки (в порядке приоритета):
+ *   1. Explicit FK: field.type === "foreignKey" && (field.refs || field.references) === entityName
+ *      ИЛИ field.kind === "foreignKey" && (field.refs || field.references) === entityName
+ *      (поддерживает {type:"entityRef", kind:"foreignKey"} — IDF importer convention)
+ *   2. Convention с Id-суффиксом: parentXxxId (parentResourceId, parentNodeId)
+ *   3. Convention без Id-суффикса: parentXxx (parentResource, parentNode)
+ *   4. Generic fallback: parentId, parent
  */
 export function findSelfRefField(entityName, entity) {
   const fields = entity?.fields;
   if (!fields || typeof fields !== "object") return null;
-  // 1. Explicit FK
+  // 1. Explicit FK — проверяем type="foreignKey" | kind="foreignKey", refs | references
   for (const [name, def] of Object.entries(fields)) {
-    if (def?.type === "foreignKey" && def?.refs === entityName) return name;
+    if (!def) continue;
+    const isFkType = def.type === "foreignKey" || def.kind === "foreignKey";
+    const refTarget = def.refs || def.references;
+    if (isFkType && refTarget === entityName) return name;
   }
-  // 2. Convention: parentXxxId — где Xxx совпадает с entityName
-  const parentByName = `parent${entityName}Id`;
+  // 2. Convention с Id-суффиксом: parent<EntityName>Id
+  const parentById = `parent${entityName}Id`;
+  if (fields[parentById]) return parentById;
+  // 3. Convention без Id-суффикса: parent<EntityName>
+  const parentByName = `parent${entityName}`;
   if (fields[parentByName]) return parentByName;
-  // 3. Generic parentId / parentResourceId
+  // 4. Generic fallback
   for (const candidate of ["parentId", "parentResourceId", "parent"]) {
     if (fields[candidate]) return candidate;
   }
