@@ -14,6 +14,14 @@ import mapFilterCatalog from "./catalog/map-filter-catalog.js";
 import rowContextualActionsMenu from "./catalog/row-contextual-actions-menu.js";
 import reputationLevelBadge from "./detail/reputation-level-badge.js";
 import directInviteSidebar from "./detail/direct-invite-sidebar.js";
+// Tri-source field research (2026-04-25): два workflow-editor field-test'а
+// (LLM/AI-agent + Spark/data-pipeline) + Angular-imperative legacy с polymorphic
+// 200+ кубами и 18-fork brand-overlay. Все три независимо пришли к этим
+// четырём паттернам; формализуем как candidate.
+import humanInTheLoopGate from "./cross/human-in-the-loop-gate.js";
+import compositionAsCallable from "./cross/composition-as-callable.js";
+import agentPlanPreviewApprove from "./cross/agent-plan-preview-approve.js";
+import lifecycleGatesOnRun from "./detail/lifecycle-gates-on-run.js";
 
 // Promoted в stable (2026-04-20, B2):
 //   rating-aggregate-hero       → stable/detail/
@@ -33,6 +41,10 @@ export {
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,
+  humanInTheLoopGate,
+  compositionAsCallable,
+  agentPlanPreviewApprove,
+  lifecycleGatesOnRun,
 };
 
 export const CURATED_CANDIDATES = [
@@ -42,4 +54,8 @@ export const CURATED_CANDIDATES = [
   rowContextualActionsMenu,
   reputationLevelBadge,
   directInviteSidebar,
+  humanInTheLoopGate,
+  compositionAsCallable,
+  agentPlanPreviewApprove,
+  lifecycleGatesOnRun,
 ];
