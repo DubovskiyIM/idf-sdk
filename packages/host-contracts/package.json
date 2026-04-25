@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/host-contracts",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Контракт shell↔module для IDF: AppModuleManifest, ShellContext, NavSection, RouteConfig, CommandConfig",
   "type": "module",
   "exports": {
