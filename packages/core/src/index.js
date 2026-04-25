@@ -43,6 +43,7 @@ export { parseCondition, parseConditions } from "./conditionParser.js";
 export { crystallizeV2 } from "./crystallize_v2/index.js";
 export { deriveProjections } from "./crystallize_v2/deriveProjections.js";
 export { extractSalienceFeatures, FEATURE_KEYS } from "./crystallize_v2/salienceFeatures.js";
+export { salienceFromFeatures, DEFAULT_SALIENCE_WEIGHTS } from "./crystallize_v2/salience.js";
 export { composeProjections } from "./crystallize_v2/composeProjections.js";
 export { explainCrystallize, explainAllCrystallize } from "./crystallize_v2/explainCrystallize.js";
 export { resolveCompositions, resolveItemCompositions, getAliasedField } from "./crystallize_v2/resolveCompositions.js";

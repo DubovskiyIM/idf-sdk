@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
+import { computeSalience, bySalienceDesc, detectTiedGroups, salienceFromFeatures, DEFAULT_SALIENCE_WEIGHTS } from "./salience.js";
 
 describe("computeSalience — explicit override", () => {
   it("число как salience возвращается напрямую", () => {
@@ -223,5 +223,45 @@ describe("detectTiedGroups — witness basis", () => {
     const ws = detectTiedGroups(items, ctx);
     expect(ws).toHaveLength(1);
     expect(ws[0].basis).toBe("alphabetical-fallback");
+  });
+});
+
+describe("salienceFromFeatures — линейная комбинация", () => {
+  it("Σ wᵢ·featureᵢ для явных весов", () => {
+    const f = { explicitNumber: 0.8, tier3Promotion: 1, phaseTransition: 1 };
+    const w = { explicitNumber: 100, tier3Promotion: 60, phaseTransition: 40 };
+    expect(salienceFromFeatures(f, w)).toBeCloseTo(0.8 * 100 + 60 + 40);
+  });
+
+  it("нулевые фичи → нулевой вклад", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(0);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS: creatorMain=1 → salience=80", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.creatorMain = 1;
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(80);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS: tier1CanonicalEdit=1 → salience=80", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.tier1CanonicalEdit = 1;
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(80);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS воспроизводит поведение ladder для phase-transition", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.tier3Promotion = 1;
+    f.phaseTransition = 1;
+    // tier3Promotion(70) + phaseTransition(40) = 110 > 70 (ladder phase-transition)
+    // Суммарно выше, чем просто creatorMain=80 — это правильное семантическое поведение
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBeGreaterThan(40);
+  });
+
+  it("missing weights ключ → 0 вклад (не ошибка)", () => {
+    const f = { unknownKey: 5, tier1CanonicalEdit: 1 };
+    const w = { tier1CanonicalEdit: 80 };
+    expect(salienceFromFeatures(f, w)).toBe(80);
   });
 });

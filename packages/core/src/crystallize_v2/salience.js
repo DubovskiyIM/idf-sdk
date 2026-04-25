@@ -37,6 +37,7 @@
  */
 
 import { normalizeCreates } from "./assignToSlotsShared.js";
+import { extractSalienceFeatures, FEATURE_KEYS } from "./salienceFeatures.js";
 
 const LABEL_MAP = {
   primary: 100,
@@ -44,6 +45,57 @@ const LABEL_MAP = {
   tertiary: 20,
   utility: 5,
 };
+
+/**
+ * Веса по умолчанию для weighted-sum salience (Phase 2).
+ *
+ * Откалиброваны вручную чтобы воспроизвести поведение implicit ladder:
+ * - tier1CanonicalEdit / creatorMain ≈ 80 (как в computeSalience)
+ * - tier3Promotion ≈ 70 (phase-transition)
+ * - tier4ReplaceMain ≈ 60 (edit main)
+ * - removeMain ≈ 30 (destructive ниже edit)
+ * - readOnly ≈ 10
+ *
+ * Подбор на labeled-dataset (21 суждение) — отдельный host-скрипт
+ * salience-fit-weights.mjs (Task 2.3 в idf).
+ *
+ * projection.salienceWeights мержится поверх этих значений на уровне
+ * bySalienceDesc — автор может усилить одну фичу для конкретной проекции.
+ */
+export const DEFAULT_SALIENCE_WEIGHTS = {
+  explicitNumber: 100,
+  explicitTier: 100,
+  tier1CanonicalEdit: 80,
+  tier2EditLike: 50,
+  tier3Promotion: 70,
+  tier4ReplaceMain: 60,
+  creatorMain: 80,
+  phaseTransition: 40,
+  irreversibilityHigh: 35,
+  removeMain: 30,
+  readOnly: 10,
+  ownershipMatch: 15,
+  domainFrequency: 20,
+};
+
+/**
+ * Линейная комбинация Σ wᵢ · featureᵢ.
+ *
+ * @param {Record<string, number>} features — результат extractSalienceFeatures
+ * @param {Record<string, number>} [weights] — по умолчанию DEFAULT_SALIENCE_WEIGHTS
+ * @returns {number}
+ */
+export function salienceFromFeatures(features, weights = DEFAULT_SALIENCE_WEIGHTS) {
+  let s = 0;
+  for (const [k, v] of Object.entries(features)) {
+    if (typeof v !== "number") continue;
+    s += v * (weights[k] || 0);
+  }
+  return s;
+}
+
+// Re-export для удобства вызова из одного модуля
+export { extractSalienceFeatures, FEATURE_KEYS };
 
 /**
  * Вычислить salience для intent в контексте mainEntity.
