@@ -219,14 +219,31 @@ describe("resource-hierarchy-canvas — structure.apply", () => {
 });
 
 describe("resource-hierarchy-canvas — helpers", () => {
-  it("findSelfRefField: explicit FK", () => {
+  it("findSelfRefField: explicit FK type='foreignKey' + refs", () => {
     const entity = { fields: { foo: { type: "foreignKey", refs: "Resource" } } };
     expect(findSelfRefField("Resource", entity)).toBe("foo");
+  });
+
+  it("findSelfRefField: IDF importer convention type='entityRef' + kind='foreignKey' + references", () => {
+    // ArgoCD Resource.parentResource: { type: "entityRef", kind: "foreignKey", references: "Resource" }
+    const entity = { fields: { parentResource: { type: "entityRef", kind: "foreignKey", references: "Resource" } } };
+    expect(findSelfRefField("Resource", entity)).toBe("parentResource");
+  });
+
+  it("findSelfRefField: explicit FK с references (не refs)", () => {
+    const entity = { fields: { parentNode: { type: "foreignKey", references: "Node" } } };
+    expect(findSelfRefField("Node", entity)).toBe("parentNode");
   });
 
   it("findSelfRefField: convention parentXxxId", () => {
     const entity = { fields: { parentNodeId: { type: "string" } } };
     expect(findSelfRefField("Node", entity)).toBe("parentNodeId");
+  });
+
+  it("findSelfRefField: convention parentXxx (без Id суффикса)", () => {
+    // parentResource — без Id, распространён в K8s-style ontology
+    const entity = { fields: { parentResource: { type: "string" } } };
+    expect(findSelfRefField("Resource", entity)).toBe("parentResource");
   });
 
   it("findSelfRefField: generic parentId fallback", () => {
