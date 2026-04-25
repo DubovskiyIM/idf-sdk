@@ -16,6 +16,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "swagger2openapi": "^7.0.8",
     "yaml": "^2.6.0"
   },
   "devDependencies": {
