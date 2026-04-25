@@ -29,7 +29,7 @@ const STATUS_NAME_HINTS = [/Status$/i, /State$/i, /Phase$/i];
 function looksLikeStatusField(fieldName, fieldDef) {
   if (!fieldDef) return false;
   // Must be enum-like (string with values OR boolean — но boolean редко "status").
-  const hasValues = Array.isArray(fieldDef.values) && fieldDef.values.length >= 2;
+  const hasValues = (() => { const v = fieldDef.values ?? fieldDef.options; return Array.isArray(v) && v.length >= 2; })();
   if (!hasValues) return false;
   if (fieldDef.fieldRole === "status") return true;
   if (typeof fieldName === "string" && STATUS_NAME_HINTS.some(re => re.test(fieldName))) return true;
@@ -48,7 +48,7 @@ function pickStatusWitnesses(witnesses, entity) {
     if (!name) continue;
     const fieldDef = entity.fields[name];
     if (looksLikeStatusField(name, fieldDef)) {
-      out.push({ bind: name, label: fieldDef.label || name, values: fieldDef.values });
+      out.push({ bind: name, label: fieldDef.label || name, values: fieldDef.values ?? fieldDef.options });
     }
   }
   return out;

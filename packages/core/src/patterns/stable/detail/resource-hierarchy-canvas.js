@@ -30,7 +30,7 @@ const KIND_FIELD_PREFS = ["kind", "type", "resourceType", "category"];
 
 function looksLikeStatusField(fieldName, fieldDef) {
   if (!fieldDef) return false;
-  const hasValues = Array.isArray(fieldDef.values) && fieldDef.values.length >= 2;
+  const hasValues = (() => { const v = fieldDef.values ?? fieldDef.options; return Array.isArray(v) && v.length >= 2; })();
   if (!hasValues) return false;
   if (fieldDef.fieldRole === "status") return true;
   if (typeof fieldName === "string" && STATUS_NAME_HINTS.some(re => re.test(fieldName))) return true;
@@ -71,7 +71,7 @@ function findStatusFields(entity) {
   const out = [];
   for (const [name, def] of Object.entries(fields)) {
     if (looksLikeStatusField(name, def)) {
-      out.push({ field: name, label: def.label || name, values: def.values });
+      out.push({ field: name, label: def.label || name, values: def.values ?? def.options });
     }
   }
   return out;
