@@ -88,6 +88,21 @@ function isTerminalItem(item, statusField) {
 }
 
 /**
+ * resolveInlinePath — нелобовая навигация по target[seg1][seg2][...]. Возвращает
+ * undefined если любой шаг null/undefined. Используется только для inlineSource:
+ * не support'ит wildcards / index-access / array-traversal — это собственно цель
+ * (массив возвращается как есть из последнего segment'а). Backlog §10.4b.
+ */
+function resolveInlinePath(target, path) {
+  let cur = target;
+  for (const seg of path) {
+    if (cur == null) return undefined;
+    cur = cur[seg];
+  }
+  return cur;
+}
+
+/**
  * Pluralization для fallback collection-key'а: "Position" → "positions",
  * "Address" → "addresses". Используется когда section.source — witness
  * ("derived:<pattern>"), а реальный ключ коллекции не задан явно.
@@ -130,6 +145,14 @@ export default function SubCollectionSection({ section, target, ctx }) {
     // с подзаголовком + count. NullLabel — для items, где значение отсутствует.
     groupBy,
     groupNullLabel,
+    // Inline-children (backlog §10.4b, ArgoCD G-A-4b): items резолвятся
+    // прямо из target[path] вместо ctx.world[collectionKey]+FK. Используется
+    // для K8s status.resources[] / status.conditions[] и audit-log
+    // timeline'ов — где child-collection лежит inline в parent JSON, а не
+    // отдельной коллекцией в world. Importer §10.4a извлекает такие массивы
+    // в entity.inlineCollections[]; кристаллизатор может транслировать их в
+    // section.inlineSource.
+    inlineSource,
   } = section;
 
   // Pattern-derived section'ы могут держать `source` как witness ("derived:<id>")
@@ -143,19 +166,32 @@ export default function SubCollectionSection({ section, target, ctx }) {
   // §6.7: toggle "показать всё" для terminal items. hidden by default когда terminalStatus задан.
   const [showAllTerminal, setShowAllTerminal] = useState(false);
 
-  // Фильтруем коллекцию по foreignKey === target.id + author where + sort + terminal hiding
+  // Фильтруем коллекцию по foreignKey === target.id + author where + sort + terminal hiding.
+  // Inline-children (§10.4b): если section.inlineSource задан, items берутся
+  // из target[path] напрямую (минуя ctx.world / FK). Все остальные фичи
+  // (where / sort / renderAs / groupBy / terminal-hiding) применяются идентично.
   const items = useMemo(() => {
-    const all = ctx.world?.[collectionKey] || [];
-    let result = (!foreignKey || !target?.id)
+    let all;
+    if (inlineSource) {
+      const path = Array.isArray(inlineSource) ? inlineSource : String(inlineSource).split(".");
+      const inlineItems = resolveInlinePath(target, path);
+      all = Array.isArray(inlineItems) ? inlineItems : [];
+    } else {
+      all = ctx.world?.[collectionKey] || [];
+    }
+    // FK-фильтрация только для world-source. Inline-source уже scoped к target.
+    let result = inlineSource
       ? all
-      : all.filter(it => it[foreignKey] === target.id);
+      : (!foreignKey || !target?.id)
+        ? all
+        : all.filter(it => it[foreignKey] === target.id);
     result = applyWhere(result, sectionWhere, ctx);
     if (hideTerminalFlag && terminalStatus && !showAllTerminal) {
       result = result.filter(it => !isTerminalItem(it, terminalStatus));
     }
     result = applySort(result, sectionSort);
     return result;
-  }, [ctx.world, collectionKey, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer]);
+  }, [ctx.world, collectionKey, foreignKey, target, sectionWhere, sectionSort, terminalStatus, hideTerminalFlag, showAllTerminal, ctx.viewer, inlineSource]);
 
   // Section-kind dispatchers (P-K-D / P-K-C, 2026-04-24): renderAs.type →
   // specialized primitive. Items передаются как value; action-callback'и
@@ -306,9 +342,9 @@ export default function SubCollectionSection({ section, target, ctx }) {
               target={target}
             />
           ) : (
-            items.map(item => (
+            items.map((item, idx) => (
               <SubCollectionItem
-                key={item.id}
+                key={item.id ?? `inline_${idx}`}
                 item={item}
                 itemView={itemView}
                 itemIntents={itemIntents || []}
@@ -362,9 +398,9 @@ function GroupedItems({ items, groupBy, nullLabel, itemView, itemIntents, editab
             {group.label} ({group.items.length})
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {group.items.map(item => (
+            {group.items.map((item, idx) => (
               <SubCollectionItem
-                key={item.id}
+                key={item.id ?? `${group.key}_${idx}`}
                 item={item}
                 itemView={itemView}
                 itemIntents={itemIntents}
