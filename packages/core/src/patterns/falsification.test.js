@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("43 stable patterns loaded (+form-yaml-dual-surface ArgoCD G-A-7 closes 2026-04-25)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(43);
+  it("44 stable patterns loaded (+form-yaml-dual-surface ArgoCD G-A-7 closes 2026-04-25)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(44);
   });
 
   // ─── hero-create ───
