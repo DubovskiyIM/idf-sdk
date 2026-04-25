@@ -1,320 +1,140 @@
 import { describe, it, expect } from "vitest";
 import formYamlDualSurface from "./form-yaml-dual-surface.js";
+const { isYamlEditorEntity } = formYamlDualSurface._helpers;
 
-const { isYamlField, detectYamlField, hasStructuredFields } =
-  formYamlDualSurface._helpers;
-
-// ─── Базовые данные ──────────────────────────────────────────────────────────
-
-/** Application.spec — yaml-type + structured fields (ArgoCD). */
-const ontologyArgo = {
+const ontologyK8s = {
   entities: {
     Application: {
       fields: {
-        id:          { type: "string" },
-        name:        { type: "string" },
-        project:     { type: "string" },
-        destination: { type: "string" },
-        spec:        { type: "yaml" },
+        id: { type: "string" },
+        apiVersion: { type: "string" },
+        kind: { type: "string" },
+        metadata: { type: "object" },
+        spec: { type: "object" },
       },
     },
   },
 };
-const projArgo = { archetype: "detail", mainEntity: "Application" };
 
-/** Keycloak Client — json export field + structured fields. */
-const ontologyKeycloak = {
+const ontologyYamlField = {
   entities: {
-    Client: {
+    Repository: {
       fields: {
-        id:           { type: "string" },
-        clientId:     { type: "string" },
-        protocol:     { type: "string" },
-        enabled:      { type: "boolean" },
-        definition:   { type: "json" },
+        id: { type: "string" },
+        url: { type: "string" },
+        tlsClientCertData: { type: "yaml" },
       },
     },
   },
 };
-const projKeycloak = { archetype: "detail", mainEntity: "Client" };
 
-/** Booking — только structured fields, нет yaml/manifest. */
-const ontologyBooking = {
+const ontologyResourceClass = {
   entities: {
-    Booking: {
-      fields: {
-        id:     { type: "string" },
-        date:   { type: "datetime" },
-        status: { type: "select", options: ["pending", "confirmed", "cancelled"] },
-        price:  { type: "number", fieldRole: "money" },
-      },
+    HelmChart: {
+      resourceClass: "helm",
+      fields: { id: { type: "string" }, chart: { type: "string" } },
     },
   },
 };
-const projBooking = { archetype: "detail", mainEntity: "Booking" };
-
-/** Sales Listing — text/multiImage/money, нет raw-manifest. */
-const ontologySales = {
-  entities: {
-    Listing: {
-      fields: {
-        id:     { type: "string" },
-        title:  { type: "string" },
-        images: { type: "multiImage" },
-        price:  { type: "number", fieldRole: "money" },
-      },
-    },
-  },
-};
-const projListing = { archetype: "detail", mainEntity: "Listing" };
-
-// ─── trigger.match ───────────────────────────────────────────────────────────
 
 describe("form-yaml-dual-surface — trigger.match", () => {
-  it("matches: ArgoCD Application (spec: yaml + structured fields)", () => {
-    expect(formYamlDualSurface.trigger.match([], ontologyArgo, projArgo)).toBe(true);
+  it("matches: K8s convention (apiVersion + kind + metadata)", () => {
+    expect(formYamlDualSurface.trigger.match([], ontologyK8s, { archetype: "form", mainEntity: "Application" })).toBe(true);
+    expect(formYamlDualSurface.trigger.match([], ontologyK8s, { archetype: "detail", mainEntity: "Application" })).toBe(true);
   });
 
-  it("matches: Keycloak Client (definition: json + structured fields)", () => {
-    expect(formYamlDualSurface.trigger.match([], ontologyKeycloak, projKeycloak)).toBe(true);
+  it("matches: yaml-type field", () => {
+    expect(formYamlDualSurface.trigger.match([], ontologyYamlField, { archetype: "form", mainEntity: "Repository" })).toBe(true);
   });
 
-  it("matches: entity с fieldRole raw-manifest + structured field", () => {
-    const ont = {
-      entities: {
-        Resource: {
-          fields: {
-            name:     { type: "string" },
-            manifest: { type: "string", fieldRole: "raw-manifest" },
-          },
-        },
-      },
-    };
-    expect(formYamlDualSurface.trigger.match([], ont, { archetype: "detail", mainEntity: "Resource" })).toBe(true);
+  it("matches: entity.resourceClass", () => {
+    expect(formYamlDualSurface.trigger.match([], ontologyResourceClass, { archetype: "detail", mainEntity: "HelmChart" })).toBe(true);
   });
 
-  it("matches: поле с именем 'manifest' (convention-based) + structured field", () => {
-    const ont = {
-      entities: {
-        Config: {
-          fields: {
-            id:       { type: "string" },
-            manifest: { type: "string" },
-          },
-        },
-      },
-    };
-    expect(formYamlDualSurface.trigger.match([], ont, { archetype: "detail", mainEntity: "Config" })).toBe(true);
+  it("matches: fieldRole manifest", () => {
+    const ont = { entities: { E: { fields: { id: { type: "string" }, raw: { type: "string", fieldRole: "manifest" } } } } };
+    expect(formYamlDualSurface.trigger.match([], ont, { archetype: "form", mainEntity: "E" })).toBe(true);
   });
 
-  it("не matches: нет yaml/manifest field (только structured)", () => {
-    expect(formYamlDualSurface.trigger.match([], ontologyBooking, projBooking)).toBe(false);
+  it("не matches: обычная форма без yaml/manifest signals", () => {
+    const ont = { entities: { Booking: { fields: { id: { type: "string" }, date: { type: "datetime" } } } } };
+    expect(formYamlDualSurface.trigger.match([], ont, { archetype: "form", mainEntity: "Booking" })).toBe(false);
   });
 
-  it("не matches: archetype !== detail (catalog)", () => {
-    expect(
-      formYamlDualSurface.trigger.match([], ontologyArgo, { ...projArgo, archetype: "catalog" })
-    ).toBe(false);
+  it("не matches: archetype catalog/feed/dashboard", () => {
+    expect(formYamlDualSurface.trigger.match([], ontologyK8s, { archetype: "catalog", mainEntity: "Application" })).toBe(false);
   });
 
-  it("не matches: нет structured fields (только yaml)", () => {
-    const ont = {
-      entities: {
-        RawDoc: {
-          fields: {
-            spec: { type: "yaml" },
-          },
-        },
-      },
-    };
-    expect(formYamlDualSurface.trigger.match([], ont, { archetype: "detail", mainEntity: "RawDoc" })).toBe(false);
-  });
-
-  it("не matches: projection.noYamlToggle: true (kill-switch)", () => {
-    expect(
-      formYamlDualSurface.trigger.match([], ontologyArgo, { ...projArgo, noYamlToggle: true })
-    ).toBe(false);
-  });
-
-  it("не matches: нет mainEntity", () => {
-    expect(formYamlDualSurface.trigger.match([], ontologyArgo, { archetype: "detail" })).toBe(false);
+  it("не matches: null archetype (любой) с невалидным entity", () => {
+    expect(formYamlDualSurface.trigger.match([], {}, { mainEntity: "Missing" })).toBe(false);
   });
 });
-
-// ─── structure.apply ─────────────────────────────────────────────────────────
 
 describe("form-yaml-dual-surface — structure.apply", () => {
-  const context = { projection: projArgo, ontology: ontologyArgo };
-
-  it("добавляет renderHint: yamlToggle + yamlField к form overlay без renderHint", () => {
-    const slots = {
-      overlays: [
-        { id: "edit_application", kind: "form", entity: "Application" },
-      ],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, context);
-    expect(out.overlays[0].renderHint).toBe("yamlToggle");
-    expect(out.overlays[0].yamlField).toBe("spec");
+  it("form-archetype: выставляет slots.form.renderAs", () => {
+    const slots = { form: { type: "form", fields: [] } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "form", mainEntity: "Application" } });
+    expect(out.form.renderAs).toEqual({ type: "formYamlDualSurface" });
   });
 
-  it("сохраняет остальные поля overlay без изменений", () => {
-    const slots = {
-      overlays: [
-        { id: "edit_app", kind: "formModal", entity: "Application", title: "Edit Application" },
-      ],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, context);
-    expect(out.overlays[0].id).toBe("edit_app");
-    expect(out.overlays[0].title).toBe("Edit Application");
-    expect(out.overlays[0].kind).toBe("formModal");
+  it("detail-archetype: выставляет slots.body.renderAs", () => {
+    const slots = { body: { type: "fields" } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "detail", mainEntity: "Application" } });
+    expect(out.body.renderAs).toEqual({ type: "formYamlDualSurface" });
   });
 
-  it("no-op: overlay уже имеет renderHint (author-override)", () => {
-    const slots = {
-      overlays: [
-        { id: "edit_app", kind: "form", entity: "Application", renderHint: "tabbedForm" },
-      ],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, context);
-    expect(out).toBe(slots); // identity — мутации нет
-  });
-
-  it("no-op: overlay для другой entity (не mainEntity)", () => {
-    const slots = {
-      overlays: [
-        { id: "edit_cluster", kind: "form", entity: "Cluster" },
-      ],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, context);
+  it("no-op: form.renderAs уже задан", () => {
+    const slots = { form: { renderAs: { type: "existing" } } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "form", mainEntity: "Application" } });
     expect(out).toBe(slots);
   });
 
-  it("no-op: projection.noYamlToggle: true", () => {
-    const slots = {
-      overlays: [{ id: "edit_app", kind: "form", entity: "Application" }],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, {
-      projection: { ...projArgo, noYamlToggle: true },
-      ontology: ontologyArgo,
-    });
+  it("no-op: body.renderAs уже задан", () => {
+    const slots = { body: { renderAs: { type: "existing" } } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "detail", mainEntity: "Application" } });
     expect(out).toBe(slots);
   });
 
-  it("no-op: slots.overlays отсутствует", () => {
-    const out = formYamlDualSurface.structure.apply({}, context);
-    expect(out).toEqual({});
+  it("no-op: projection.bodyOverride задан", () => {
+    const slots = { body: { type: "fields" } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "detail", mainEntity: "Application", bodyOverride: {} } });
+    expect(out).toBe(slots);
   });
 
-  it("обрабатывает несколько overlays — применяет только к form/edit без renderHint + mainEntity", () => {
-    const slots = {
-      overlays: [
-        { id: "view_app",  kind: "detail",    entity: "Application" },
-        { id: "edit_app",  kind: "form",      entity: "Application" },
-        { id: "edit_clus", kind: "form",      entity: "Cluster" },
-        { id: "already",   kind: "form",      entity: "Application", renderHint: "tabbedForm" },
-      ],
-    };
-    const out = formYamlDualSurface.structure.apply(slots, context);
-    // view (detail kind) → пропускаем... но kind "detail" не в skip-list
-    // Проверяем, что "edit_app" (form + Application) получил renderHint
-    const editApp = out.overlays.find(o => o.id === "edit_app");
-    expect(editApp.renderHint).toBe("yamlToggle");
-    // edit_clus → другой entity → no change
-    const editClus = out.overlays.find(o => o.id === "edit_clus");
-    expect(editClus.renderHint).toBeUndefined();
-    // already → renderHint сохранён
-    const already = out.overlays.find(o => o.id === "already");
-    expect(already.renderHint).toBe("tabbedForm");
+  it("no-op: entity не yaml-editor (booking)", () => {
+    const ont = { entities: { Booking: { fields: { id: { type: "string" } } } } };
+    const slots = { form: { type: "form" } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ont, projection: { archetype: "form", mainEntity: "Booking" } });
+    expect(out).toBe(slots);
   });
 
-  it("detectYamlField: выбирает первое подходящее поле по declaration order", () => {
-    const ont = {
-      entities: {
-        Res: {
-          fields: {
-            id:   { type: "string" },
-            name: { type: "string" },
-            spec: { type: "yaml" },
-          },
-        },
-      },
-    };
-    const slots = { overlays: [{ id: "e", kind: "form" }] };
-    const out = formYamlDualSurface.structure.apply(slots, {
-      projection: { archetype: "detail", mainEntity: "Res" },
-      ontology: ont,
-    });
-    expect(out.overlays[0].yamlField).toBe("spec");
+  it("сохраняет остальные поля form без изменений", () => {
+    const slots = { form: { type: "form", action: "create_app", custom: 42 } };
+    const out = formYamlDualSurface.structure.apply(slots, { ontology: ontologyK8s, projection: { archetype: "form", mainEntity: "Application" } });
+    expect(out.form.action).toBe("create_app");
+    expect(out.form.custom).toBe(42);
   });
 });
 
-// ─── helpers ─────────────────────────────────────────────────────────────────
-
 describe("form-yaml-dual-surface — helpers", () => {
-  describe("isYamlField", () => {
-    it("fieldRole: raw-manifest → true", () => {
-      expect(isYamlField("anything", { type: "string", fieldRole: "raw-manifest" })).toBe(true);
-    });
-    it("type: yaml → true", () => {
-      expect(isYamlField("body", { type: "yaml" })).toBe(true);
-    });
-    it("type: json → true", () => {
-      expect(isYamlField("config", { type: "json" })).toBe(true);
-    });
-    it("имя 'spec' (convention) → true даже без yaml-type", () => {
-      expect(isYamlField("spec", { type: "string" })).toBe(true);
-    });
-    it("имя 'manifest' → true", () => {
-      expect(isYamlField("manifest", { type: "text" })).toBe(true);
-    });
-    it("имя 'status' + type select → false (не yaml field)", () => {
-      expect(isYamlField("status", { type: "select" })).toBe(false);
-    });
-    it("null fieldDef → false", () => {
-      expect(isYamlField("spec", null)).toBe(false);
-    });
+  it("isYamlEditorEntity: K8s convention", () => {
+    const entity = { fields: { apiVersion: {}, kind: {}, metadata: {}, spec: {} } };
+    expect(isYamlEditorEntity(entity)).toBe(true);
   });
 
-  describe("detectYamlField", () => {
-    it("возвращает имя первого yaml-field", () => {
-      const entity = {
-        fields: {
-          id:   { type: "string" },
-          spec: { type: "yaml" },
-        },
-      };
-      expect(detectYamlField(entity)).toBe("spec");
-    });
-    it("возвращает null если yaml-field нет", () => {
-      const entity = { fields: { id: { type: "string" }, name: { type: "string" } } };
-      expect(detectYamlField(entity)).toBe(null);
-    });
-    it("возвращает null для пустого entity", () => {
-      expect(detectYamlField(null)).toBe(null);
-      expect(detectYamlField({})).toBe(null);
-    });
+  it("isYamlEditorEntity: yaml field type", () => {
+    expect(isYamlEditorEntity({ fields: { cfg: { type: "yaml" } } })).toBe(true);
   });
 
-  describe("hasStructuredFields", () => {
-    it("true: entity с string + yaml field", () => {
-      const entity = {
-        fields: {
-          name: { type: "string" },
-          spec: { type: "yaml" },
-        },
-      };
-      expect(hasStructuredFields(entity)).toBe(true);
-    });
-    it("false: только yaml field (нет structured)", () => {
-      const entity = { fields: { spec: { type: "yaml" } } };
-      expect(hasStructuredFields(entity)).toBe(false);
-    });
-    it("false: yaml + json (оба unstructured)", () => {
-      const entity = { fields: { spec: { type: "yaml" }, raw: { type: "json" } } };
-      expect(hasStructuredFields(entity)).toBe(false);
-    });
-    it("false: null entity", () => {
-      expect(hasStructuredFields(null)).toBe(false);
-    });
+  it("isYamlEditorEntity: resourceClass helm", () => {
+    expect(isYamlEditorEntity({ resourceClass: "helm", fields: {} })).toBe(true);
+  });
+
+  it("isYamlEditorEntity: false без signals", () => {
+    expect(isYamlEditorEntity({ fields: { name: { type: "string" }, date: { type: "datetime" } } })).toBe(false);
+  });
+
+  it("isYamlEditorEntity: fieldRole template", () => {
+    expect(isYamlEditorEntity({ fields: { tpl: { type: "string", fieldRole: "template" } } })).toBe(true);
   });
 });
