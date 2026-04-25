@@ -126,6 +126,7 @@ import reverseAssociationBrowser from "./stable/detail/reverse-association-brows
 import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canvas-tree-selection.js";
 // ArgoCD dogfood (2026-04-25 promotion from argocd-pattern-batch)
 import globalScopePicker from "./stable/cross/global-scope-picker.js";
+import generatorPreviewMatrix from "./stable/detail/generator-preview-matrix.js";
 import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 import resourceHierarchyCanvas from "./stable/detail/resource-hierarchy-canvas.js";
 import specVsStatusPanels from "./stable/detail/spec-vs-status-panels.js";
@@ -169,6 +170,7 @@ const STABLE_PATTERNS = [
   dualStatusBadgeCard,
   resourceHierarchyCanvas,
   globalScopePicker,
+  generatorPreviewMatrix,
   specVsStatusPanels,
   formYamlDualSurface,
   // Sprint 1 P0 #5 (2026-04-25)
