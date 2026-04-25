@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 7 паттернов (2026-04-24 Selfai dogfood: +bidirectional-canvas-tree-selection в cross/)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(7);
+  it("в curated bank ровно 6 паттернов (bidirectional-canvas-tree-selection promoted в stable 2026-04-24)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(6);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -47,7 +47,7 @@ describe("curated candidate bank — schema validity", () => {
 });
 
 describe("curated candidate bank — registry integration", () => {
-  it("loadCandidatePatterns регистрирует все 7 curated в пустом registry", () => {
+  it("loadCandidatePatterns регистрирует все 6 curated в пустом registry", () => {
     const registry = createRegistry();
     loadCandidatePatterns(registry);
     for (const pattern of CURATED_CANDIDATES) {
@@ -59,15 +59,16 @@ describe("curated candidate bank — registry integration", () => {
     const registry = createRegistry();
     loadStablePatterns(registry);
     loadCandidatePatterns(registry);
-    // Sanity: stable (36 — +3 B2 promotions + catalog-action-cta §8.1 + catalog-default-datagrid
-    // + 3 Gravitino WebUI v2 promotions 2026-04-23) + curated (6).
+    // Sanity: stable (37 — +3 B2 promotions + catalog-action-cta §8.1 + catalog-default-datagrid
+    // + 3 Gravitino WebUI v2 promotions 2026-04-23 + bidirectional-canvas-tree-selection
+    // 2026-04-24) + curated (6).
     // Totals могут быть выше за счёт manifest-свалки (127+), но она
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(36);
-    // Curated (7) прошли validatePattern; manifest-свалка может добавить >0.
-    expect(candidateCount).toBeGreaterThanOrEqual(7);
+    expect(stableCount).toBe(37);
+    // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
+    expect(candidateCount).toBeGreaterThanOrEqual(6);
     // Проверка, что каждый curated действительно в registry.
     for (const pattern of CURATED_CANDIDATES) {
       expect(registry.getPattern(pattern.id)).toBeTruthy();
@@ -83,11 +84,11 @@ describe("curated candidate bank — registry integration", () => {
     resetDefaultRegistry();
   });
 
-  it("curated archetypes распределены по catalog/detail/cross (feed-паттерны promoted в stable)", () => {
+  it("curated archetypes распределены по catalog/detail (cross/feed promoted в stable)", () => {
     const archetypes = new Set(CURATED_CANDIDATES.map(p => p.archetype));
     expect(archetypes.has("catalog")).toBe(true);
     expect(archetypes.has("detail")).toBe(true);
-    expect(archetypes.has("cross")).toBe(true);
-    // feed-паттерны (response-cost-before-action) promoted в stable 2026-04-20.
+    // cross-паттерн (bidirectional-canvas-tree-selection) promoted 2026-04-24.
+    // feed-паттерны (response-cost-before-action) promoted 2026-04-20.
   });
 });

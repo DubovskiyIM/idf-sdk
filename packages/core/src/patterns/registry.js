@@ -122,6 +122,8 @@ import catalogDefaultDatagrid   from "./stable/catalog/catalog-default-datagrid.
 import lifecycleGatedDestructive from "./stable/detail/lifecycle-gated-destructive.js";
 import inlineChipAssociation     from "./stable/catalog/inline-chip-association.js";
 import reverseAssociationBrowser from "./stable/detail/reverse-association-browser.js";
+// Selfai dogfood (2026-04-24 promotion from candidate — co-selection gates closed)
+import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canvas-tree-selection.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -153,6 +155,8 @@ const STABLE_PATTERNS = [
   lifecycleGatedDestructive,
   inlineChipAssociation,
   reverseAssociationBrowser,
+  // Selfai dogfood (2026-04-24)
+  bidirectionalCanvasTreeSelection,
 ];
 
 export function loadStablePatterns(registry) {
