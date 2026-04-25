@@ -1,5 +1,14 @@
 # @intent-driven/cli
 
+## 1.4.41
+
+### Patch Changes
+
+- Updated dependencies [40b5213]
+- Updated dependencies [38fcfd8]
+  - @intent-driven/core@0.69.0
+  - @intent-driven/importer-openapi@0.15.0
+
 ## 1.4.40
 
 ### Patch Changes
