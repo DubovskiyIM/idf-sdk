@@ -1,0 +1,58 @@
+{
+  "name": "@intent-driven/host-contracts",
+  "version": "0.1.0",
+  "description": "Контракт shell↔module для IDF: AppModuleManifest, ShellContext, NavSection, RouteConfig, CommandConfig",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./validate": {
+      "types": "./src/validate.d.ts",
+      "default": "./src/validate.js"
+    },
+    "./merge": {
+      "types": "./src/merge.d.ts",
+      "default": "./src/merge.js"
+    },
+    "./constants": {
+      "types": "./src/constants.d.ts",
+      "default": "./src/constants.js"
+    }
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/host-contracts",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
+    "directory": "packages/host-contracts"
+  },
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "intent-driven",
+    "host-contracts",
+    "module-federation",
+    "shell",
+    "manifest",
+    "micro-frontend"
+  ]
+}
