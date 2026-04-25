@@ -122,7 +122,7 @@ import catalogDefaultDatagrid   from "./stable/catalog/catalog-default-datagrid.
 import lifecycleGatedDestructive from "./stable/detail/lifecycle-gated-destructive.js";
 import inlineChipAssociation     from "./stable/catalog/inline-chip-association.js";
 import reverseAssociationBrowser from "./stable/detail/reverse-association-browser.js";
-// Selfai dogfood (2026-04-24 promotion from candidate — co-selection gates closed)
+// workflow-editor field-test dogfood (2026-04-24 promotion from candidate — co-selection gates closed)
 import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canvas-tree-selection.js";
 // ArgoCD dogfood (2026-04-25 promotion from argocd-pattern-batch)
 import globalScopePicker from "./stable/cross/global-scope-picker.js";
@@ -164,7 +164,7 @@ const STABLE_PATTERNS = [
   lifecycleGatedDestructive,
   inlineChipAssociation,
   reverseAssociationBrowser,
-  // Selfai dogfood (2026-04-24)
+  // workflow-editor field-test (2026-04-24)
   bidirectionalCanvasTreeSelection,
   // ArgoCD dogfood (2026-04-25)
   dualStatusBadgeCard,

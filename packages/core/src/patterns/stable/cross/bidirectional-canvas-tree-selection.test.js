@@ -2,7 +2,7 @@
  * Integration tests for stable `bidirectional-canvas-tree-selection`.
  * Покрывает: trigger (via evaluateTrigger), structure.apply (opt-in gate +
  * happy path + idempotency + config override), validatePattern, explainMatch
- * на Selfai-like онтологии.
+ * на field-test онтологии.
  */
 
 import { describe, it, expect } from "vitest";
@@ -11,8 +11,8 @@ import { validatePattern, evaluateTrigger } from "../../schema.js";
 import { explainMatch } from "../../index.js";
 import { resetDefaultRegistry } from "../../registry.js";
 
-// Selfai-like онтология (на основе thirdPartyData.gui.groups JSON с bank-client).
-const selfaiOntology = {
+// field-test онтология (на основе thirdPartyData.gui.groups JSON с bank-client).
+const fieldTestOntology = {
   entities: {
     Node: {
       fields: {
@@ -41,7 +41,7 @@ const selfaiOntology = {
   features: {},
 };
 
-const selfaiGroupProjection = {
+const fieldTestGroupProjection = {
   mainEntity: "Group",
   archetype: "catalog",
   name: "group_tree",
@@ -71,21 +71,21 @@ describe("bidirectional-canvas-tree-selection — schema validity", () => {
   });
 });
 
-describe("bidirectional-canvas-tree-selection — trigger matching (Selfai-like)", () => {
+describe("bidirectional-canvas-tree-selection — trigger matching (field-test)", () => {
   it("matches Group entity (имеет nodeIds[] + parentGroupId)", () => {
-    expect(evaluateTrigger(pattern.trigger, [], selfaiOntology, selfaiGroupProjection)).toBe(true);
+    expect(evaluateTrigger(pattern.trigger, [], fieldTestOntology, fieldTestGroupProjection)).toBe(true);
   });
 
   it("NOT matches Node (нет hierarchy, нет membership)", () => {
-    expect(evaluateTrigger(pattern.trigger, [], selfaiOntology, { mainEntity: "Node" })).toBe(false);
+    expect(evaluateTrigger(pattern.trigger, [], fieldTestOntology, { mainEntity: "Node" })).toBe(false);
   });
 
   it("NOT matches Workflow (flat entity)", () => {
-    expect(evaluateTrigger(pattern.trigger, [], selfaiOntology, { mainEntity: "Workflow" })).toBe(false);
+    expect(evaluateTrigger(pattern.trigger, [], fieldTestOntology, { mainEntity: "Workflow" })).toBe(false);
   });
 
   it("NOT matches missing entity", () => {
-    expect(evaluateTrigger(pattern.trigger, [], selfaiOntology, { mainEntity: "Ghost" })).toBe(false);
+    expect(evaluateTrigger(pattern.trigger, [], fieldTestOntology, { mainEntity: "Ghost" })).toBe(false);
   });
 });
 
@@ -95,9 +95,9 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
   it("no-op без author-signal (pattern matched, но apply opt-in)", () => {
     const slots = { sidebar: [] };
     const result = apply(slots, {
-      ontology: selfaiOntology,
+      ontology: fieldTestOntology,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(result).toBe(slots); // identity — no-op returns same object
     expect(result.sidebar).toEqual([]);
@@ -105,14 +105,14 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
 
   it("injects coSelectionTreeNav при features.coSelectionTree === true", () => {
     const ontologyOptIn = {
-      ...selfaiOntology,
+      ...fieldTestOntology,
       features: { coSelectionTree: true },
     };
     const slots = { sidebar: [] };
     const result = apply(slots, {
       ontology: ontologyOptIn,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(result.sidebar).toHaveLength(1);
     expect(result.sidebar[0]).toEqual({
@@ -127,12 +127,12 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
 
   it("injects при projection.patterns.enabled includes pattern id", () => {
     const projection = {
-      ...selfaiGroupProjection,
+      ...fieldTestGroupProjection,
       patterns: { enabled: ["bidirectional-canvas-tree-selection"] },
     };
     const slots = { sidebar: [] };
     const result = apply(slots, {
-      ontology: selfaiOntology,
+      ontology: fieldTestOntology,
       mainEntity: "Group",
       projection,
     });
@@ -141,12 +141,12 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
   });
 
   it("sidebar-injection — prepend (существующие items сохранены)", () => {
-    const ontologyOptIn = { ...selfaiOntology, features: { coSelectionTree: true } };
+    const ontologyOptIn = { ...fieldTestOntology, features: { coSelectionTree: true } };
     const slots = { sidebar: [{ type: "someOtherPanel" }] };
     const result = apply(slots, {
       ontology: ontologyOptIn,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(result.sidebar).toHaveLength(2);
     expect(result.sidebar[0].type).toBe("coSelectionTreeNav");
@@ -154,17 +154,17 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
   });
 
   it("idempotent: повторный apply не дублирует", () => {
-    const ontologyOptIn = { ...selfaiOntology, features: { coSelectionTree: true } };
+    const ontologyOptIn = { ...fieldTestOntology, features: { coSelectionTree: true } };
     const slots = { sidebar: [] };
     const first = apply(slots, {
       ontology: ontologyOptIn,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     const second = apply(first, {
       ontology: ontologyOptIn,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(second).toBe(first); // no-op idempotent
     expect(second.sidebar).toHaveLength(1);
@@ -172,9 +172,9 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
 
   it("no-op когда entity без array-ref field", () => {
     const ontologyBroken = {
-      ...selfaiOntology,
+      ...fieldTestOntology,
       entities: {
-        Node: selfaiOntology.entities.Node,
+        Node: fieldTestOntology.entities.Node,
         Group: {
           fields: {
             name: { type: "text" },
@@ -188,16 +188,16 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
     const result = apply(slots, {
       ontology: ontologyBroken,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(result).toBe(slots);
   });
 
   it("no-op когда entity без self-reference", () => {
     const ontologyBroken = {
-      ...selfaiOntology,
+      ...fieldTestOntology,
       entities: {
-        Node: selfaiOntology.entities.Node,
+        Node: fieldTestOntology.entities.Node,
         Group: {
           fields: {
             name: { type: "text" },
@@ -212,7 +212,7 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
     const result = apply(slots, {
       ontology: ontologyBroken,
       mainEntity: "Group",
-      projection: selfaiGroupProjection,
+      projection: fieldTestGroupProjection,
     });
     expect(result).toBe(slots);
   });
@@ -234,7 +234,7 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
       features: { coSelectionTree: true },
     };
     const projection = {
-      ...selfaiGroupProjection,
+      ...fieldTestGroupProjection,
       patterns: {
         config: {
           "bidirectional-canvas-tree-selection": {
@@ -258,15 +258,15 @@ describe("bidirectional-canvas-tree-selection — structure.apply", () => {
   });
 });
 
-describe("bidirectional-canvas-tree-selection — explainMatch integration (Selfai-like)", () => {
+describe("bidirectional-canvas-tree-selection — explainMatch integration (field-test)", () => {
   // explainMatch использует default registry (loadStablePatterns), поэтому
   // pattern должен быть зарегистрирован через registry.js — resetDefaultRegistry
   // между тестами чтобы перечитать stable set.
 
   it("integration: explainMatch включает pattern в matched для Group projection", () => {
     resetDefaultRegistry();
-    const projection = { ...selfaiGroupProjection, kind: "catalog" };
-    const result = explainMatch([], selfaiOntology, projection);
+    const projection = { ...fieldTestGroupProjection, kind: "catalog" };
+    const result = explainMatch([], fieldTestOntology, projection);
     const matched = result.structural.matched.map(m => m.pattern.id);
     expect(matched).toContain("bidirectional-canvas-tree-selection");
   });
@@ -274,7 +274,7 @@ describe("bidirectional-canvas-tree-selection — explainMatch integration (Self
   it("integration: NOT matched для Node projection", () => {
     resetDefaultRegistry();
     const projection = { mainEntity: "Node", kind: "detail" };
-    const result = explainMatch([], selfaiOntology, projection);
+    const result = explainMatch([], fieldTestOntology, projection);
     const matched = result.structural.matched.map(m => m.pattern.id);
     expect(matched).not.toContain("bidirectional-canvas-tree-selection");
   });
