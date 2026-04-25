@@ -13,6 +13,7 @@ import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
 import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
 import { extractInlineArrays } from "./extractInlineArrays.js";
+import { convertSwagger2, isSwagger2 } from "./convertSwagger2.js";
 import { parse as parseYaml } from "yaml";
 
 export {
@@ -29,6 +30,8 @@ export {
   inferFieldRolesForEntities,
   canonicalizeGrpcOperationId,
   extractInlineArrays,
+  convertSwagger2,
+  isSwagger2,
 };
 
 export function parseSpec(source) {
@@ -38,9 +41,48 @@ export function parseSpec(source) {
   return parseYaml(source);
 }
 
+/**
+ * importSpec — async one-shot wrapper над `parseSpec` + `convertSwagger2`
+ * + `importOpenApi`. Закрывает §10.6 (Swagger 2.0 native support).
+ *
+ * Принимает source как:
+ *   - string (JSON / YAML текст)
+ *   - parsed object (OpenAPI 3.x или Swagger 2.0)
+ *
+ * Auto-detect версии:
+ *   - swagger:"2.0" → конвертация через swagger2openapi → importOpenApi
+ *   - openapi:"3.x" → прямой importOpenApi
+ *
+ * Опции:
+ *   - `swagger2openapi: { patch?, warnOnly?, ... }` — пробрасывается в
+ *     convertObj если detected swagger 2.0.
+ *   - все остальные opts передаются в importOpenApi.
+ *
+ * Закрывает host workaround `idf/scripts/argocd-reimport.mjs` (двухступенчатый
+ * convert + import → один await).
+ */
+export async function importSpec(source, opts = {}) {
+  let spec = typeof source === "string" ? parseSpec(source) : source;
+  if (isSwagger2(spec)) {
+    spec = await convertSwagger2(spec, opts.swagger2openapi || {});
+  }
+  const { swagger2openapi: _ignored, ...importOpts } = opts;
+  return importOpenApi(spec, importOpts);
+}
+
 const METHODS = ["get", "post", "put", "patch", "delete"];
 
 export function importOpenApi(spec, opts = {}) {
+  // §10.6 guard: sync importOpenApi не умеет конвертировать Swagger 2.0
+  // (swagger2openapi async). Кидаем понятную ошибку с указанием на
+  // async importSpec.
+  if (isSwagger2(spec)) {
+    throw new Error(
+      "importOpenApi: spec is Swagger 2.0 — use `await importSpec(spec)` " +
+      "or `await convertSwagger2(spec)` then importOpenApi(converted)."
+    );
+  }
+
   const entities = {};
   const intents = {};
 
