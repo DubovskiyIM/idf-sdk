@@ -125,6 +125,7 @@ import reverseAssociationBrowser from "./stable/detail/reverse-association-brows
 // Selfai dogfood (2026-04-24 promotion from candidate — co-selection gates closed)
 import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canvas-tree-selection.js";
 // ArgoCD dogfood (2026-04-25 promotion from argocd-pattern-batch)
+import globalScopePicker from "./stable/cross/global-scope-picker.js";
 import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 import resourceHierarchyCanvas from "./stable/detail/resource-hierarchy-canvas.js";
 import specVsStatusPanels from "./stable/detail/spec-vs-status-panels.js";
@@ -167,6 +168,7 @@ const STABLE_PATTERNS = [
   // ArgoCD dogfood (2026-04-25)
   dualStatusBadgeCard,
   resourceHierarchyCanvas,
+  globalScopePicker,
   specVsStatusPanels,
   formYamlDualSurface,
   // Sprint 1 P0 #5 (2026-04-25)
