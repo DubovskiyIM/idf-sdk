@@ -124,6 +124,8 @@ import inlineChipAssociation     from "./stable/catalog/inline-chip-association.
 import reverseAssociationBrowser from "./stable/detail/reverse-association-browser.js";
 // Selfai dogfood (2026-04-24 promotion from candidate — co-selection gates closed)
 import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canvas-tree-selection.js";
+// ArgoCD dogfood (2026-04-25 promotion from argocd-pattern-batch — status-driven admin)
+import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -157,6 +159,8 @@ const STABLE_PATTERNS = [
   reverseAssociationBrowser,
   // Selfai dogfood (2026-04-24)
   bidirectionalCanvasTreeSelection,
+  // ArgoCD dogfood (2026-04-25)
+  dualStatusBadgeCard,
 ];
 
 export function loadStablePatterns(registry) {
