@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("39 stable patterns loaded (+resource-hierarchy-canvas ArgoCD dogfood 2026-04-25)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(39);
+  it("40 stable patterns loaded (+spec-vs-status-panels ArgoCD 2026-04-25)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(40);
   });
 
   // ─── hero-create ───
