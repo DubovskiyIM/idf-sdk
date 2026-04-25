@@ -185,7 +185,14 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
     }
   }
 
-  const collapsed = collapseToolbar(slots.toolbar, projection.id);
+  // Строим ctx для weighted-sum salience при сортировке toolbar.
+  // intentUsage: если в онтологии нет usageCount — 1 для всех (равный вес).
+  const intentUsage = Object.fromEntries(
+    Object.entries(INTENTS).map(([id, intent]) => [id, intent.particles?.usageCount || 1])
+  );
+  const salienceCtx = { projection, ONTOLOGY, intentUsage };
+
+  const collapsed = collapseToolbar(slots.toolbar, projection.id, salienceCtx);
   slots.toolbar = collapsed.toolbar;
   if (collapsed.witnesses.length > 0) {
     slots._witnesses = [...(slots._witnesses || []), ...collapsed.witnesses];
@@ -210,11 +217,12 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
  *  - Overflow: организован секциями. Антагонистические пары — рядом,
  *    одиночные — группируются по иконке.
  */
-function collapseToolbar(toolbar, projectionId) {
+function collapseToolbar(toolbar, projectionId, salienceCtx) {
   // Salience sort применяется всегда, не только при overflow — иначе
   // пара-тройка кнопок в detail toolbar наследует alphabetical порядок
   // от INTENTS iteration, а не семантический приоритет spec'и.
-  const sortedToolbar = [...toolbar].sort(bySalienceDesc);
+  // Если salienceCtx передан — используем weighted-sum; иначе pre-computed.
+  const sortedToolbar = [...toolbar].sort((a, b) => bySalienceDesc(a, b, salienceCtx ?? null));
   const witnesses = detectTiedGroups(sortedToolbar, { slot: "toolbar", projection: projectionId });
   if (sortedToolbar.length <= 3) return { toolbar: sortedToolbar, witnesses };
 

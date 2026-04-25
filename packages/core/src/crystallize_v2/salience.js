@@ -166,17 +166,38 @@ export function computeSalience(intent, mainEntity) {
  *   fallback на alphabetical.
  *
  * Tie-break ladder: salience desc → declarationOrder asc → alphabetical asc.
+ *
+ * @param {Object} a — кнопка/intent A
+ * @param {Object} b — кнопка/intent B
+ * @param {Object|null} [ctx] — опциональный контекст для weighted-sum:
+ *   { projection, ONTOLOGY, intentUsage? }
+ *   Если ctx передан — вычисляем salience через salienceFromFeatures.
+ *   Если ctx == null — backward-compat: используем pre-computed salience-поле.
  */
-export function bySalienceDesc(a, b) {
-  const sA = a.salience ?? 40;
-  const sB = b.salience ?? 40;
-  if (sA !== sB) return sB - sA;
+export function bySalienceDesc(a, b, ctx) {
+  if (ctx != null) {
+    // Weighted-sum режим: ctx = { projection, ONTOLOGY, intentUsage? }
+    const weights = { ...DEFAULT_SALIENCE_WEIGHTS, ...(ctx.projection?.salienceWeights || {}) };
+    // a и b — объекты с intentId; нужно достать intent с id для extractSalienceFeatures
+    const intentA = { id: a.intentId, ...a };
+    const intentB = { id: b.intentId, ...b };
+    const sA = salienceFromFeatures(extractSalienceFeatures(intentA, ctx), weights);
+    const sB = salienceFromFeatures(extractSalienceFeatures(intentB, ctx), weights);
+    if (sA !== sB) return sB - sA;
+  } else {
+    // Backward-compat: используем pre-computed salience-поле из assignToSlots
+    const sA = a.salience ?? 40;
+    const sB = b.salience ?? 40;
+    if (sA !== sB) return sB - sA;
+  }
 
+  // Tier 2: declarationOrder asc (authorial signal)
   const dA = typeof a.declarationOrder === "number" ? a.declarationOrder : Infinity;
   const dB = typeof b.declarationOrder === "number" ? b.declarationOrder : Infinity;
   if (dA !== dB) return dA - dB;
 
-  return a.intentId.localeCompare(b.intentId);
+  // Tier 3: alphabetical asc (last resort)
+  return (a.intentId || "").localeCompare(b.intentId || "");
 }
 
 /**

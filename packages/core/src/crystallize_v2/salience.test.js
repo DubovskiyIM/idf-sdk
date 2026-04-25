@@ -265,3 +265,80 @@ describe("salienceFromFeatures — линейная комбинация", () =>
     expect(salienceFromFeatures(f, w)).toBe(80);
   });
 });
+
+describe("bySalienceDesc — ctx режим (weighted-sum)", () => {
+  const baseCtx = {
+    projection: { id: "deal_detail", mainEntity: "Deal" },
+    ONTOLOGY: { entities: { Deal: { fields: { status: {} } } } },
+    intentUsage: {},
+  };
+
+  it("без ctx — backward-compat по pre-computed salience", () => {
+    const a = { intentId: "a", salience: 100 };
+    const b = { intentId: "b", salience: 40 };
+    expect(bySalienceDesc(a, b)).toBeLessThan(0); // a первый
+  });
+
+  it("с ctx — per-projection weights: irreversibilityHigh=999 побеждает creatorMain", () => {
+    const irreversibleCtx = {
+      ...baseCtx,
+      projection: {
+        ...baseCtx.projection,
+        salienceWeights: { irreversibilityHigh: 999 },
+      },
+    };
+    const irr = {
+      intentId: "confirm_deal",
+      particles: {
+        effects: [{ α: "replace", target: "Deal.status", context: { __irr: { point: "high", at: "now" } } }],
+      },
+    };
+    const creator = {
+      intentId: "create_deal",
+      creates: "Deal",
+      particles: { effects: [{ α: "create", target: "Deal" }] },
+    };
+    const sorted = [creator, irr].sort((a, b) => bySalienceDesc(a, b, irreversibleCtx));
+    expect(sorted[0].intentId).toBe("confirm_deal");
+  });
+
+  it("с ctx — promotion intent (tier3Promotion) выше чем create при default weights", () => {
+    const confirm = {
+      intentId: "confirm_deal",
+      particles: { effects: [{ α: "replace", target: "Deal.status" }] },
+    };
+    const create = {
+      intentId: "create_deal",
+      creates: "Deal",
+      particles: { effects: [{ α: "create", target: "Deal" }] },
+    };
+    // confirm_deal имеет tier3Promotion=1 (70) + phaseTransition=1 (40) = 110
+    // create_deal имеет creatorMain=1 (80)
+    // confirm должен быть выше
+    const sorted = [create, confirm].sort((a, b) => bySalienceDesc(a, b, baseCtx));
+    expect(sorted[0].intentId).toBe("confirm_deal");
+  });
+
+  it("с ctx — tie-break через declarationOrder если weighted-sum одинаков", () => {
+    // Два intent'а с одинаковым набором фич
+    const a = { intentId: "edit_deal", declarationOrder: 0 };
+    const b = { intentId: "update_deal", declarationOrder: 5 };
+    // оба tier2EditLike=1 (если есть "edit" или "update") — проверяем tiebreak
+    const result = bySalienceDesc(a, b, baseCtx);
+    // a имеет declarationOrder=0 < 5, должен быть первым
+    expect(result).toBeLessThan(0);
+  });
+
+  it("null ctx → не падает, использует pre-computed salience", () => {
+    const a = { intentId: "a", salience: 60 };
+    const b = { intentId: "b", salience: 20 };
+    expect(() => bySalienceDesc(a, b, null)).not.toThrow();
+    expect(bySalienceDesc(a, b, null)).toBeLessThan(0); // a выше
+  });
+
+  it("undefined ctx → backward-compat (не падает)", () => {
+    const a = { intentId: "a", salience: 60 };
+    const b = { intentId: "b", salience: 20 };
+    expect(bySalienceDesc(a, b, undefined)).toBeLessThan(0);
+  });
+});
