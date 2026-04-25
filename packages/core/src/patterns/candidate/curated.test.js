@@ -36,8 +36,8 @@ describe("curated candidate bank — schema validity", () => {
     });
   }
 
-  it("в curated bank ровно 6 паттернов (bidirectional-canvas-tree-selection promoted в stable 2026-04-24)", () => {
-    expect(CURATED_CANDIDATES.length).toBe(6);
+  it("в curated bank ровно 10 паттернов (6 базовых + 4 tri-source candidates 2026-04-25)", () => {
+    expect(CURATED_CANDIDATES.length).toBe(10);
   });
 
   it("все id уникальны внутри curated bank", () => {
@@ -47,7 +47,7 @@ describe("curated candidate bank — schema validity", () => {
 });
 
 describe("curated candidate bank — registry integration", () => {
-  it("loadCandidatePatterns регистрирует все 6 curated в пустом registry", () => {
+  it("loadCandidatePatterns регистрирует все 10 curated в пустом registry", () => {
     const registry = createRegistry();
     loadCandidatePatterns(registry);
     for (const pattern of CURATED_CANDIDATES) {
@@ -68,8 +68,8 @@ describe("curated candidate bank — registry integration", () => {
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
     expect(stableCount).toBe(44);
-    // Curated (6) прошли validatePattern; manifest-свалка может добавить >0.
-    expect(candidateCount).toBeGreaterThanOrEqual(6);
+    // Curated (10) прошли validatePattern; manifest-свалка может добавить >0.
+    expect(candidateCount).toBeGreaterThanOrEqual(10);
     // Проверка, что каждый curated действительно в registry.
     for (const pattern of CURATED_CANDIDATES) {
       expect(registry.getPattern(pattern.id)).toBeTruthy();
@@ -85,11 +85,11 @@ describe("curated candidate bank — registry integration", () => {
     resetDefaultRegistry();
   });
 
-  it("curated archetypes распределены по catalog/detail (cross/feed promoted в stable)", () => {
+  it("curated archetypes распределены по catalog/detail/cross/null", () => {
     const archetypes = new Set(CURATED_CANDIDATES.map(p => p.archetype));
     expect(archetypes.has("catalog")).toBe(true);
     expect(archetypes.has("detail")).toBe(true);
-    // cross-паттерн (bidirectional-canvas-tree-selection) promoted 2026-04-24.
-    // feed-паттерны (response-cost-before-action) promoted 2026-04-20.
+    // null — cross-archetype паттерны (human-in-the-loop-gate, agent-plan-preview-approve).
+    expect(archetypes.has(null)).toBe(true);
   });
 });
