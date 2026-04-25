@@ -56,8 +56,10 @@ jobs:
       - name: Install monorepo deps
         run: pnpm install --frozen-lockfile
 
-      - name: Build all packages
+      - name: Build all packages (no DTS — DTS worker исчерпывает heap на CI)
         run: pnpm -r build
+        env:
+          SKIP_DTS: "true"
 
       - name: Pack SDK tarballs
         run: |
