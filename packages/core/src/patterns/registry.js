@@ -128,6 +128,7 @@ import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canva
 import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 import resourceHierarchyCanvas from "./stable/detail/resource-hierarchy-canvas.js";
 import specVsStatusPanels from "./stable/detail/spec-vs-status-panels.js";
+import formYamlDualSurface from "./stable/detail/form-yaml-dual-surface.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -165,6 +166,7 @@ const STABLE_PATTERNS = [
   dualStatusBadgeCard,
   resourceHierarchyCanvas,
   specVsStatusPanels,
+  formYamlDualSurface,
 ];
 
 export function loadStablePatterns(registry) {
