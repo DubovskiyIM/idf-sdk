@@ -2,10 +2,10 @@
 "@intent-driven/core": minor
 ---
 
-feat(patterns): spec-vs-status-panels — двухпанельная раскладка desired vs observed для declarative reconciliation
+feat(patterns): spec-vs-status-panels — двухпанельный split declarative/observed state
 
-Promote'ится из argocd-pattern-batch (2026-04-24, flux-weave-gitops + ArgoCD + Spinnaker — 3 источника независимо). В декларативных reconciliation-системах (GitOps, K8s, Terraform, Flux/ArgoCD) пользователю критично различать "что я объявил" (spec) vs "что контроллер видит сейчас" (status/observed). Единая форма скрывает drift.
+Promote'ится из flux-weave-gitops candidate (2026-04-24) в рамках ArgoCD dogfood sprint. В декларативных reconciliation-системах (GitOps, K8s, Terraform, Flux/ArgoCD) пользователю критично различать «что я задекларировал» (spec) vs «что контроллер применил» (status/observed). Плоский detail скрывает drift.
 
-**Trigger**: detail + mainEntity с обоими слоями — spec (desired/config) + status (observed/live). Определяется через `entity.groups` (авторская аннотация) или convention-поля (spec/desired/config + status/observed/live).
+**Trigger**: detail + mainEntity имеет ≥1 spec-like поле (fieldRole==="spec" OR имя в spec-словаре: sourceRef, targetRevision, path, interval, chartVersion, desired...) AND ≥1 status-like поле (fieldRole==="status" OR имя в status-словаре: conditions, lastAppliedRevision, phase, health, syncStatus, message...).
 
-**Apply**: выставляет `body.renderAs = { type: "specStatusSplit", specField, statusField }`. Renderer рендерит два panel'а: Desired (Spec) слева / Observed (Status) справа. Author-override: no-op если `body.renderAs` уже задан.
+**Apply**: выставляет `body.layout = "spec-status-split"` + `body.specFields` + `body.statusFields`. Author-override: no-op если `body.layout` уже задан. Экспортирует `_helpers: { detectSpecFields, detectStatusFields }` для тестов и reuse.
