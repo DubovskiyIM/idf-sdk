@@ -21,7 +21,7 @@ import directInviteSidebar from "./detail/direct-invite-sidebar.js";
 //   response-cost-before-action → stable/feed/
 // Promoted в stable (2026-04-23, Gravitino dogfood):
 //   catalog-default-datagrid    → stable/catalog/ (with structure.apply)
-// Promoted в stable (2026-04-24, Selfai workflow-editor dogfood):
+// Promoted в stable (2026-04-24, workflow-editor field-test dogfood):
 //   bidirectional-canvas-tree-selection → stable/cross/ (with structure.apply)
 //   После закрытия трёх gate'ов: trigger.kind co-selection-group-entity (#303),
 //   CoSelectionProvider primitive (#308), adapter externalSelection capability (#311).

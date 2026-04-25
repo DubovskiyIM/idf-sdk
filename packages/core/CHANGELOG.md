@@ -149,11 +149,11 @@
   17 новых тестов в `stable/cross/bidirectional-canvas-tree-selection.test.js`:
 
   - schema validity (validatePattern, status/archetype/trigger/apply invariants)
-  - trigger matching на Selfai-like ontology (Group matches, Node/Workflow/Ghost fail)
+  - trigger matching на field-test ontology (Group matches, Node/Workflow/Ghost fail)
   - structure.apply: opt-in gate (no-op без signal), happy-path с feature flag
     и с projection.patterns.enabled, prepend preserves existing sidebar items,
     idempotency, no-op при отсутствии array-ref/self-ref, explicit config override
-  - explainMatch integration на Selfai JSON-shape (Group matched, Node NOT matched)
+  - explainMatch integration на field-test JSON-shape (Group matched, Node NOT matched)
 
   1339/1339 core tests зелёные.
 
@@ -197,9 +197,9 @@
   catalog+hierarchy-tree-nav проекцией, группирующей элементы canvas по
   semantic buckets (правила, папки, workflow-группы).
 
-  Источник: Selfai workflow-editor dogfood 2026-04-24. Полевая валидация —
+  Источник: workflow-editor field-test dogfood 2026-04-24. Полевая валидация —
   Figma layers, n8n workflow zones, Dataiku DSS, Blender hierarchy,
-  React DevTools, VSCode outline. Селфаевский JSON (`thirdPartyData.gui.groups`
+  React DevTools, VSCode outline. Field-test JSON (`thirdPartyData.gui.groups`
   с `nodeIds[]` + `parentGroupId`) — конкретный shouldMatch-кейс.
 
   Status: matching-only. Promotion в stable требует:

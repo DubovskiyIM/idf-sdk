@@ -1,8 +1,8 @@
 /**
  * Bidirectional canvas↔tree selection — cross-projection state-sharing паттерн.
  *
- * Promoted в stable 2026-04-24 (Selfai workflow-editor dogfood) после закрытия
- * трёх promotion-gate'ов:
+ * Promoted в stable 2026-04-24 (workflow-editor field-test dogfood) после
+ * закрытия трёх promotion-gate'ов:
  *   - Gate 1: trigger.kind `co-selection-group-entity` (schema.js) — PR #303
  *   - Gate 2: renderer `CoSelectionProvider` + `useCoSelection` — PR #308
  *   - Gate 3: adapter capability `interaction.externalSelection` +
@@ -29,10 +29,10 @@
  *
  * Idempotent: если `slots.sidebar[0].type === "coSelectionTreeNav"` — no-op.
  *
- * Источник: Selfai workflow-editor 2026-04-24 dogfood (клиент банка:
+ * Источник: workflow-editor field-test 2026-04-24 (клиент банка:
  * "tree правил справа + click highlight кубов + zoomTo"). Полевая валидация:
  * Figma layers, n8n workflow zones, Dataiku DSS, Blender hierarchy,
- * React DevTools, VSCode outline, Selfai.
+ * React DevTools, VSCode outline, internal workflow-editor field-test.
  */
 
 const DEFAULT_ARRAY_TYPES = new Set(["entityRefArray", "entityRef[]"]);
@@ -164,7 +164,7 @@ export default {
     evidence: [
       { source: "Figma / Sketch / Adobe XD", description: "Layers panel ↔ canvas: клик по layer выделяет и zoom-to объект; клик по объекту на canvas подсвечивает его в layers panel. Де-факто стандарт design-tools", reliability: "high" },
       { source: "n8n / Node-RED workflow editors", description: "Workflow / group sidebar ↔ flow canvas — клик по group highlight'ит nodes", reliability: "high" },
-      { source: "Selfai workflow editor (2026-04-24)", description: "Клиент банка попросил эту фичу: tree правил + click highlight кубов + zoomTo. У Selfai thirdPartyData.gui.groups[].nodeIds + parentGroupId уже существуют — pattern формализует bi-direction через онтологию", reliability: "high" },
+      { source: "workflow-editor field-test (2026-04-24)", description: "Клиент банка попросил эту фичу: tree правил + click highlight кубов + zoomTo. В целевом стэке thirdPartyData.gui.groups[].nodeIds + parentGroupId уже существуют — pattern формализует bi-direction через онтологию", reliability: "high" },
       { source: "React DevTools / Redux DevTools", description: "Component tree ↔ runtime viewport/state. Клик по node в tree → highlight в live-app DOM", reliability: "high" },
       { source: "Dataiku DSS flow zones", description: "Zones panel ↔ flow graph (bi-directional selection + zoom-to-fit)", reliability: "high" },
       { source: "VSCode outline + editor", description: "Outline panel ↔ text editor — cursor movement syncs obeh directions", reliability: "medium" },
@@ -180,7 +180,7 @@ export default {
   },
   falsification: {
     shouldMatch: [
-      { domain: "workflow", projection: "workflow_editor", reason: "Canvas-archetype граф кубов + Group entity с nodeIds[]+parentGroupId → ожидается tree-панель справа с bidirectional selection (поле-тест Selfai 2026-04-24)" },
+      { domain: "workflow", projection: "workflow_editor", reason: "Canvas-archetype граф кубов + Group entity с nodeIds[]+parentGroupId → ожидается tree-панель справа с bidirectional selection (поле-тест 2026-04-24)" },
       { domain: "workflow", projection: "group_tree", reason: "Tree-сторона pair'а: clicking a group → highlight owned nodes в workflow_editor + zoomTo bounds" },
       { domain: "lifequest", projection: "sphere_canvas", reason: "Если есть SphereGroup с goalIds[] hierarchy — tree-sphere ↔ canvas-goal co-selection ожидается" },
     ],
