@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-mantine",
-  "version": "1.4.1",
+  "version": "1.4.2",
   "description": "Mantine UI adapter for @intent-driven/renderer",
   "type": "module",
   "main": "./dist/index.cjs",
