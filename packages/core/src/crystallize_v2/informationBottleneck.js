@@ -17,15 +17,70 @@ import { intentReadFields, intentWriteFields } from "./intentFields.js";
  */
 export function applyInformationBottleneck({ projection, role, INTENTS, ONTOLOGY }) {
   const mainEntity = projection?.mainEntity;
-  const allFields = Object.keys(ONTOLOGY?.entities?.[mainEntity]?.fields || {});
+  const rawFields = ONTOLOGY?.entities?.[mainEntity]?.fields;
+
+  // Поддержка обоих форматов fields: массив строк (старый) или объект (новый).
+  // Массив — legacy-формат без метаданных, IB не применяется (no-op).
+  // Если поле-словарь не определено или пустое — IB не применяется.
+  let allFields;
+  if (Array.isArray(rawFields)) {
+    // Старый формат: ["id", "name", ...] — IB пропускается (нет canonicalType/fieldRole).
+    allFields = [];
+  } else if (rawFields && typeof rawFields === "object") {
+    allFields = Object.keys(rawFields);
+  } else {
+    allFields = [];
+  }
+
   const intents = accessibleIntents(projection, role, INTENTS, ONTOLOGY);
+
+  // Guard: если нет полей (или legacy-массив) — IB не фильтрует (null → buildDetailBody использует все).
+  const includeOverride = new Set(projection?.uiSchema?.includeFields || []);
+  const excludeOverride = new Set(projection?.uiSchema?.excludeFields || []);
+
+  if (allFields.length === 0) {
+    return {
+      fields: null,
+      witness: {
+        basis: "information-bottleneck",
+        reliability: "rule-based",
+        projection: projection?.id,
+        role,
+        accessibleIntentIds: intents.map((i) => i.id),
+        included: [],
+        excluded: [],
+        skipped: true,
+        reason: "no-fields-in-ontology",
+        overrides: { include: [...includeOverride], exclude: [...excludeOverride] },
+      },
+    };
+  }
+
+  // Guard: если нет доступных intent'ов — IB не фильтрует.
+  if (intents.length === 0) {
+    return {
+      fields: null,
+      witness: {
+        basis: "information-bottleneck",
+        reliability: "rule-based",
+        projection: projection?.id,
+        role,
+        accessibleIntentIds: [],
+        included: [],
+        excluded: [],
+        skipped: true,
+        reason: "no-accessible-intents",
+        overrides: { include: [...includeOverride], exclude: [...excludeOverride] },
+      },
+    };
+  }
+
   const touched = new Set();
   for (const intent of intents) {
     for (const f of intentReadFields(intent, mainEntity)) touched.add(f);
     for (const f of intentWriteFields(intent, mainEntity)) touched.add(f);
   }
-  const includeOverride = new Set(projection?.uiSchema?.includeFields || []);
-  const excludeOverride = new Set(projection?.uiSchema?.excludeFields || []);
+
   const fields = allFields.filter((f) => {
     if (excludeOverride.has(f)) return false;
     if (includeOverride.has(f)) return true;

@@ -8,15 +8,23 @@
 const splitDotted = (s) => String(s || "").split(".");
 
 /**
+ * Проверяет совпадение имени сущности case-insensitive.
+ * Domains используют как "Booking.status" так и "booking.status".
+ */
+const matchesEntity = (ent, entityName) =>
+  ent.toLowerCase() === entityName.toLowerCase();
+
+/**
  * Возвращает поля сущности entityName, упомянутые в conditions[] intent'а.
- * Формат conditions[].field: "EntityName.fieldName"
+ * Формат conditions[].field: "EntityName.fieldName" или "entityName.fieldName"
  */
 export function intentReadFields(intent, entityName) {
   const conditions = intent?.particles?.conditions || [];
   const fields = new Set();
   for (const cond of conditions) {
-    const [ent, field] = splitDotted(cond.field);
-    if (ent === entityName && field) fields.add(field);
+    const raw = typeof cond === "string" ? cond : (cond.field || "");
+    const [ent, field] = splitDotted(raw);
+    if (matchesEntity(ent, entityName) && field) fields.add(field);
   }
   return [...fields];
 }
@@ -25,7 +33,7 @@ export function intentReadFields(intent, entityName) {
  * Возвращает поля сущности entityName, записываемые intent'ом через effects[].
  *
  * Поддерживает:
- * - dotted target: "Entity.field" → field
+ * - dotted target: "Entity.field" / "entity.field" → field
  * - α:"create" с entity target + payload → ключи payload
  * - α:"create" с entity target без payload → пустой массив
  */
@@ -34,7 +42,7 @@ export function intentWriteFields(intent, entityName) {
   const fields = new Set();
   for (const eff of effects) {
     const [ent, field] = splitDotted(eff.target);
-    if (ent !== entityName) continue;
+    if (!matchesEntity(ent, entityName)) continue;
     if (field) {
       fields.add(field);
     } else if (eff.α === "create" && eff.payload && typeof eff.payload === "object") {

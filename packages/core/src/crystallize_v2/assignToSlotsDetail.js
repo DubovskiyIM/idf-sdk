@@ -20,6 +20,7 @@ import { getEntityFields, canRead, inferFieldRole, getOwnerFields } from "./onto
 import { getIntentIcon } from "./getIntentIcon.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
+import { applyInformationBottleneck } from "./informationBottleneck.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt", "deletedFor",
@@ -30,10 +31,19 @@ const SYSTEM_SUB_FIELDS = new Set([
 ]);
 
 export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opts = {}) {
+  // Information Bottleneck: вычислить допустимые поля для body.
+  // role — из opts.role, или из strategy если передана строкой (тесты),
+  // или null (IB применяет union из всех accessible intent'ов без role filter).
+  const ibRole = opts.role ?? (typeof strategy === "string" ? strategy : null);
+  const { fields: ibFields, witness: ibWitness } = applyInformationBottleneck({
+    projection, role: ibRole, INTENTS, ONTOLOGY
+  });
+  if (Array.isArray(opts.witnesses)) opts.witnesses.push(ibWitness);
+
   const slots = {
     header: [],
     toolbar: [],
-    body: buildDetailBody(projection, ONTOLOGY, "self", INTENTS),
+    body: buildDetailBody(projection, ONTOLOGY, "self", INTENTS, ibFields),
     context: [],
     fab: [],
     overlay: [],
@@ -733,13 +743,22 @@ function fieldToAtom(field) {
   };
 }
 
-function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}) {
+function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}, allowedFields = null) {
   const mainEntity = projection.mainEntity;
   const entity = ONTOLOGY?.entities?.[mainEntity];
   const allFields = getEntityFields(entity || {});
-  const fields = allFields.filter(f =>
-    !SYSTEM_DETAIL_FIELDS.has(f.name) && canRead(f, viewerRole)
-  );
+  // IB filter: если allowedFields передан и не null — ограничиваем набор полей.
+  // null означает «IB не применяется» (нет интентов или нет полей в онтологии).
+  // Системные поля (id, createdAt...) всегда фильтруются canRead + SYSTEM_DETAIL_FIELDS.
+  const candidateNames = Array.isArray(allowedFields) && allowedFields !== null
+    ? new Set(allowedFields)
+    : null;
+  const fields = allFields.filter(f => {
+    if (!canRead(f, viewerRole)) return false;
+    if (SYSTEM_DETAIL_FIELDS.has(f.name)) return false;
+    if (candidateNames !== null && !candidateNames.has(f.name)) return false;
+    return true;
+  });
 
   // Backlog 3.3: если у mainEntity есть intent с irreversibility:"high",
   // детальная проекция получает irreversibleBadge-node в header — бейдж

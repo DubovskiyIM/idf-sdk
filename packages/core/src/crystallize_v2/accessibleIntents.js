@@ -4,7 +4,9 @@
  * R0→R1 conservation property-test'ом (Phase 3).
  */
 
-const stripRole = (entityRef) => String(entityRef).split(":")[0].trim();
+// Формат entities: "alias: EntityType[]" или "EntityType" → берём последнюю часть после ":"
+const stripRole = (entityRef) =>
+  String(entityRef).split(":").pop().trim().replace(/\[\]$/, "");
 
 /**
  * Проверяет, касается ли intent указанной сущности (по particles.entities,

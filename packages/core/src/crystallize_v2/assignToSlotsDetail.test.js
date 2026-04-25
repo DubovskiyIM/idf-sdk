@@ -236,7 +236,8 @@ describe("assignToSlotsDetail", () => {
       };
       const slots = assignToSlotsDetail(
         INTENTS,
-        { kind: "detail", mainEntity: "Order", entities: ["Order"] },
+        // IB: title — presentational поле без intent → explicit includeFields override
+        { kind: "detail", mainEntity: "Order", entities: ["Order"], uiSchema: { includeFields: ["title"] } },
         ontology,
       );
       const binds = extractBinds(slots.body);
@@ -787,5 +788,46 @@ describe("field.primitive declarative hint", () => {
     };
     const slots = assignToSlotsDetail({}, proj, ont);
     expect(JSON.stringify(slots.body)).toContain('"type":"map"');
+  });
+});
+
+describe("IB filter в assignToSlotsDetail", () => {
+  function extractFieldNames(body) {
+    const names = [];
+    function traverse(node) {
+      if (!node || typeof node !== "object") return;
+      if (node.bind && typeof node.bind === "string") names.push(node.bind);
+      for (const child of node.children || []) traverse(child);
+      for (const item of node.items || []) traverse(item);
+      // infoSection хранит поля в node.fields[].bind
+      for (const f of node.fields || []) {
+        if (f.bind && typeof f.bind === "string") names.push(f.bind);
+      }
+    }
+    traverse(body);
+    return names;
+  }
+
+  it("excludes Booking.internalNote from detail body when no accessible intent reads/writes it", () => {
+    const ONTOLOGY = {
+      entities: { Booking: { fields: {
+        id: { canonicalType: "id" },
+        status: { canonicalType: "string" },
+        customerId: { canonicalType: "id" },
+        internalNote: { canonicalType: "string" }
+      }, ownerField: "customerId" } },
+      roles: { customer: { base: "owner" } }
+    };
+    const INTENTS = {
+      cancel_booking: { particles: {
+        effects: [{ α: "replace", target: "Booking.status" }],
+        conditions: [{ field: "Booking.status", op: "in", value: ["pending"] }]
+      } }
+    };
+    const projection = { id: "booking_detail", archetype: "detail", mainEntity: "Booking" };
+    const result = assignToSlotsDetail(INTENTS, projection, ONTOLOGY, "customer", {});
+    const fieldNames = extractFieldNames(result.body);
+    expect(fieldNames).not.toContain("internalNote");
+    expect(fieldNames).toContain("status");
   });
 });
