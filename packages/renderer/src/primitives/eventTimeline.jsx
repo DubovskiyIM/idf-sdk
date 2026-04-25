@@ -66,8 +66,29 @@ function EventRowCausal({ event, atField, kindField, actorField, descriptionFiel
   );
 }
 
-function EventRowSnapshot({ event, atField, stateFields }) {
+// Tone → CSS color для dot/border. Используется dotColorBy в snapshot rows.
+const TONE_HEX = {
+  success: "#22c55e",
+  warning: "#f59e0b",
+  danger: "#ef4444",
+  info: "#3b82f6",
+  neutral: "#9ca3af",
+  default: "#6366f1",
+};
+
+function EventRowSnapshot({ event, atField, stateFields, dotColorBy }) {
   const at = atField ? event[atField] : null;
+
+  // §10.4c: severity-coloring для conditions timeline.
+  // dotColorBy = { field, colorMap, default? } — value из event[field]
+  // мапится через colorMap → tone, далее tone → hex.
+  let dotColor = TONE_HEX.default;
+  if (dotColorBy && typeof dotColorBy === "object" && dotColorBy.field) {
+    const raw = event[dotColorBy.field];
+    const tone = dotColorBy.colorMap?.[raw] || dotColorBy.default || "default";
+    dotColor = TONE_HEX[tone] || TONE_HEX.default;
+  }
+
   return (
     <div
       data-timeline-row="snapshot"
@@ -76,10 +97,13 @@ function EventRowSnapshot({ event, atField, stateFields }) {
         marginLeft: 6, position: "relative",
       }}
     >
-      <span style={{
-        position: "absolute", left: -5, top: 14, width: 10, height: 10,
-        borderRadius: "50%", background: "#6366f1",
-      }} />
+      <span
+        data-dot-color={dotColor}
+        style={{
+          position: "absolute", left: -5, top: 14, width: 10, height: 10,
+          borderRadius: "50%", background: dotColor,
+        }}
+      />
       {at && (
         <div style={{ fontSize: 13, fontWeight: 600, color: "#111827", marginBottom: 4 }}>
           {fmtTimestamp(at)}
@@ -107,21 +131,25 @@ export function EventTimeline({
   actorField,
   descriptionField,
   stateFields,
+  // §10.4c: severity-coloring для snapshot rows.
+  // dotColorBy: { field, colorMap, default? }.
+  dotColorBy,
 }) {
   if (!Array.isArray(events) || events.length === 0) return null;
 
   return (
     <div data-timeline={kind} style={{ paddingTop: 4 }}>
-      {events.map(event => (
+      {events.map((event, idx) => (
         kind === "snapshot"
           ? <EventRowSnapshot
-              key={event.id}
+              key={event.id ?? `snap_${idx}`}
               event={event}
               atField={atField}
               stateFields={stateFields}
+              dotColorBy={dotColorBy}
             />
           : <EventRowCausal
-              key={event.id}
+              key={event.id ?? `causal_${idx}`}
               event={event}
               atField={atField}
               kindField={kindField}

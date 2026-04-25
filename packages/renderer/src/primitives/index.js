@@ -17,6 +17,7 @@ import Wizard from "./Wizard.jsx";
 import PropertyPopover from "./PropertyPopover.jsx";
 import ChipList from "./ChipList.jsx";
 import AdminShell from "./AdminShell.jsx";
+import ResourceTree from "./ResourceTree.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -35,6 +36,8 @@ export { default as Wizard } from "./Wizard.jsx";
 export { default as PropertyPopover } from "./PropertyPopover.jsx";
 export { default as ChipList } from "./ChipList.jsx";
 export { default as AdminShell } from "./AdminShell.jsx";
+export { default as ResourceTree } from "./ResourceTree.jsx";
+export { EventTimeline } from "./eventTimeline.jsx";
 
 export const PRIMITIVES = {
   text: Text,
@@ -75,4 +78,5 @@ export const PRIMITIVES = {
   propertyPopover: PropertyPopover,
   chipList: ChipList,
   adminShell: AdminShell,
+  resourceTree: ResourceTree,
 };
