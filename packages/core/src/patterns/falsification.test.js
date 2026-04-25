@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("38 stable patterns loaded (+dual-status-badge-card ArgoCD dogfood 2026-04-25)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(38);
+  it("39 stable patterns loaded (+resource-hierarchy-canvas ArgoCD dogfood 2026-04-25)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(39);
   });
 
   // ─── hero-create ───
