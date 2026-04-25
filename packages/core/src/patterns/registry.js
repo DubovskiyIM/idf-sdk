@@ -129,6 +129,8 @@ import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 import resourceHierarchyCanvas from "./stable/detail/resource-hierarchy-canvas.js";
 import specVsStatusPanels from "./stable/detail/spec-vs-status-panels.js";
 import formYamlDualSurface from "./stable/detail/form-yaml-dual-surface.js";
+// Sprint 1 P0 #5 (2026-04-25)
+import diffPreviewBeforeIrreversible from "./stable/cross/diff-preview-before-irreversible.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -167,6 +169,8 @@ const STABLE_PATTERNS = [
   resourceHierarchyCanvas,
   specVsStatusPanels,
   formYamlDualSurface,
+  // Sprint 1 P0 #5 (2026-04-25)
+  diffPreviewBeforeIrreversible,
 ];
 
 export function loadStablePatterns(registry) {
