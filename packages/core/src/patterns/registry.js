@@ -127,6 +127,7 @@ import bidirectionalCanvasTreeSelection from "./stable/cross/bidirectional-canva
 // ArgoCD dogfood (2026-04-25 promotion from argocd-pattern-batch)
 import dualStatusBadgeCard from "./stable/catalog/dual-status-badge-card.js";
 import resourceHierarchyCanvas from "./stable/detail/resource-hierarchy-canvas.js";
+import diffPreviewBeforeIrreversible from "./stable/cross/diff-preview-before-irreversible.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -163,6 +164,7 @@ const STABLE_PATTERNS = [
   // ArgoCD dogfood (2026-04-25)
   dualStatusBadgeCard,
   resourceHierarchyCanvas,
+  diffPreviewBeforeIrreversible,
 ];
 
 export function loadStablePatterns(registry) {
