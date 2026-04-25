@@ -748,6 +748,13 @@ function GridCard({ item, node, ctx }) {
   const priceRaw = resolveField(spec.price);
   const price = typeof priceRaw === "number" ? priceRaw.toLocaleString("ru") + (spec.price?.suffix || "") : priceRaw;
   const badge = resolveField(spec.badge);
+  // dual-status-badge-card (2026-04-25): cardSpec.badges (array) для status-driven
+  // admin (ArgoCD sync+health, Flux ready+suspended). Fallback на single badge.
+  const badges = Array.isArray(spec.badges)
+    ? spec.badges
+        .map(b => ({ key: b.bind, label: b.label, value: resolveField(b) }))
+        .filter(b => b.value != null)
+    : null;
   const locationVal = resolveField(spec.location);
 
   // Timer
@@ -804,10 +811,20 @@ function GridCard({ item, node, ctx }) {
           overflow: "hidden", textOverflow: "ellipsis",
           display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
         }}>{title}</div>
-        {(badge || locationVal) && (
-          <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--idf-text-muted)" }}>
-            {badge && <span>{badge}</span>}
-            {badge && locationVal && <span>·</span>}
+        {(badges?.length || badge || locationVal) && (
+          <div style={{ display: "flex", gap: 6, fontSize: 11, color: "var(--idf-text-muted)", flexWrap: "wrap" }}>
+            {badges?.length ? (
+              badges.map(b => (
+                <span key={b.key} style={{
+                  background: "var(--idf-hover)",
+                  border: "1px solid var(--idf-border)",
+                  padding: "1px 6px", borderRadius: 4,
+                  fontSize: 10, fontWeight: 500,
+                  color: "var(--idf-text)",
+                }} title={b.label || b.key}>{String(b.value)}</span>
+              ))
+            ) : badge && <span>{badge}</span>}
+            {(badges?.length || badge) && locationVal && <span>·</span>}
             {locationVal && <span>📍 {locationVal}</span>}
           </div>
         )}
