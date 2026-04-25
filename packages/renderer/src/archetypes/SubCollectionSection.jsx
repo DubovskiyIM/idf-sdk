@@ -7,6 +7,7 @@ import { getAdaptedComponent } from "../adapters/registry.js";
 import { EventTimeline } from "../primitives/eventTimeline.jsx";
 import PermissionMatrix from "../primitives/PermissionMatrix.jsx";
 import CredentialEditor from "../primitives/CredentialEditor.jsx";
+import ResourceTree from "../primitives/ResourceTree.jsx";
 
 /**
  * SectionCard — consistent wrapper для specialized sections (permission
@@ -224,6 +225,64 @@ export default function SubCollectionSection({ section, target, ctx }) {
           readOnly={section.renderAs.readOnly !== false}
           actionsByType={section.renderAs.actionsByType}
           onAction={section.renderAs.readOnly === false ? handleAction : undefined}
+        />
+      </SectionCard>
+    );
+  }
+
+  // §10.4c: ResourceTree dispatcher для K8s-style inline children
+  // (Application.status.resources[]).
+  // renderAs: {
+  //   type: "resourceTree",
+  //   nameField?: "name", kindField?: "kind",
+  //   parentField?: "ownerName" | undefined,
+  //   levelField?: "level"   // приоритет над parentField
+  //   iconMap?: { CustomKind: "🦄", ... },
+  //   badgeColumns?: [{ field, colorMap, label? }, ...],
+  //   intentOnClick?: "open_resource"  // ctx.exec(intent, { id: item.id })
+  // }
+  if (section.renderAs?.type === "resourceTree") {
+    if (items.length === 0) return null;
+    const ra = section.renderAs;
+    const handleClick = ra.intentOnClick && ctx?.exec
+      ? (resourceItem) => ctx.exec(ra.intentOnClick, { id: resourceItem.id })
+      : undefined;
+    return (
+      <SectionCard title={title} count={items.length}>
+        <ResourceTree
+          items={items}
+          nameField={ra.nameField}
+          kindField={ra.kindField}
+          parentField={ra.parentField}
+          levelField={ra.levelField}
+          iconMap={ra.iconMap}
+          badgeColumns={ra.badgeColumns}
+          onItemClick={handleClick}
+        />
+      </SectionCard>
+    );
+  }
+
+  // §10.4c: ConditionsTimeline dispatcher для K8s status.conditions[] /
+  // audit-log timelines. Под капотом — EventTimeline kind="snapshot" с
+  // severity-coloring через dotColorBy.
+  // renderAs: {
+  //   type: "conditionsTimeline",
+  //   atField?: "lastTransitionTime",
+  //   stateFields?: ["type","status","message"],
+  //   dotColorBy?: { field: "type", colorMap: { SyncError: "danger", ... } }
+  // }
+  if (section.renderAs?.type === "conditionsTimeline") {
+    if (items.length === 0) return null;
+    const ra = section.renderAs;
+    return (
+      <SectionCard title={title} count={items.length}>
+        <EventTimeline
+          events={items}
+          kind="snapshot"
+          atField={ra.atField || "lastTransitionTime"}
+          stateFields={ra.stateFields || ["type", "status", "message"]}
+          dotColorBy={ra.dotColorBy}
         />
       </SectionCard>
     );
