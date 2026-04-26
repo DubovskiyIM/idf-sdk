@@ -48,6 +48,12 @@ export {
   getDefaultSlotsForArchetype,
 } from "./crystallize_v2/jointSolverBridge.js";
 
+// Joint solver — Phase 2c: diagnostic helper (derived vs alternate diff)
+export {
+  extractDerivedAssignment,
+  diagnoseAssignment,
+} from "./crystallize_v2/jointSolverDiagnose.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
