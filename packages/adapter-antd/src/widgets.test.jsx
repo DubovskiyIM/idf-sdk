@@ -391,3 +391,65 @@ describe("AntdTextInput validation attrs (2.4)", () => {
     expect(input.getAttribute("minlength")).toBe("6");
   });
 });
+
+describe("AntdBlockEditor primitive (§12.10 reference impl)", () => {
+  it("registry содержит primitive.blockEditor", () => {
+    expect(typeof get("primitive", "blockEditor")).toBe("function");
+  });
+
+  it("capabilities декларирует kinds + low-level flags=false", () => {
+    const cap = antdAdapter.capabilities.primitive.blockEditor;
+    expect(cap.kinds).toContain("paragraph");
+    expect(cap.kinds).toContain("heading-1");
+    expect(cap.kinds).toContain("divider");
+    expect(cap.slashCommands).toBe(false);
+    expect(cap.indent).toBe(false);
+  });
+
+  it("пустой blocks → placeholder", () => {
+    const Be = get("primitive", "blockEditor");
+    render(<Be blocks={[]} />);
+    expect(screen.getByText("Блоков нет")).toBeTruthy();
+  });
+
+  it("custom placeholder уважается", () => {
+    const Be = get("primitive", "blockEditor");
+    render(<Be blocks={[]} placeholder="Начните писать" />);
+    expect(screen.getByText("Начните писать")).toBeTruthy();
+  });
+
+  it("paragraph block рендерит Input.TextArea + Select kind", () => {
+    const Be = get("primitive", "blockEditor");
+    const blocks = [{ id: "b1", parentId: null, order: 0, kind: "paragraph", content: "hello" }];
+    const { container } = render(<Be blocks={blocks} />);
+    const textarea = container.querySelector("textarea");
+    expect(textarea).toBeTruthy();
+    expect(textarea.value).toBe("hello");
+  });
+
+  it("divider блок рендерится как horizontal-rule (без textarea/select)", () => {
+    const Be = get("primitive", "blockEditor");
+    const blocks = [{ id: "d", parentId: null, order: 0, kind: "divider" }];
+    const { container } = render(<Be blocks={blocks} />);
+    expect(container.querySelector("textarea")).toBeFalsy();
+    expect(container.querySelector(".ant-select")).toBeFalsy();
+  });
+
+  it("readOnly=true → textarea disabled", () => {
+    const Be = get("primitive", "blockEditor");
+    const blocks = [{ id: "b1", parentId: null, order: 0, kind: "paragraph", content: "x" }];
+    const { container } = render(<Be blocks={blocks} readOnly />);
+    const textarea = container.querySelector("textarea");
+    expect(textarea.disabled).toBe(true);
+  });
+
+  it("onChange вызывается при правке content", () => {
+    const Be = get("primitive", "blockEditor");
+    const blocks = [{ id: "b1", parentId: null, order: 0, kind: "paragraph", content: "old" }];
+    const onChange = vi.fn();
+    const { container } = render(<Be blocks={blocks} onChange={onChange} />);
+    const textarea = container.querySelector("textarea");
+    fireEvent.change(textarea, { target: { value: "new" } });
+    expect(onChange).toHaveBeenCalledWith("b1", { content: "new" });
+  });
+});

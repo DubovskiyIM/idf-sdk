@@ -18,6 +18,7 @@ import PropertyPopover from "./PropertyPopover.jsx";
 import ChipList from "./ChipList.jsx";
 import AdminShell from "./AdminShell.jsx";
 import ResourceTree from "./ResourceTree.jsx";
+import BlockEditor from "./BlockEditor.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -37,6 +38,7 @@ export { default as PropertyPopover } from "./PropertyPopover.jsx";
 export { default as ChipList } from "./ChipList.jsx";
 export { default as AdminShell } from "./AdminShell.jsx";
 export { default as ResourceTree } from "./ResourceTree.jsx";
+export { default as BlockEditor, BlockEditorFallback, buildHierarchy } from "./BlockEditor.jsx";
 export { EventTimeline } from "./eventTimeline.jsx";
 
 export const PRIMITIVES = {
@@ -79,4 +81,5 @@ export const PRIMITIVES = {
   chipList: ChipList,
   adminShell: AdminShell,
   resourceTree: ResourceTree,
+  blockEditor: BlockEditor,
 };
