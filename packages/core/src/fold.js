@@ -40,15 +40,19 @@ export function buildTypeMap(ontology) {
  * @param {{ snapshot?: import('./snapshot.js').Snapshot }} [options]
  * @returns {World}
  */
-export function fold(effects, typeMap = {}, options = {}) {
+export function fold(effects, typeMap, options = {}) {
   if (options.snapshot) {
+    // typeMap может быть undefined — foldFromSnapshot fallback'ает
+    // на snapshot.typeMap. Если typeMap передан явно (включая {}) —
+    // он имеет приоритет.
     return foldFromSnapshot(options.snapshot, effects, typeMap);
   }
 
+  const effectiveTypeMap = typeMap ?? {};
   const collections = {};
   const sorted = causalSort(effects);
 
-  for (const ef of sorted) applyEffect(ef, collections, typeMap);
+  for (const ef of sorted) applyEffect(ef, collections, effectiveTypeMap);
 
   const world = {};
   for (const [type, entities] of Object.entries(collections)) {
