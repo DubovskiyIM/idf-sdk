@@ -30,6 +30,13 @@ export {
   tiptapDocToText,
   tiptapDocToKind,
 } from "./kindMap.js";
+export {
+  SlashMenuPopup,
+  SLASH_OPTIONS,
+  filterSlashOptions,
+} from "./SlashMenu.jsx";
+export { createSlashCommandExtension } from "./slashCommandExtension.js";
+export { default as InlineBubbleMenu } from "./InlineBubbleMenu.jsx";
 
 /**
  * Mutates `adapter` (антд-адаптер) — заменяет primitive.blockEditor на

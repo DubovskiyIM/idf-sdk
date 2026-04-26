@@ -55,7 +55,10 @@ importers:
     dependencies:
       '@intent-driven/adapter-antd':
         specifier: '>=1.5.0'
-        version: 1.9.0(@ant-design/icons@6.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@ant-design/plots@2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@intent-driven/renderer@0.57.0(@intent-driven/core@0.79.0(react@19.2.5))(react@19.2.5))(antd@5.29.3(moment@2.30.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
+        version: 1.9.0(@ant-design/icons@6.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@ant-design/plots@2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@intent-driven/renderer@0.57.0(@intent-driven/core@0.81.0(react@19.2.5))(react@19.2.5))(antd@5.29.3(moment@2.30.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)
+      '@tiptap/core':
+        specifier: ^3.7.0
+        version: 3.22.4(@tiptap/pm@3.22.4)
       '@tiptap/pm':
         specifier: ^3.7.0
         version: 3.22.4
@@ -65,6 +68,9 @@ importers:
       '@tiptap/starter-kit':
         specifier: ^3.7.0
         version: 3.22.4
+      '@tiptap/suggestion':
+        specifier: ^3.7.0
+        version: 3.22.4(@tiptap/core@3.22.4(@tiptap/pm@3.22.4))(@tiptap/pm@3.22.4)
     devDependencies:
       '@testing-library/react':
         specifier: ^16.1.0
@@ -912,8 +918,8 @@ packages:
       antd: '>=5'
       react: '>=18'
 
-  '@intent-driven/core@0.79.0':
-    resolution: {integrity: sha512-NaVX8DI7HUCVjOriG1JkpM46xqL+g5Yc0HzQSi8XinwILptcHICZ6bcscZ3Zsa32//yPol5bT2a/6ieWYMXMyw==}
+  '@intent-driven/core@0.81.0':
+    resolution: {integrity: sha512-VSAyJ6ry1xAWr+FxEPLumU0R6P6dX2Iv6zoQhcSKR+UpIwDuXUfjnFF8OSIpCKfWDwQTOkXAmCn1TKzP2iMM4w==}
     peerDependencies:
       react: '>=18'
 
@@ -2228,6 +2234,12 @@ packages:
 
   '@tiptap/starter-kit@3.22.4':
     resolution: {integrity: sha512-qWjw+vfdin1rzMRpRU4cC5tLTwMJtUpXeQukv+6mOqqvhptuwuZBjUHImVEJaSPoHXS7+1ut+nTnrLyWyEuE5Q==}
+
+  '@tiptap/suggestion@3.22.4':
+    resolution: {integrity: sha512-1buvLZemITTeKmPf2wGFWvvhRFKjdQ+JgMqc67xBraOKeDd8wQi1e2XlhCYAtlVMm5f6j+qlLC/MvwuHI2jHeQ==}
+    peerDependencies:
+      '@tiptap/core': 3.22.4
+      '@tiptap/pm': 3.22.4
 
   '@tybys/wasm-util@0.10.1':
     resolution: {integrity: sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg==}
@@ -4866,22 +4878,22 @@ snapshots:
       chardet: 2.1.1
       iconv-lite: 0.7.2
 
-  '@intent-driven/adapter-antd@1.9.0(@ant-design/icons@6.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@ant-design/plots@2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@intent-driven/renderer@0.57.0(@intent-driven/core@0.79.0(react@19.2.5))(react@19.2.5))(antd@5.29.3(moment@2.30.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)':
+  '@intent-driven/adapter-antd@1.9.0(@ant-design/icons@6.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@ant-design/plots@2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(@intent-driven/renderer@0.57.0(@intent-driven/core@0.81.0(react@19.2.5))(react@19.2.5))(antd@5.29.3(moment@2.30.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5))(react@19.2.5)':
     dependencies:
       '@ant-design/icons': 6.1.1(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@ant-design/plots': 2.6.8(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@intent-driven/renderer': 0.57.0(@intent-driven/core@0.79.0(react@19.2.5))(react@19.2.5)
+      '@intent-driven/renderer': 0.57.0(@intent-driven/core@0.81.0(react@19.2.5))(react@19.2.5)
       antd: 5.29.3(moment@2.30.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       react: 19.2.5
 
-  '@intent-driven/core@0.79.0(react@19.2.5)':
+  '@intent-driven/core@0.81.0(react@19.2.5)':
     dependencies:
       react: 19.2.5
       uuid: 11.1.0
 
-  '@intent-driven/renderer@0.57.0(@intent-driven/core@0.79.0(react@19.2.5))(react@19.2.5)':
+  '@intent-driven/renderer@0.57.0(@intent-driven/core@0.81.0(react@19.2.5))(react@19.2.5)':
     dependencies:
-      '@intent-driven/core': 0.79.0(react@19.2.5)
+      '@intent-driven/core': 0.81.0(react@19.2.5)
       react: 19.2.5
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -6217,6 +6229,11 @@ snapshots:
       '@tiptap/extension-text': 3.22.4(@tiptap/core@3.22.4(@tiptap/pm@3.22.4))
       '@tiptap/extension-underline': 3.22.4(@tiptap/core@3.22.4(@tiptap/pm@3.22.4))
       '@tiptap/extensions': 3.22.4(@tiptap/core@3.22.4(@tiptap/pm@3.22.4))(@tiptap/pm@3.22.4)
+      '@tiptap/pm': 3.22.4
+
+  '@tiptap/suggestion@3.22.4(@tiptap/core@3.22.4(@tiptap/pm@3.22.4))(@tiptap/pm@3.22.4)':
+    dependencies:
+      '@tiptap/core': 3.22.4(@tiptap/pm@3.22.4)
       '@tiptap/pm': 3.22.4
 
   '@tybys/wasm-util@0.10.1':

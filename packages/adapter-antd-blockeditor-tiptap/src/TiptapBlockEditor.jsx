@@ -3,18 +3,20 @@
  * для @intent-driven/adapter-antd. Подключается через
  * `applyTiptapBlockEditor(antdAdapter)` (см. ./index.js).
  *
- * Архитектура (v0.1):
+ * Архитектура (v0.2):
  *   - Per-block Tiptap editor instance (один блок ↔ один ProseMirror).
  *     Прозрачное reverse-mapping (text/kind/checked) и stable IDs из domain.
  *     Trade-off: нет «слитного» selection через границу блока, нет
  *     автоматической слайс-операции через несколько блоков. Drag-handles
- *     и slash-commands — v0.2 (BlockNote upgrade).
- *   - `BubbleMenu` (StarterKit) даёт inline-formatting (bold / italic / code).
- *   - Kind-toolbar (AntD Select) над блоком — kind transition emit'ит
- *     `onKindChange(blockId, nextKind)`.
- *   - Capability declaration: `slashCommands: false`, `indent: false`,
- *     `dragHandles: false`, `inlineFormatting: true` — потребитель видит,
- *     что rich-text есть, но Notion-style block-management ещё нет.
+ *     и indent — отложены (BlockNote upgrade-path).
+ *   - InlineBubbleMenu (StarterKit) даёт inline-formatting (bold / italic /
+ *     strike / code) на любом непустом selection.
+ *   - SlashMenuPopup (через @tiptap/suggestion) открывается на ввод "/" и
+ *     эмитит onKindChange(blockId, kind) при выборе.
+ *   - Kind-toolbar (AntD Select) над блоком — fallback для пользователей,
+ *     которые не нашли slash-меню.
+ *   - Capability declaration: `slashCommands: true`, `inlineFormatting: true`,
+ *     `indent: false`, `dragHandles: false`.
  */
 
 import { useMemo, useEffect, useRef } from "react";
@@ -26,6 +28,9 @@ import {
   tiptapDocToText,
   tiptapDocToKind,
 } from "./kindMap.js";
+import { SlashMenuPopup } from "./SlashMenu.jsx";
+import { createSlashCommandExtension } from "./slashCommandExtension.js";
+import InlineBubbleMenu from "./InlineBubbleMenu.jsx";
 
 const KIND_OPTIONS = [
   { value: "paragraph", label: "P" },
@@ -42,12 +47,41 @@ const KIND_OPTIONS = [
 
 function TiptapSingleBlock({ block, readOnly, onChange, onKindChange }) {
   const initialDoc = useMemo(() => blockToTiptapDoc(block), [block.id]);
-  // ref на последнюю синхронизированную форму, чтобы не эмитить onChange при
-  // программных setContent (например, при kind change).
   const lastEmittedTextRef = useRef(block.content || "");
+  const popupRef = useRef(null);
+
+  // Slash-extension с замыканиями на popupRef.current. Оставляем onKindChange
+  // и blockId через ref'ы — extension создаётся один раз на mount, props
+  // могут меняться.
+  const onKindChangeRef = useRef(onKindChange);
+  onKindChangeRef.current = onKindChange;
+  const blockIdRef = useRef(block.id);
+  blockIdRef.current = block.id;
+
+  const slashExtension = useMemo(() => createSlashCommandExtension({
+    onShow: ({ x, y, query, selectItem }) => {
+      popupRef.current?.show({ x, y, query, onSelect: (kind) => {
+        selectItem(kind);
+        // selectItem дернёт extension.command → onCommand(kind) ниже
+      }});
+    },
+    onUpdate: ({ query, x, y }) => {
+      popupRef.current?.update({ query, x, y });
+    },
+    onHide: () => {
+      popupRef.current?.hide();
+    },
+    onKeyDown: (event) => {
+      return popupRef.current?.handleKeyDown(event) === true;
+    },
+    onCommand: (kind) => {
+      const cb = onKindChangeRef.current;
+      if (cb) cb(blockIdRef.current, kind);
+    },
+  }), []);
 
   const editor = useEditor({
-    extensions: [StarterKit.configure({})],
+    extensions: [StarterKit.configure({}), slashExtension],
     content: initialDoc,
     editable: !readOnly,
     onUpdate({ editor }) {
@@ -102,6 +136,8 @@ function TiptapSingleBlock({ block, readOnly, onChange, onKindChange }) {
       />
       <div style={{ flex: 1, minWidth: 0 }} className="idf-tiptap-block">
         <EditorContent editor={editor} />
+        <InlineBubbleMenu editor={editor} />
+        <SlashMenuPopup ref={popupRef} />
       </div>
     </div>
   );
@@ -114,8 +150,6 @@ export default function TiptapBlockEditor({
   onKindChange,
   placeholder = "Блоков нет",
 }) {
-  // hierarchy сейчас проигнорируем (per-block editor не поддерживает indent,
-  // см. v0.2 roadmap). Сортировка по order.
   const sorted = useMemo(
     () => (blocks || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     [blocks]
@@ -153,8 +187,8 @@ export default function TiptapBlockEditor({
  */
 export const TIPTAP_CAPABILITY = {
   kinds: KIND_OPTIONS.map(o => o.value),
-  slashCommands: false,
+  slashCommands: true,    // v0.2 — через @tiptap/suggestion + SlashMenuPopup
   indent: false,
   dragHandles: false,
-  inlineFormatting: true, // bold/italic/code через BubbleMenu StarterKit'а
+  inlineFormatting: true, // bold/italic/strike/code через InlineBubbleMenu
 };

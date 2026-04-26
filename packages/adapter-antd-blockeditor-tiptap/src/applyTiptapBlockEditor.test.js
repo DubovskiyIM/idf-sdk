@@ -54,8 +54,8 @@ describe("applyTiptapBlockEditor", () => {
     expect(() => applyTiptapBlockEditor("string")).toThrow(TypeError);
   });
 
-  it("TIPTAP_CAPABILITY декларирует ожидаемые flags", () => {
-    expect(TIPTAP_CAPABILITY.slashCommands).toBe(false);
+  it("TIPTAP_CAPABILITY декларирует ожидаемые flags (v0.2: slashCommands)", () => {
+    expect(TIPTAP_CAPABILITY.slashCommands).toBe(true);
     expect(TIPTAP_CAPABILITY.indent).toBe(false);
     expect(TIPTAP_CAPABILITY.dragHandles).toBe(false);
     expect(TIPTAP_CAPABILITY.inlineFormatting).toBe(true);
