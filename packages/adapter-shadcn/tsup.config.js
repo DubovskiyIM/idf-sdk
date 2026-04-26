@@ -1,9 +1,11 @@
 import { defineConfig } from "tsup";
 
+const skipDts = process.env.SKIP_DTS === "true";
+
 export default defineConfig({
   entry: ["src/index.js"],
   format: ["esm", "cjs"],
-  dts: true,
+  dts: !skipDts,
   splitting: false,
   sourcemap: true,
   clean: true,
