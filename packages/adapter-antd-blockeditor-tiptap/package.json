@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/adapter-antd-blockeditor-tiptap",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Tiptap-backed BlockEditor primitive для @intent-driven/adapter-antd (опциональный upgrade поверх reference textarea-impl)",
   "type": "module",
   "main": "./dist/index.cjs",
