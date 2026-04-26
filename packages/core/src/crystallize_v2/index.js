@@ -18,6 +18,7 @@ import { hashInputs } from "./hash.js";
 import { deriveNavGraph } from "./navGraph.js";
 import { generateEditProjections, generateCreateProjections, buildFormSpec, buildCreateFormSpec } from "./formGrouping.js";
 import { normalizeIntentsMap } from "./normalizeIntentNative.js";
+import { normalizeProjections } from "../normalizeProjection.js";
 import { validateArtifact } from "./validateArtifact.js";
 import { checkAnchoring } from "../anchoring.js";
 import { AnchoringError } from "../errors.js";
@@ -65,6 +66,11 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   // crystallize_v2 downstream ожидает `particles.entities`, α, array-params.
   // Normalize — additive-only, legacy-intent'ы проходят как no-op.
   INTENTS = normalizeIntentsMap(INTENTS);
+
+  // §12.1 закрытие (Notion field test): копируем `archetype` → `kind`
+  // если автор писал manifest-термин. Materializer'ы и downstream
+  // iteration читают только `kind`.
+  PROJECTIONS = normalizeProjections(PROJECTIONS);
 
   // Anchoring gate (§15 zazor #1)
   const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;

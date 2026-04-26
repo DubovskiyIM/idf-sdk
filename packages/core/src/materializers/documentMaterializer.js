@@ -31,6 +31,7 @@
  */
 
 import { evalFilter } from "../filterExpr.js";
+import { normalizeProjection } from "../normalizeProjection.js";
 
 function pluralize(word) {
   if (!word) return word;
@@ -174,6 +175,8 @@ function materializeDashboard(projection, world, viewer, allProjections) {
  * @returns document-граф
  */
 function materializeAsDocument(projection, world, viewer, opts = {}) {
+  // §12.1: archetype → kind нормализация перед switch'ем
+  projection = normalizeProjection(projection);
   const { allProjections = {}, routeParams = {}, domain = "" } = opts;
   const now = new Date();
 

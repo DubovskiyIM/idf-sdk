@@ -90,6 +90,12 @@ export {
   isInheritablePermission,
   isPermissionSufficient,
 } from "./permissionInheritance.js";
+
+// §12.1 — projection.archetype → projection.kind unification
+export { normalizeProjection, normalizeProjections } from "./normalizeProjection.js";
+
+// §12.2 — primary-display field discovery (voice/document materializer'ы)
+export { getPrimaryFieldName, getPrimaryFieldValue } from "./getPrimaryFieldName.js";
 export { evalFilter } from "./filterExpr.js";
 
 // Базовые роли (§5 v1.6.1) — таксономия owner / viewer / agent / observer
