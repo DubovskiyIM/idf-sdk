@@ -1289,6 +1289,112 @@ function AntdSidebar({ sections, active, onSelect, projectionNames }) {
 }
 
 // ============================================================
+// AntdBlockEditor — reference impl §12.10 (block-canvas primitive).
+// Базовая редактируемая обёртка: textarea per block + select для kind.
+// Не включает drag-handles / slash-commands / inline formatting —
+// это намеренный минимум, чтобы не тащить тяжёлую editor-зависимость
+// (Tiptap / BlockNote / Lexical) в bundled-адаптер. Хост, которому
+// нужен полноценный block-editor, регистрирует свой адаптерный
+// компонент с тем же contract'ом.
+// ============================================================
+
+const ANTD_BLOCK_KINDS = [
+  "paragraph",
+  "heading-1",
+  "heading-2",
+  "heading-3",
+  "bulleted-list-item",
+  "numbered-list-item",
+  "to-do",
+  "quote",
+  "callout",
+  "divider",
+  "code",
+];
+
+function AntdBlockRow({ block, depth, readOnly, onChange, onKindChange }) {
+  const isDivider = block.kind === "divider";
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "flex-start",
+      gap: 8,
+      marginLeft: depth * 20,
+      padding: "4px 0",
+    }}>
+      {!isDivider && (
+        <Select
+          size="small"
+          value={block.kind || "paragraph"}
+          disabled={readOnly}
+          onChange={(next) => onKindChange?.(block.id, next)}
+          options={ANTD_BLOCK_KINDS.map(k => ({ value: k, label: k }))}
+          style={{ width: 130, flexShrink: 0 }}
+        />
+      )}
+      {isDivider ? (
+        <div style={{ flex: 1, borderTop: "1px solid var(--idf-border, #d9d9d9)", margin: "10px 0" }} />
+      ) : (
+        <Input.TextArea
+          autoSize={{ minRows: 1 }}
+          value={block.content || ""}
+          disabled={readOnly}
+          onChange={(e) => onChange?.(block.id, { content: e.target.value })}
+          placeholder={block.kind === "paragraph" ? "Введите текст..." : ""}
+          variant="borderless"
+          style={{ flex: 1 }}
+        />
+      )}
+    </div>
+  );
+}
+
+function AntdBlockEditor({ blocks = [], readOnly = false, onChange, onKindChange, placeholder = "Блоков нет" }) {
+  // Hierarchy через локальный сорт (без зависимости от renderer для thin-edge).
+  const sorted = (blocks || []).slice().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const byId = new Map();
+  const roots = [];
+  sorted.forEach(b => byId.set(b.id, { ...b, children: [] }));
+  byId.forEach(node => {
+    if (node.parentId && byId.has(node.parentId)) {
+      byId.get(node.parentId).children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  const renderNode = (node, depth = 0) => (
+    <div key={node.id}>
+      <AntdBlockRow
+        block={node}
+        depth={depth}
+        readOnly={readOnly}
+        onChange={(id, patch) => onChange?.(id, patch)}
+        onKindChange={onKindChange}
+      />
+      {(node.children || []).map(child => renderNode(child, depth + 1))}
+    </div>
+  );
+
+  if (roots.length === 0) {
+    return (
+      <div style={{
+        padding: "24px 16px",
+        color: "rgba(0,0,0,0.45)",
+        fontStyle: "italic",
+        textAlign: "center",
+      }}>{placeholder}</div>
+    );
+  }
+
+  return (
+    <div style={{ fontFamily: "var(--idf-font, system-ui)" }}>
+      {roots.map(node => renderNode(node))}
+    </div>
+  );
+}
+
+// ============================================================
 // Adapter export
 // ============================================================
 
@@ -1307,6 +1413,18 @@ export const antdAdapter = {
       wizard: { steps: true, testConnection: true },
       propertyPopover: true,
       chipList: { variants: ["tag", "policy", "role"] },
+      // §12.10: block-editor через adapter capability (reference impl).
+      // kinds — какие block.kind адаптер умеет редактировать.
+      // slashCommands/indent/dragHandles/inlineFormatting = false — reference
+      // impl минимальная (textarea + select), для полноценного UX надо
+      // регистрировать Tiptap/BlockNote/Lexical-обёртку.
+      blockEditor: {
+        kinds: ANTD_BLOCK_KINDS,
+        slashCommands: false,
+        indent: false,
+        dragHandles: false,
+        inlineFormatting: false,
+      },
     },
     shell: { modal: true, tabs: true, sidebar: true },
     button: { primary: true, secondary: true, danger: true, intent: true, overflow: true },
@@ -1354,6 +1472,7 @@ export const antdAdapter = {
     wizard: AntdWizard,
     propertyPopover: AntdPropertyPopover,
     chipList: AntdChipList,
+    blockEditor: AntdBlockEditor,
   },
   icon: {
     resolve: resolveAntdIcon,
