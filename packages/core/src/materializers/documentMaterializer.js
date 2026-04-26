@@ -130,16 +130,27 @@ function materializeDetail(projection, world, viewer, routeParams = {}) {
     rowCount: witnesses.length,
   });
 
-  // 2. Sub-collections как отдельные таблицы
+  // 2. Sub-collections как отдельные таблицы.
+  //
+  // Resolver: предпочтительно `sub.entity` (canonical в IDF-spec), fallback на
+  // `sub.collection` (legacy). Поиск через тот же `findCollection` helper,
+  // что и в `materializeCatalog` — pluralize(entity.toLowerCase()) +
+  // CamelCase last-segment heuristic. Это снимает legacy-friction:
+  //   { entity: "Intent", foreignKey: "domainId" }      ← canonical
+  //   { collection: "intents", foreignKey: "domainId" }  ← старая форма
+  // обе работают.
   const subColls = projection.subCollections || [];
   for (const sub of subColls) {
-    const subRows = (world[sub.collection] || [])
-      .filter(r => r[sub.foreignKey] === mainRow.id);
+    const allRows = sub.entity
+      ? findCollection(world, sub.entity)
+      : (world[sub.collection] || []);
+    const subRows = allRows.filter(r => r[sub.foreignKey] === mainRow.id);
     if (subRows.length === 0) continue;
+    const sectionKey = sub.entity || sub.collection;
     const fields = Object.keys(subRows[0] || {}).filter(f => f !== "id").slice(0, 6);
     sections.push({
-      id: `sub_${sub.collection}`,
-      heading: sub.title || sub.collection,
+      id: `sub_${sectionKey}`,
+      heading: sub.title || sectionKey,
       kind: "table",
       columns: fields.map(f => ({ id: f, label: humanizeFieldName(f) })),
       rows: subRows.map(r => ({
