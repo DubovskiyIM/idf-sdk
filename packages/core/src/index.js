@@ -183,6 +183,18 @@ export {
   validatePolymorphicEntity,
 } from "./ontology/polymorphic.js";
 
+// Polymorphic foreign-key fields (§12.9, 2026-04-27, Notion field-test) —
+// sparse-FK XOR-pair (Comment.pageId XOR blockId) declarative shape вместо
+// ручных expression invariants.
+export {
+  isPolymorphicFkField,
+  getPolymorphicFkFields,
+  getActiveAlternative,
+  validatePolymorphicFkRow,
+  buildPolymorphicFkInvariants,
+  resolvePolymorphicFkParent,
+} from "./ontology/polymorphicFk.js";
+
 // Canonical type-map + auto field-mapping (P0.4 — backlog §9.1, 2026-04-26).
 // Закрывает gap «type:string не мапится» из importer'ов и 70+ ручных
 // camelCase ↔ snake_case трансформ при FE↔BE bridge.
