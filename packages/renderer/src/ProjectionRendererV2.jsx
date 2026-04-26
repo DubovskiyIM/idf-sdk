@@ -5,7 +5,6 @@ import ArchetypeForm from "./archetypes/ArchetypeForm.jsx";
 import ArchetypeCanvas from "./archetypes/ArchetypeCanvas.jsx";
 import ArchetypeDashboard from "./archetypes/ArchetypeDashboard.jsx";
 import ArchetypeWizard from "./archetypes/ArchetypeWizard.jsx";
-import AgentConsole from "./archetypes/AgentConsole/AgentConsole.jsx";
 import ArchetypeErrorBoundary from "./ErrorBoundary.jsx";
 import { validateArtifact } from "./validation/validateArtifact.js";
 
@@ -17,7 +16,6 @@ const ARCHETYPES = {
   canvas: ArchetypeCanvas,
   dashboard: ArchetypeDashboard,
   wizard: ArchetypeWizard,
-  agent_console: AgentConsole,
 };
 
 /**
