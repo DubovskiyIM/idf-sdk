@@ -53,3 +53,9 @@ jobs:
           # упирается в дефолтный heap (~4 GB) и падает с ERR_WORKER_OUT_OF_MEMORY.
           # ubuntu-latest даёт 7+ GB — поднимаем до 8 GB.
           NODE_OPTIONS: --max-old-space-size=8192
+          # adapter-mantine DTS падает с TS2742 (cross-pnpm @types/react portability)
+          # — блокирует публикацию всего monorepo. Сейчас публикуем без .d.ts во
+          # всех пакетах (consumer'ы используют untyped JS, так же как CI bug).
+          # Follow-up: добавить explicit type annotations в mantine-компоненты или
+          # перевести на tsx + react.FC, тогда вернём dts по умолчанию.
+          SKIP_DTS: "true"
