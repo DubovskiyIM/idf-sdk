@@ -85,6 +85,10 @@ export default {
         const inverse = resolveInverse(intent);
         if (!inverse) continue;
         toAdd.push({
+          // Stable key, deterministic per (intent → inverse).
+          // validateArtifact (idf backlog §13.11) требует уникальный key
+          // на каждый overlay entry, иначе artifact rejected.
+          key: `undoToast__${intent.id}`,
           type: "undoToast",
           intentId: intent.id,
           inverseIntentId: inverse,

@@ -82,6 +82,9 @@ export default {
         if (existing.has(intent.id)) continue;
         if (!isCandidateForUndoToast(intent, intents)) continue;
         toAdd.push({
+          // Stable key, deterministic per intent — validateArtifact (idf
+          // backlog §13.11) требует уникальный key на каждый overlay entry.
+          key: `undoToast__${intent.id}`,
           type: "undoToast",
           intentId: intent.id,
           inverseIntentId: resolveInverse(intent, intents),

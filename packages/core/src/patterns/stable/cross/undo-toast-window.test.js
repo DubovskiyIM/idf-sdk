@@ -99,4 +99,19 @@ describe("undo-toast-window (merge promotion)", () => {
     const next = pattern.structure.apply(slots, { intents: [destructive, inverse] });
     expect(next).toBe(slots);
   });
+
+  it("apply: каждый overlay entry имеет stable `key` (validateArtifact §13.11)", () => {
+    const next = pattern.structure.apply(
+      { overlay: [] },
+      { intents: [destructive, inverse] }
+    );
+    expect(next.overlay[0].key).toBe("undoToast__reject_bid");
+    // Идемпотентность: дополнительный intent → дополнительный stable key
+    const both = pattern.structure.apply(
+      { overlay: [] },
+      { intents: [destructive, inverse, { ...destructive, id: "delete_x" }, { ...inverse, id: "restore_x" }] }
+    );
+    const keys = both.overlay.map((o) => o.key);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
 });
