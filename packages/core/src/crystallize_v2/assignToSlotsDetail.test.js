@@ -286,6 +286,61 @@ describe("assignToSlotsDetail", () => {
       },
     };
 
+    it("default collection key = camelPlural(entity) когда не задан", () => {
+      // Repro для invest-portfolio-ai bug: ontology authored как
+      // {entity, foreignKey, title} без `collection` — section.source раньше
+      // был undefined, в renderer'е ctx.world?.[undefined] = empty list.
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{ entity: "Response", foreignKey: "taskId", title: "Отклики" }],
+        },
+        ontology,
+      );
+      const s = slots.sections[0];
+      expect(s.source).toBe("responses");
+      expect(s.id).toBe("responses");
+    });
+
+    it("authored collection остаётся priority над default fallback", () => {
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Task",
+          subCollections: [{
+            collection: "myCustomKey", entity: "Response", foreignKey: "taskId",
+          }],
+        },
+        ontology,
+      );
+      const s = slots.sections[0];
+      expect(s.source).toBe("myCustomKey");
+    });
+
+    it("camelPlural работает для irregular: Category → categories, Glass → glasses", () => {
+      const onto = {
+        entities: {
+          Holder: { fields: { id: {} } },
+          Category: { fields: { id: {}, holderId: { type: "entityRef" } } },
+          Glass: { fields: { id: {}, holderId: { type: "entityRef" } } },
+        },
+      };
+      const slots = assignToSlotsDetail(
+        {},
+        {
+          kind: "detail", mainEntity: "Holder",
+          subCollections: [
+            { entity: "Category", foreignKey: "holderId" },
+            { entity: "Glass", foreignKey: "holderId" },
+          ],
+        },
+        onto,
+      );
+      expect(slots.sections.find(s => s.itemEntity === "Category").source).toBe("categories");
+      expect(slots.sections.find(s => s.itemEntity === "Glass").source).toBe("glasses");
+    });
+
     it("itemView как строка → section.itemView.bind = строка", () => {
       const slots = assignToSlotsDetail(
         {},
