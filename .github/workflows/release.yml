@@ -49,3 +49,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          # tsup DTS worker для @intent-driven/core (~31k LOC, ~1.3 MB bundle)
+          # упирается в дефолтный heap (~4 GB) и падает с ERR_WORKER_OUT_OF_MEMORY.
+          # ubuntu-latest даёт 7+ GB — поднимаем до 8 GB.
+          NODE_OPTIONS: --max-old-space-size=8192
