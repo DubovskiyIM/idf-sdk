@@ -173,6 +173,21 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     } else if (archetype === "wizard") {
       // Wizard-архетип: steps пробрасываются as-is, рендер управляется ArchetypeWizard.
       slots = { kind: "wizard", steps: proj.steps || [], projection: proj };
+    } else if (archetype === "agent_console") {
+      // Agent_console (8-й архетип) — tool-use streams для AI-агента. Рендер
+      // делегируется AgentConsole в renderer; crystallize_v2 не synthesize'ит
+      // slots, projection пробрасывается as-is. Без этой ветки дефолтный
+      // assignToSlots ниже синтезировал бы catalog по mainEntity, и
+      // agent_console projection рендерилась бы как catalog (что и происходило
+      // в Fold invest tenant до этого fix'а).
+      slots = {
+        header: [],
+        toolbar: [],
+        body: { type: "agent_console", mainEntity: proj.mainEntity },
+        context: [],
+        fab: [],
+        overlay: [],
+      };
     } else {
       slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape, { projections: allProjections });
     }
@@ -184,7 +199,7 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     // идут первыми — они объясняют само происхождение проекции.
     // Спецификация: idf-manifest-v2.1/docs/design/debugging-derived-ui-spec.md
     let witnesses = Array.isArray(proj.derivedBy) ? [...proj.derivedBy] : [];
-    if (applyEnabled && archetype !== "form" && archetype !== "canvas" && archetype !== "dashboard" && archetype !== "wizard") {
+    if (applyEnabled && archetype !== "form" && archetype !== "canvas" && archetype !== "dashboard" && archetype !== "wizard" && archetype !== "agent_console") {
       const matchedAugmented = structuralPatterns.map(p => ({
         pattern: p,
         explain: evaluateTriggerExplained(p.trigger, projIntents, ONTOLOGY, proj),
