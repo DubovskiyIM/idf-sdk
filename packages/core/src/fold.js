@@ -3,6 +3,7 @@
 /** @typedef {import('../types/idf.d.ts').World} World */
 
 import { causalSort } from "./causalSort.js";
+import { applyEffect, getCollectionType, foldFromSnapshot } from "./snapshot.js";
 
 /**
  * Построить маппинг singular→plural из онтологии.
@@ -23,69 +24,35 @@ export function buildTypeMap(ontology) {
   return map;
 }
 
-function getCollectionType(target, typeMap) {
-  const base = target.split(".")[0];
-  return typeMap[base] || base;
-}
-
 /**
- * fold(effects, typeMap) → world (объект по типам сущностей)
+ * fold(effects, typeMap, options) → world (объект по типам сущностей)
  *
  * По манифесту: World(t) = fold(⊕, ∅, sort≺(Φ_confirmed ↓ t))
  *
  * Эффекты сортируются причинно (parent_id → child) перед применением.
+ *
+ * Если options.snapshot передан, fold делегирует в foldFromSnapshot —
+ * incremental режим. Иначе — full fold с нуля. Backward-compat:
+ * fold(effects) и fold(effects, typeMap) работают как раньше.
+ *
  * @param {Effect[]} effects
  * @param {Record<string, string>} [typeMap]
+ * @param {{ snapshot?: import('./snapshot.js').Snapshot }} [options]
  * @returns {World}
  */
-export function fold(effects, typeMap = {}) {
+export function fold(effects, typeMap, options = {}) {
+  if (options.snapshot) {
+    // typeMap может быть undefined — foldFromSnapshot fallback'ает
+    // на snapshot.typeMap. Если typeMap передан явно (включая {}) —
+    // он имеет приоритет.
+    return foldFromSnapshot(options.snapshot, effects, typeMap);
+  }
+
+  const effectiveTypeMap = typeMap ?? {};
   const collections = {};
   const sorted = causalSort(effects);
 
-  function applyEffect(ef) {
-    if (ef.target.startsWith("drafts")) return;
-    if (ef.scope === "presentation") return;
-
-    // Batch: разворачиваем массив под-эффектов
-    if (ef.alpha === "batch" && Array.isArray(ef.value)) {
-      for (const sub of ef.value) applyEffect(sub);
-      return;
-    }
-
-    const ctx = ef.context || {};
-    const val = ef.value;
-    const collType = getCollectionType(ef.target, typeMap);
-
-    if (!collections[collType]) collections[collType] = {};
-
-    switch (ef.alpha) {
-      case "add": {
-        const entityId = ctx.id || ef.id;
-        collections[collType][entityId] = { ...ctx };
-        break;
-      }
-      case "replace": {
-        // Upsert: если сущности ещё нет в Φ (например, auth-users не
-        // сидируются через add), создаём partial entity из {id, field}.
-        // V2UI merge'ит такие partials с base из currentUser так, что
-        // folded поля побеждают — см. V2UI.worldWithRoute.
-        const entityId = ctx.id;
-        if (entityId) {
-          const field = ef.target.split(".").pop();
-          const existing = collections[collType][entityId] || { id: entityId };
-          collections[collType][entityId] = { ...existing, [field]: val };
-        }
-        break;
-      }
-      case "remove": {
-        const entityId = ctx.id;
-        if (entityId) delete collections[collType][entityId];
-        break;
-      }
-    }
-  }
-
-  for (const ef of sorted) applyEffect(ef);
+  for (const ef of sorted) applyEffect(ef, collections, effectiveTypeMap);
 
   const world = {};
   for (const [type, entities] of Object.entries(collections)) {
@@ -99,13 +66,11 @@ export function fold(effects, typeMap = {}) {
  * Мутирует копию world — обновляет визуальные свойства (x, y, порядок и т.д.)
  */
 export function applyPresentation(world, effects, typeMap = {}) {
-  // Глубокая копия world
   const result = {};
   for (const [key, arr] of Object.entries(world)) {
     result[key] = arr.map(e => ({ ...e }));
   }
 
-  // Применить presentation-эффекты
   for (const ef of effects) {
     if (ef.scope !== "presentation") continue;
     const ctx = ef.context || {};
@@ -161,8 +126,7 @@ export function foldDrafts(effects) {
 
 /**
  * Отфильтровать эффекты по статусам.
- */
-/**
+ *
  * @param {Effect[]} effects
  * @param {...string} statuses
  * @returns {Effect[]}

@@ -19,6 +19,14 @@ export {
 } from "./fold.js";
 export { causalSort } from "./causalSort.js";
 
+// Snapshot — incremental fold (A1: closed-over префикс Φ)
+export {
+  createSnapshot,
+  foldFromSnapshot,
+  applyEffect,
+  getCollectionType,
+} from "./snapshot.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
