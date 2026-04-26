@@ -165,3 +165,9 @@ export {
   isProjectionAvailableForRole,
   partitionProjectionsByRole,
 } from "./filterProjectionsByRole.js";
+
+// Information Bottleneck filter (Phase 1 salience formalization)
+export {
+  accessibleIntents,
+  intentTouchesEntity,
+} from "./crystallize_v2/accessibleIntents.js";

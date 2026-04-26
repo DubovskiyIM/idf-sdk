@@ -16,8 +16,16 @@ import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildWitnessChildren, findHeroImageWitness } from "./witnessItemChildren.js";
+import { applyInformationBottleneck } from "./informationBottleneck.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default", opts = {}) {
+  // Information Bottleneck: вычислить допустимые поля для body catalog.
+  // role — из opts.role, или из strategy если передана строкой, или null.
+  const ibRole = opts.role ?? (typeof strategy === "string" ? strategy : null);
+  const { witness: ibWitness } = applyInformationBottleneck({
+    projection, role: ibRole, INTENTS, ONTOLOGY
+  });
+  if (Array.isArray(opts.witnesses)) opts.witnesses.push(ibWitness);
   // projection.gating (UI-gap #6) — onboarding prerequisites: шаги к
   // разблокировке проекции. Node-shape { title, steps }, Array<step>
   // с { id, label, icon?, done?, cta? }. Renderer рендерит GatingPanel
