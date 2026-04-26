@@ -40,6 +40,8 @@ function pluralize(word) {
 }
 
 import { evalFilter } from "../filterExpr.js";
+import { normalizeProjection } from "../normalizeProjection.js";
+import { getPrimaryFieldValue } from "../getPrimaryFieldName.js";
 
 function findCollection(world, entityName) {
   if (!entityName) return [];
@@ -119,7 +121,7 @@ const RU_FIELD_LABELS = {
 
 const TOP_ITEMS = 3; // сколько элементов catalog озвучивать перед "и ещё N"
 
-function voiceCatalog(projection, world, viewer) {
+function voiceCatalog(projection, world, viewer, ontology) {
   const rows = findCollection(world, projection.mainEntity);
   const filtered = projection.filter
     ? rows.filter(r => evalFilter(projection.filter, r, { viewer, world }))
@@ -127,21 +129,24 @@ function voiceCatalog(projection, world, viewer) {
 
   const witnesses = (projection.witnesses || []).slice(0, 3); // top-3 fields для brevity
   const total = filtered.length;
+  const entityDef = ontology?.entities?.[projection.mainEntity];
+  const projectionName = projection.name || projection.title || projection.mainEntity;
 
   if (total === 0) {
     return [{
       role: "assistant",
-      text: `В разделе «${projection.name || projection.mainEntity}» пока ничего нет.`,
+      text: `В разделе «${projectionName}» пока ничего нет.`,
     }];
   }
 
   const top = filtered.slice(0, TOP_ITEMS);
   const rest = total - top.length;
 
-  let intro = `В разделе «${projection.name || projection.mainEntity}» ${speakCount(total)}. `;
+  let intro = `В разделе «${projectionName}» ${speakCount(total)}. `;
 
   const itemTexts = top.map((r, i) => {
-    const titleField = r.name || r.title || r.ticker || r.id;
+    // §12.2: primary-field discovery через fieldRole instead of hardcode
+    const titleField = getPrimaryFieldValue(r, entityDef);
     const keyFacts = witnesses
       .filter(w => w !== "name" && w !== "title")
       .slice(0, 2)
@@ -157,7 +162,7 @@ function voiceCatalog(projection, world, viewer) {
   return [{ role: "assistant", text: intro + body }];
 }
 
-function voiceDetail(projection, world, viewer, routeParams) {
+function voiceDetail(projection, world, viewer, routeParams, ontology) {
   const rows = findCollection(world, projection.mainEntity);
   const idParam = projection.idParam;
   const targetId = routeParams[idParam];
@@ -168,7 +173,9 @@ function voiceDetail(projection, world, viewer, routeParams) {
       text: `Сущность ${projection.mainEntity} не найдена.` }];
   }
 
-  const titleField = mainRow.name || mainRow.title || mainRow.ticker || projection.mainEntity;
+  const entityDef = ontology?.entities?.[projection.mainEntity];
+  // §12.2: primary-field discovery
+  const titleField = getPrimaryFieldValue(mainRow, entityDef) || projection.mainEntity;
   const witnesses = (projection.witnesses || []).slice(0, 4);
 
   const facts = witnesses
@@ -187,32 +194,35 @@ function voiceDetail(projection, world, viewer, routeParams) {
   }];
 }
 
-function voiceFeed(projection, world, viewer) {
+function voiceFeed(projection, world, viewer, ontology) {
   const rows = findCollection(world, projection.mainEntity);
   const filtered = projection.filter
     ? rows.filter(r => evalFilter(projection.filter, r, { viewer, world }))
     : rows;
   const sorted = [...filtered].reverse(); // newest first (простая эвристика)
+  const projectionName = projection.name || projection.title || projection.mainEntity;
+  const entityDef = ontology?.entities?.[projection.mainEntity];
 
   if (sorted.length === 0) {
-    return [{ role: "assistant", text: `Новых событий в «${projection.name}» нет.` }];
+    return [{ role: "assistant", text: `Новых событий в «${projectionName}» нет.` }];
   }
 
   const top = sorted.slice(0, TOP_ITEMS);
   const rest = sorted.length - top.length;
   const items = top.map(r => {
-    const summary = r.message || r.title || r.name || r.content || r.id;
+    // §12.2: messenger-style fields prefer message/content; иначе primary-field
+    const summary = r.message || r.content || getPrimaryFieldValue(r, entityDef);
     return String(summary).slice(0, 60);
   });
 
-  let text = `В ленте «${projection.name}» ${speakCount(sorted.length)}. `;
+  let text = `В ленте «${projectionName}» ${speakCount(sorted.length)}. `;
   text += items.map((t, i) => `${ordinal(i + 1)}: ${t}`).join(". ");
   if (rest > 0) text += `. И ещё ${rest}.`;
 
   return [{ role: "assistant", text }];
 }
 
-function voiceDashboard(projection, world, viewer, allProjections) {
+function voiceDashboard(projection, world, viewer, allProjections, ontology) {
   const embedded = projection.embedded || [];
   const turns = [{
     role: "assistant",
@@ -223,7 +233,7 @@ function voiceDashboard(projection, world, viewer, allProjections) {
     const sub = allProjections?.[emb.projection];
     if (!sub) continue;
     if (sub.kind === "catalog" || sub.kind === "feed") {
-      turns.push(...voiceCatalog(sub, world, viewer));
+      turns.push(...voiceCatalog(sub, world, viewer, ontology));
     }
   }
 
@@ -305,6 +315,8 @@ function ordinal(n) {
 // ───────────────────────────────────────────────────────────
 
 function materializeAsVoice(projection, world, viewer, opts = {}) {
+  // §12.1: archetype → kind нормализация перед switch'ем
+  projection = normalizeProjection(projection);
   const { allProjections = {}, routeParams = {}, domain = "", ontology = {}, viewerRole = "owner" } = opts;
   const now = new Date();
 
@@ -334,16 +346,16 @@ function materializeAsVoice(projection, world, viewer, opts = {}) {
   let bodyTurns;
   switch (projection.kind) {
     case "catalog":
-      bodyTurns = voiceCatalog(projection, world, viewer);
+      bodyTurns = voiceCatalog(projection, world, viewer, ontology);
       break;
     case "feed":
-      bodyTurns = voiceFeed(projection, world, viewer);
+      bodyTurns = voiceFeed(projection, world, viewer, ontology);
       break;
     case "detail":
-      bodyTurns = voiceDetail(projection, world, viewer, routeParams);
+      bodyTurns = voiceDetail(projection, world, viewer, routeParams, ontology);
       break;
     case "dashboard":
-      bodyTurns = voiceDashboard(projection, world, viewer, allProjections);
+      bodyTurns = voiceDashboard(projection, world, viewer, allProjections, ontology);
       break;
     case "wizard":
       bodyTurns = voiceWizard(projection, world, viewer);
