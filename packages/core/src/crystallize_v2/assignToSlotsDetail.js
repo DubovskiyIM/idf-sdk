@@ -383,7 +383,7 @@ function isPhaseTransition(intent, mainEntity) {
  */
 function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
   const {
-    collection,
+    collection: authoredCollection,
     entity: subEntity,
     foreignKey,
     title: rawTitle,
@@ -396,6 +396,14 @@ function buildSection(subDef, INTENTS, ONTOLOGY, parentProjection) {
     itemView: authorItemView,
     statusField: authorStatusField,
   } = subDef;
+
+  // Если автор задал только {entity, foreignKey, title}, без `collection` —
+  // SDK раньше возвращал section.source = undefined, и SubCollectionSection
+  // в renderer'е лукапил `ctx.world?.[undefined]` → empty. Default fallback
+  // на camelPlural(entity) — host'ы fold'ят world этим же ключом
+  // (TenantApp.foldEffects + filterWorldForRole.camelPluralize). Author
+  // override остаётся приоритетом для не-стандартных collection'ов.
+  const collection = authoredCollection || (subEntity ? camelPluralFromEntity(subEntity) : undefined);
 
   const parentEntity = parentProjection.mainEntity;
 
@@ -929,4 +937,20 @@ function buildDetailBody(projection, ONTOLOGY, viewerRole = "self", INTENTS = {}
   }
 
   return { type: "column", gap: 16, children };
+}
+
+/**
+ * Default `collection` key для subCollection без authored override.
+ * Совпадает с `filterWorldForRole.camelPluralize` (SDK source of truth):
+ * Transaction → transactions, OrderItem → orderItems, Category → categories.
+ *
+ * Логика идентичная host-side `TenantApp.camelPluralize` (idf-runtime/web/src),
+ * чтобы fold(Φ) → world.<key> матчился с section.source.
+ */
+function camelPluralFromEntity(entity) {
+  if (typeof entity !== "string" || entity.length === 0) return "";
+  const head = entity[0].toLowerCase() + entity.slice(1);
+  if (head.endsWith("y")) return head.slice(0, -1) + "ies";
+  if (head.endsWith("s")) return head + "es";
+  return head + "s";
 }
