@@ -35,6 +35,13 @@ export {
   INFINITY_COST,
 } from "./crystallize_v2/jointSolver.js";
 
+// Joint solver — Phase 2a: Hungarian (optimal assignment, drop-in для greedy)
+export {
+  hungarianAssign,
+  hungarianMatch,
+  expandSlots,
+} from "./crystallize_v2/hungarianAssign.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
