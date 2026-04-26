@@ -143,6 +143,21 @@ export {
   validatePolymorphicEntity,
 } from "./ontology/polymorphic.js";
 
+// Canonical type-map + auto field-mapping (P0.4 — backlog §9.1, 2026-04-26).
+// Закрывает gap «type:string не мапится» из importer'ов и 70+ ручных
+// camelCase ↔ snake_case трансформ при FE↔BE bridge.
+export {
+  CANONICAL_TYPES,
+  TYPE_ALIASES,
+  normalizeFieldType,
+  normalizeFieldDef,
+  camelToSnake,
+  snakeToCamel,
+  inferWireFieldName,
+  applyFieldMapping,
+  buildAutoFieldMapping,
+} from "./ontology/typeMapping.js";
+
 // UX Pattern Layer — поведенческие паттерны поверх архетипов
 export {
   resolvePattern,
