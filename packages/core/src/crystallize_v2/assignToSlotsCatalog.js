@@ -218,10 +218,17 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     slots.body.item.intents = itemIntents;
   }
 
+  // Строим ctx для weighted-sum salience при сортировке toolbar.
+  // intentUsage: если в онтологии нет usageCount — 1 для всех (равный вес).
+  const intentUsage = Object.fromEntries(
+    Object.entries(INTENTS).map(([id, intent]) => [id, intent.particles?.usageCount || 1])
+  );
+  const salienceCtx = { projection, ONTOLOGY, intentUsage };
+
   // Сортировка toolbar по salience desc перед overflow cutoff — семантически
-  // primary intent'ы попадают в visible, остальные — в overflow. Tied salience
-  // → alphabetical (наследуется из функториальной нормализации INTENTS).
-  slots.toolbar.sort(bySalienceDesc);
+  // primary intent'ы попадают в visible, остальные — в overflow. Используем
+  // weighted-sum через ctx для более семантически точного порядка.
+  slots.toolbar.sort((a, b) => bySalienceDesc(a, b, salienceCtx));
 
   const tiedWitnesses = detectTiedGroups(slots.toolbar, { slot: "toolbar", projection: projection.id });
   if (tiedWitnesses.length > 0) {

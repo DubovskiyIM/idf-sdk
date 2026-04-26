@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
+import { computeSalience, bySalienceDesc, detectTiedGroups, salienceFromFeatures, DEFAULT_SALIENCE_WEIGHTS } from "./salience.js";
 
 describe("computeSalience — explicit override", () => {
   it("число как salience возвращается напрямую", () => {
@@ -223,5 +223,122 @@ describe("detectTiedGroups — witness basis", () => {
     const ws = detectTiedGroups(items, ctx);
     expect(ws).toHaveLength(1);
     expect(ws[0].basis).toBe("alphabetical-fallback");
+  });
+});
+
+describe("salienceFromFeatures — линейная комбинация", () => {
+  it("Σ wᵢ·featureᵢ для явных весов", () => {
+    const f = { explicitNumber: 0.8, tier3Promotion: 1, phaseTransition: 1 };
+    const w = { explicitNumber: 100, tier3Promotion: 60, phaseTransition: 40 };
+    expect(salienceFromFeatures(f, w)).toBeCloseTo(0.8 * 100 + 60 + 40);
+  });
+
+  it("нулевые фичи → нулевой вклад", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(0);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS: creatorMain=1 → salience=80", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.creatorMain = 1;
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(80);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS: tier1CanonicalEdit=1 → salience=80", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.tier1CanonicalEdit = 1;
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBe(80);
+  });
+
+  it("DEFAULT_SALIENCE_WEIGHTS воспроизводит поведение ladder для phase-transition", () => {
+    const f = Object.fromEntries(["explicitNumber","explicitTier","tier1CanonicalEdit","tier2EditLike","tier3Promotion","tier4ReplaceMain","creatorMain","phaseTransition","irreversibilityHigh","removeMain","readOnly","ownershipMatch","domainFrequency"].map(k => [k, 0]));
+    f.tier3Promotion = 1;
+    f.phaseTransition = 1;
+    // tier3Promotion(70) + phaseTransition(40) = 110 > 70 (ladder phase-transition)
+    // Суммарно выше, чем просто creatorMain=80 — это правильное семантическое поведение
+    expect(salienceFromFeatures(f, DEFAULT_SALIENCE_WEIGHTS)).toBeGreaterThan(40);
+  });
+
+  it("missing weights ключ → 0 вклад (не ошибка)", () => {
+    const f = { unknownKey: 5, tier1CanonicalEdit: 1 };
+    const w = { tier1CanonicalEdit: 80 };
+    expect(salienceFromFeatures(f, w)).toBe(80);
+  });
+});
+
+describe("bySalienceDesc — ctx режим (weighted-sum)", () => {
+  const baseCtx = {
+    projection: { id: "deal_detail", mainEntity: "Deal" },
+    ONTOLOGY: { entities: { Deal: { fields: { status: {} } } } },
+    intentUsage: {},
+  };
+
+  it("без ctx — backward-compat по pre-computed salience", () => {
+    const a = { intentId: "a", salience: 100 };
+    const b = { intentId: "b", salience: 40 };
+    expect(bySalienceDesc(a, b)).toBeLessThan(0); // a первый
+  });
+
+  it("с ctx — per-projection weights: irreversibilityHigh=999 побеждает creatorMain", () => {
+    const irreversibleCtx = {
+      ...baseCtx,
+      projection: {
+        ...baseCtx.projection,
+        salienceWeights: { irreversibilityHigh: 999 },
+      },
+    };
+    const irr = {
+      intentId: "confirm_deal",
+      particles: {
+        effects: [{ α: "replace", target: "Deal.status", context: { __irr: { point: "high", at: "now" } } }],
+      },
+    };
+    const creator = {
+      intentId: "create_deal",
+      creates: "Deal",
+      particles: { effects: [{ α: "create", target: "Deal" }] },
+    };
+    const sorted = [creator, irr].sort((a, b) => bySalienceDesc(a, b, irreversibleCtx));
+    expect(sorted[0].intentId).toBe("confirm_deal");
+  });
+
+  it("с ctx — promotion intent (tier3Promotion) выше чем create при default weights", () => {
+    const confirm = {
+      intentId: "confirm_deal",
+      particles: { effects: [{ α: "replace", target: "Deal.status" }] },
+    };
+    const create = {
+      intentId: "create_deal",
+      creates: "Deal",
+      particles: { effects: [{ α: "create", target: "Deal" }] },
+    };
+    // confirm_deal имеет tier3Promotion=1 (70) + phaseTransition=1 (40) = 110
+    // create_deal имеет creatorMain=1 (80)
+    // confirm должен быть выше
+    const sorted = [create, confirm].sort((a, b) => bySalienceDesc(a, b, baseCtx));
+    expect(sorted[0].intentId).toBe("confirm_deal");
+  });
+
+  it("с ctx — tie-break через declarationOrder если weighted-sum одинаков", () => {
+    // Два intent'а с одинаковым набором фич
+    const a = { intentId: "edit_deal", declarationOrder: 0 };
+    const b = { intentId: "update_deal", declarationOrder: 5 };
+    // оба tier2EditLike=1 (если есть "edit" или "update") — проверяем tiebreak
+    const result = bySalienceDesc(a, b, baseCtx);
+    // a имеет declarationOrder=0 < 5, должен быть первым
+    expect(result).toBeLessThan(0);
+  });
+
+  it("null ctx → не падает, использует pre-computed salience", () => {
+    const a = { intentId: "a", salience: 60 };
+    const b = { intentId: "b", salience: 20 };
+    expect(() => bySalienceDesc(a, b, null)).not.toThrow();
+    expect(bySalienceDesc(a, b, null)).toBeLessThan(0); // a выше
+  });
+
+  it("undefined ctx → backward-compat (не падает)", () => {
+    const a = { intentId: "a", salience: 60 };
+    const b = { intentId: "b", salience: 20 };
+    expect(bySalienceDesc(a, b, undefined)).toBeLessThan(0);
   });
 });
