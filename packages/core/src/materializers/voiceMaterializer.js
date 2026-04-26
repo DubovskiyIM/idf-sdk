@@ -320,13 +320,18 @@ function materializeAsVoice(projection, world, viewer, opts = {}) {
   const { allProjections = {}, routeParams = {}, domain = "", ontology = {}, viewerRole = "owner" } = opts;
   const now = new Date();
 
+  // §12.4: domain fallback — если автор не передал opts.domain, берём из
+  // ontology.name / ontology.domain. Пустой fallback не даёт «домена «»» в
+  // тексте — system prompt и subtitle просто не упоминают домен.
+  const resolvedDomain = domain || ontology?.name || ontology?.domain || "";
+
   const script = {
     title: projection.name || projection.id || "Проекция",
-    subtitle: domain ? `домен ${domain}` : "",
+    subtitle: resolvedDomain ? `домен ${resolvedDomain}` : "",
     meta: {
       date: now.toISOString(),
       viewer: viewer?.name || viewer?.id || "—",
-      domain,
+      domain: resolvedDomain,
       projection: projection.id || null,
       materialization: "voice",
       locale: opts.locale || "ru-RU",
@@ -335,7 +340,9 @@ function materializeAsVoice(projection, world, viewer, opts = {}) {
     turns: [
       {
         role: "system",
-        text: `Ты — голосовой ассистент для домена «${domain}». Говори кратко, дружелюбно, на русском. Пользователь: ${viewer?.name || "клиент"}.`,
+        text: resolvedDomain
+          ? `Ты — голосовой ассистент для домена «${resolvedDomain}». Говори кратко, дружелюбно, на русском. Пользователь: ${viewer?.name || "клиент"}.`
+          : `Ты — голосовой ассистент. Говори кратко, дружелюбно, на русском. Пользователь: ${viewer?.name || "клиент"}.`,
       },
     ],
     footer: {

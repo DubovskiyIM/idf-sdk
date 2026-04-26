@@ -177,18 +177,23 @@ function materializeDashboard(projection, world, viewer, allProjections) {
 function materializeAsDocument(projection, world, viewer, opts = {}) {
   // §12.1: archetype → kind нормализация перед switch'ем
   projection = normalizeProjection(projection);
-  const { allProjections = {}, routeParams = {}, domain = "" } = opts;
+  const { allProjections = {}, routeParams = {}, domain = "", ontology = {} } = opts;
   const now = new Date();
+
+  // §12.4: domain fallback — если автор не передал opts.domain, берём из
+  // ontology.name / ontology.domain. Пустой fallback оставляет subtitle пустым,
+  // не «Домен: ».
+  const resolvedDomain = domain || ontology?.name || ontology?.domain || "";
 
   const doc = {
     title: projection.name || projection.id || "Документ",
-    subtitle: `${domain ? `Домен: ${domain}` : ""}`.trim(),
+    subtitle: resolvedDomain ? `Домен: ${resolvedDomain}` : "",
     meta: {
       date: now.toISOString(),
       dateFormatted: now.toLocaleDateString("ru", { day: "numeric", month: "long", year: "numeric" }),
       viewer: viewer?.name || viewer?.id || "—",
       viewerEmail: viewer?.email || null,
-      domain,
+      domain: resolvedDomain,
       projection: projection.id || null,
       materialization: "document",
       generator: "IDF documentMaterializer v1",
