@@ -26,6 +26,11 @@
  */
 
 import { getOwnerFields } from "./crystallize_v2/ontologyHelpers.js";
+import {
+  isInheritablePermission,
+  resolveInheritedPermission,
+  isPermissionSufficient,
+} from "./permissionInheritance.js";
 
 function pluralize(word) {
   if (!word) return word;
@@ -108,11 +113,12 @@ function filterWorldForRole(rawWorld, ontology, roleName, viewer) {
     const { outputName, rows } = findCollection(rawWorld, entityName);
 
     // 1) Row-filter: приоритет role.scope > entity.kind:"reference" >
-    //    entity.ownerField > (no filter).
+    //    entity.permissionInheritance > entity.ownerField > (no filter).
     // resolveAllowedIds вызывается per-entity, потому что scope может отличаться
     // по statusAllowed/statusField (Portfolio/Goal требуют status=active, User — нет).
     let owned;
     const scope = scopes[entityName];
+    const isOwnerRole = role.base === "owner" || role.base === "admin";
     if (scope && scope.via) {
       const allowedIds = resolveAllowedIds(rawWorld, scope, viewer);
       const localField = scope.localField || entityDef.ownerField;
@@ -127,10 +133,20 @@ function filterWorldForRole(rawWorld, ontology, roleName, viewer) {
       // ownership не применяется — все видят все строки. Role.visibleFields
       // всё равно контролирует какие поля выдавать. §26.5 закрытие.
       owned = rows;
+    } else if (isInheritablePermission(entityDef) && !isOwnerRole) {
+      // §12.8 Permission inheritance: cascading visibility через parent chain
+      // и fallback на root entity. Owner-роли пропускают этот шаг (видят всё).
+      const cfg = entityDef.permissionInheritance;
+      const viewerId = typeof viewer === "string" ? viewer : viewer?.id;
+      owned = rows.filter(r => {
+        const lvl = resolveInheritedPermission(r, viewerId, cfg, rawWorld);
+        return isPermissionSufficient(lvl, cfg);
+      });
     } else {
       const ownerFields = getOwnerFields(entityDef);
       if (ownerFields.length > 0) {
-        owned = rows.filter(r => ownerFields.some(f => r[f] === viewer.id));
+        const viewerId = typeof viewer === "string" ? viewer : viewer?.id;
+        owned = rows.filter(r => ownerFields.some(f => r[f] === viewerId));
       } else {
         owned = rows;
       }
