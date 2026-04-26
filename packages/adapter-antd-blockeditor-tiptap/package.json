@@ -1,0 +1,68 @@
+{
+  "name": "@intent-driven/adapter-antd-blockeditor-tiptap",
+  "version": "0.1.0",
+  "description": "Tiptap-backed BlockEditor primitive для @intent-driven/adapter-antd (опциональный upgrade поверх reference textarea-impl)",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "test": "vitest run"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18",
+    "antd": ">=5",
+    "@intent-driven/adapter-antd": ">=1.5.0"
+  },
+  "dependencies": {
+    "@tiptap/react": "^3.7.0",
+    "@tiptap/pm": "^3.7.0",
+    "@tiptap/starter-kit": "^3.7.0"
+  },
+  "devDependencies": {
+    "tsup": "^8.5.0",
+    "vitest": "^4.1.0",
+    "jsdom": "^25.0.0",
+    "@testing-library/react": "^16.1.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "antd": "^5.21.0",
+    "typescript": "^5.7.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT",
+  "author": "Игнат Дубовский <dubovskyy.im@gmail.com>",
+  "homepage": "https://github.com/DubovskiyIM/idf-sdk/tree/main/packages/adapter-antd-blockeditor-tiptap",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DubovskiyIM/idf-sdk.git",
+    "directory": "packages/adapter-antd-blockeditor-tiptap"
+  },
+  "bugs": {
+    "url": "https://github.com/DubovskiyIM/idf-sdk/issues"
+  },
+  "keywords": [
+    "idf",
+    "intent-driven",
+    "blockeditor",
+    "tiptap",
+    "antd",
+    "notion"
+  ],
+  "sideEffects": false
+}
