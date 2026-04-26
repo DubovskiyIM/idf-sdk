@@ -42,6 +42,12 @@ export {
   expandSlots,
 } from "./crystallize_v2/hungarianAssign.js";
 
+// Joint solver — Phase 2b: bridge (same signature как assignToSlots*, diagnostic)
+export {
+  computeAlternateAssignment,
+  getDefaultSlotsForArchetype,
+} from "./crystallize_v2/jointSolverBridge.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
