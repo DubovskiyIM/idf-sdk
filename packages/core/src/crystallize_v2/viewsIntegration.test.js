@@ -64,6 +64,44 @@ describe("crystallize_v2 multi-archetype views", () => {
     });
   });
 
+  // §12.11 — Notion-style multi-view database (table / board / calendar)
+  it("§12.11 — canvas-view даёт slot.body.type = canvas с canvasId", () => {
+    const projections = {
+      database: {
+        kind: "catalog",
+        mainEntity: "Task",
+        witnesses: ["title"],
+        views: [
+          { id: "table",    name: "Таблица",   kind: "catalog", layout: "table" },
+          { id: "board",    name: "Доска",     kind: "catalog", layout: "kanban", groupBy: "status" },
+          { id: "calendar", name: "Календарь", kind: "canvas",  canvasId: "calendar_view" },
+        ],
+      },
+    };
+    const art = crystallizeV2(intents, projections, ontology, "test").database;
+    expect(art.views).toHaveLength(3);
+    const calendar = art.views.find(v => v.id === "calendar");
+    expect(calendar.archetype).toBe("canvas");
+    expect(calendar.slots.body).toEqual({ type: "canvas", canvasId: "calendar_view" });
+  });
+
+  it("§12.11 — canvas-view без canvasId fallback'ит на view.id", () => {
+    const projections = {
+      database: {
+        kind: "catalog",
+        mainEntity: "Task",
+        witnesses: ["title"],
+        views: [
+          { id: "table",    name: "Таблица", kind: "catalog" },
+          { id: "timeline", name: "Timeline", kind: "canvas" },
+        ],
+      },
+    };
+    const art = crystallizeV2(intents, projections, ontology, "test").database;
+    const tl = art.views.find(v => v.id === "timeline");
+    expect(tl.slots.body.canvasId).toBe("timeline");
+  });
+
   it("default view = views[0].id если defaultView не указан", () => {
     const projections = {
       tasks_list: {

@@ -66,4 +66,19 @@ describe("mergeViewWithParent", () => {
     const { merged } = mergeViewWithParent(parent, view);
     expect(merged.viewId).toBe("stats");
   });
+
+  // §12.11 — canvas в whitelist для multi-view database (Notion calendar/timeline)
+  it("canvas archetype в whitelist (§12.11)", () => {
+    const view = { id: "calendar", name: "Calendar", kind: "canvas", canvasId: "calendar_view" };
+    const { merged, warnings } = mergeViewWithParent(parent, view);
+    expect(merged.kind).toBe("canvas");
+    expect(merged.canvasId).toBe("calendar_view");
+    expect(warnings).toEqual([]);
+  });
+
+  it("warning сообщение упоминает canvas в списке allowed", () => {
+    const view = { id: "v1", kind: "wizard" };
+    const { warnings } = mergeViewWithParent(parent, view);
+    expect(warnings[0]).toContain("canvas");
+  });
 });

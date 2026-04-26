@@ -373,6 +373,15 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
             body: { type: "dashboard", widgets: merged.widgets || [] },
             context: [], fab: [], overlay: [],
           };
+        } else if (viewArchetype === "canvas") {
+          // §12.11: canvas-view — host рисует через registerCanvas(canvasId).
+          // Slot-assembly не выполняется; даём минимальный placeholder body
+          // с canvasId (default — view.id), чтобы renderer мог dispatcher'ить.
+          viewSlots = {
+            header: [], toolbar: [],
+            body: { type: "canvas", canvasId: merged.canvasId || view.id },
+            context: [], fab: [], overlay: [],
+          };
         } else {
           viewSlots = assignToSlots(INTENTS, { ...merged, id: projId + ":" + view.id }, ONTOLOGY, viewPatternResult.strategy);
         }
