@@ -129,6 +129,20 @@ export {
 // Asset-boundary helpers (§19 v1.7) — декларация внешних asset-источников
 export { getAssets, validateAsset, ASSET_KINDS } from "./ontology/assets.js";
 
+// Polymorphic entity-kind (P0.2 — §14 ext, 2026-04-26) — entity с
+// discriminator + variants (закрывает gap «node-type explosion» 70+/200+).
+export {
+  isPolymorphicEntity,
+  getDiscriminatorField,
+  getEntityVariants,
+  getEntityVariant,
+  listVariantValues,
+  getEffectiveFields,
+  getUnionFields,
+  getVariantSpecificFields,
+  validatePolymorphicEntity,
+} from "./ontology/polymorphic.js";
+
 // UX Pattern Layer — поведенческие паттерны поверх архетипов
 export {
   resolvePattern,
