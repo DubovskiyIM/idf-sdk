@@ -27,6 +27,14 @@ export {
   getCollectionType,
 } from "./snapshot.js";
 
+// Joint solver — Phase 1 (pure-функции; интеграция в assignToSlots* — Phase 2)
+export {
+  classifyIntentRole,
+  buildCostMatrix,
+  greedyAssign,
+  INFINITY_COST,
+} from "./crystallize_v2/jointSolver.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
