@@ -1,6 +1,6 @@
 {
   "name": "@intent-driven/cli",
-  "version": "1.4.64",
+  "version": "1.4.65",
   "description": "Intent-Driven Frontend — CLI для bootstrap новых доменов через LLM-диалог",
   "type": "module",
   "bin": {
