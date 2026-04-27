@@ -10,6 +10,17 @@
  * — с бо́льшим числом children-candidate'ов. Tiebreak — alphabetical по
  * parentEntity. Без этого правила Role.detail мог бы поглотить User.list
  * только потому, что Role processed earlier в Object.entries.
+ *
+ * Author opt-out (§13d, Notion field-test 2026-04-27):
+ * `parentProjection.absorbExclude: ["Block", "Comment"]` — phrase'ы для
+ * R8 что эти child entities — *content* parent'а, не дочерний CRUD-каталог.
+ * Канонический кейс: notion `page_detail` имеет `slots.body.kind: "canvas"`
+ * с block-editor; Block.pageId ссылается на Page, и без opt-out R8 absorb'ит
+ * Block как subCollection, дублируя content из body. С opt-out Block остаётся
+ * root catalog (виден через canvas body, не subсекция).
+ *
+ * Также `childCatalog.absorbed: false` (legacy author override на самой
+ * проекции) сохраняется и работает.
  */
 
 import { detectForeignKeys } from "./deriveProjections.js";
@@ -40,6 +51,13 @@ export function absorbHubChildren(projections, ontology) {
   // отбрасываются сразу и не конкурируют за child'ов.
   const parentCandidates = {};
   for (const [parentEntity, detailId] of Object.entries(detailByEntity)) {
+    // §13d — author opt-out: parent projection декларирует absorbExclude:
+    // [...entityNames] — эти child entities — content, не subCollection.
+    const parentProj = result[detailId];
+    const absorbExclude = new Set(
+      Array.isArray(parentProj?.absorbExclude) ? parentProj.absorbExclude : [],
+    );
+
     const candidates = [];
     for (const [childEntity, fks] of Object.entries(foreignKeys)) {
       if (childEntity === parentEntity) continue;
@@ -49,6 +67,8 @@ export function absorbHubChildren(projections, ontology) {
       if (!childCatalogId) continue;
       const childProj = result[childCatalogId];
       if (childProj.absorbed === false) continue;
+      // §13d author opt-out — entity явно объявлена как content parent'а.
+      if (absorbExclude.has(childEntity)) continue;
       candidates.push({ childCatalogId, childEntity, foreignKey: fk.field });
     }
     if (candidates.length >= HUB_MIN_CHILDREN) {

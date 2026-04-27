@@ -159,4 +159,74 @@ describe("absorbHubChildren — best-parent heuristic (G-K-11)", () => {
     // Realm всё равно hub — 3 других child'а (Role/Group/Client) ≥ MIN
     expect(result.realm_detail.hubSections?.length).toBe(3);
   });
+
+  // §13d (Notion field-test 2026-04-27) — author opt-out для content-entities
+  describe("§13d — parentProjection.absorbExclude", () => {
+    const onto = {
+      entities: {
+        Page:       { fields: { id: { kind: "id" } } },
+        Block:      { fields: { id: { kind: "id" }, pageId: { kind: "foreignKey", references: "Page" } } },
+        Comment:    { fields: { id: { kind: "id" }, pageId: { kind: "foreignKey", references: "Page" } } },
+        Permission: { fields: { id: { kind: "id" }, pageId: { kind: "foreignKey", references: "Page" } } },
+      },
+    };
+
+    it("baseline без opt-out: Block/Comment/Permission absorbed (hubSections=3)", () => {
+      const projs = {
+        page_list: { kind: "catalog", mainEntity: "Page" },
+        page_detail: { kind: "detail", mainEntity: "Page" },
+        block_list: { kind: "catalog", mainEntity: "Block" },
+        comment_list: { kind: "catalog", mainEntity: "Comment" },
+        permission_list: { kind: "catalog", mainEntity: "Permission" },
+      };
+      const result = absorbHubChildren(projs, onto);
+      expect(result.page_detail.hubSections?.length).toBe(3);
+      expect(result.block_list.absorbedBy).toBe("page_detail");
+    });
+
+    it("absorbExclude: ['Block'] — Block остаётся root, остальные absorbed", () => {
+      const projs = {
+        page_list: { kind: "catalog", mainEntity: "Page" },
+        page_detail: { kind: "detail", mainEntity: "Page", absorbExclude: ["Block"] },
+        block_list: { kind: "catalog", mainEntity: "Block" },
+        comment_list: { kind: "catalog", mainEntity: "Comment" },
+        permission_list: { kind: "catalog", mainEntity: "Permission" },
+      };
+      const result = absorbHubChildren(projs, onto);
+      expect(result.block_list.absorbedBy).toBeUndefined();
+      expect(result.comment_list.absorbedBy).toBe("page_detail");
+      expect(result.permission_list.absorbedBy).toBe("page_detail");
+      expect(result.page_detail.hubSections?.length).toBe(2);
+      expect(result.page_detail.hubSections.map(s => s.entity).sort()).toEqual(["Comment", "Permission"]);
+    });
+
+    it("absorbExclude: ['Block','Comment'] → только Permission, <MIN → no hub", () => {
+      const projs = {
+        page_list: { kind: "catalog", mainEntity: "Page" },
+        page_detail: { kind: "detail", mainEntity: "Page", absorbExclude: ["Block", "Comment"] },
+        block_list: { kind: "catalog", mainEntity: "Block" },
+        comment_list: { kind: "catalog", mainEntity: "Comment" },
+        permission_list: { kind: "catalog", mainEntity: "Permission" },
+      };
+      const result = absorbHubChildren(projs, onto);
+      expect(result.page_detail.hubSections).toBeUndefined();
+      expect(result.permission_list.absorbedBy).toBeUndefined();
+      expect(result.block_list.absorbedBy).toBeUndefined();
+      expect(result.comment_list.absorbedBy).toBeUndefined();
+    });
+
+    it("non-array absorbExclude игнорируется (silently)", () => {
+      const projs = {
+        page_list: { kind: "catalog", mainEntity: "Page" },
+        page_detail: { kind: "detail", mainEntity: "Page", absorbExclude: "Block" }, // string!
+        block_list: { kind: "catalog", mainEntity: "Block" },
+        comment_list: { kind: "catalog", mainEntity: "Comment" },
+        permission_list: { kind: "catalog", mainEntity: "Permission" },
+      };
+      const result = absorbHubChildren(projs, onto);
+      // Non-array absorbExclude игнорируется — все 3 absorbed как обычно.
+      expect(result.page_detail.hubSections?.length).toBe(3);
+      expect(result.block_list.absorbedBy).toBe("page_detail");
+    });
+  });
 });
