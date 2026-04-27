@@ -18,6 +18,7 @@ import { accessibleIntents } from "./accessibleIntents.js";
 import { computeSalience } from "./salience.js";
 import { buildCostMatrix, greedyAssign } from "./jointSolver.js";
 import { hungarianAssign } from "./hungarianAssign.js";
+import { normalizeIntentsMap } from "./normalizeIntentNative.js";
 
 // ============================================================================
 // Empirical default slot models (Phase 3c').
@@ -127,7 +128,14 @@ export function computeAlternateAssignment(INTENTS, projection, ONTOLOGY, opts =
   const archetype = projection?.archetype || projection?.kind || "catalog";
   const slots = opts.slots || getDefaultSlotsForArchetype(archetype);
 
-  const rawIntents = accessibleIntents(projection, role, INTENTS, ONTOLOGY);
+  // Normalize INTENTS до accessibleIntents — object-format intents (notion,
+  // gravitino, automation) имеют top-level α/target вместо particles.effects.
+  // accessibleIntents читает particles, поэтому без normalize эти intents
+  // не находятся. crystallize_v2 нормализует на входе; bridge — caller-direct
+  // вход — должен делать то же. Idempotent — уже-normalized passes через no-op.
+  const normalizedIntents = normalizeIntentsMap(INTENTS);
+
+  const rawIntents = accessibleIntents(projection, role, normalizedIntents, ONTOLOGY);
   const mainEntity = projection?.mainEntity;
 
   // Enrich intents с computed salience (если ещё нет explicit)
