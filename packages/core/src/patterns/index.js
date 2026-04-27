@@ -20,6 +20,14 @@ export {
 } from "./candidate/index.js";
 export { validatePattern, evaluateTrigger } from "./schema.js";
 export { computeSlotAttribution } from "./slotAttribution.js";
+// §13.1 — composite-key API (pattern.id global uniqueness)
+export {
+  patternKey,
+  isSameLogicalPattern,
+  findPatternByKey,
+  parsePatternKey,
+  logicalId,
+} from "./patternKey.js";
 
 import { classifyPattern } from "./classifier.js";
 import { buildStrategy } from "./strategy.js";
