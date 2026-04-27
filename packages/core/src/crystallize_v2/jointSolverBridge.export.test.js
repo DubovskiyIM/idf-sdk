@@ -12,7 +12,8 @@ describe("@intent-driven/core — bridge exports (A2 Phase 2b)", () => {
       a: {
         id: "a",
         salience: 80,
-        particles: { entities: ["Item"], effects: [] },
+        creates: "Item",
+        particles: { entities: ["Item"], effects: [{ α: "add", target: "Item" }] },
       },
     };
     const ONTOLOGY = {
