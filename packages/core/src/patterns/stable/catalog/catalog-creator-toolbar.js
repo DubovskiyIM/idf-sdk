@@ -58,6 +58,11 @@ export default {
      * в toolbar. Overlay (formModal) уже лежит в slots.overlay (его
      * создаёт wrapByConfirmation). Если overlay нет — pattern не создаёт
      * placeholder, чтобы не задваивать существующий formModal flow.
+     *
+     * Tier-routing co-existence (core@0.105.0+): если intent уже размещён
+     * в hero (через `salienceDrivenRouting` extension), пропускаем — иначе
+     * получим duplicate hero+toolbar entry. Hero trigger самодостаточен:
+     * activates тот же overlay (formModal) через overlayKey.
      */
     apply(slots, context) {
       const { projection, intents } = context || {};
@@ -66,6 +71,9 @@ export default {
 
       const existingToolbarIds = new Set(
         (slots?.toolbar || []).map(t => t?.intentId).filter(Boolean)
+      );
+      const existingHeroIds = new Set(
+        (slots?.hero || []).map(h => h?.intentId).filter(Boolean)
       );
       const existingOverlayIds = new Set(
         (slots?.overlay || []).map(o => o?.intentId).filter(Boolean)
@@ -76,6 +84,7 @@ export default {
         if (!id) continue;
         if (!isMultiParamCreator(intent, mainEntity)) continue;
         if (existingToolbarIds.has(id)) continue;
+        if (existingHeroIds.has(id)) continue; // tier-routing уже разместил в hero
         if (!existingOverlayIds.has(id)) continue; // overlay должен быть сгенерирован до
         toAdd.push({
           type: "intentButton",

@@ -92,4 +92,30 @@ describe("catalog-creator-toolbar (§6.1)", () => {
     });
     expect(next).toBe(slots);
   });
+
+  it("apply skips intent уже размещённый в hero (tier-routing co-existence)", () => {
+    // core@0.105.0+: salienceDrivenRouting может промотировать creator с
+    // salience>=80 в hero. Этот pattern не должен задваивать его в toolbar.
+    const intents = [{
+      id: "create_listing",
+      name: "Создать листинг",
+      creates: "Listing",
+      confirmation: "form",
+      particles: { confirmation: "form", effects: [], parameters: [{ name: "a" }, { name: "b" }] },
+      salience: 90,
+    }];
+    const slots = {
+      toolbar: [],
+      hero: [{ type: "intentButton", intentId: "create_listing", salience: 90 }],
+      overlay: [{ intentId: "create_listing", type: "formModal" }],
+    };
+    const next = pattern.structure.apply(slots, {
+      projection: { kind: "catalog", mainEntity: "Listing" },
+      intents,
+    });
+    expect(next.toolbar).toHaveLength(0);
+    // hero сохраняется как было
+    expect(next.hero).toHaveLength(1);
+    expect(next.hero[0].intentId).toBe("create_listing");
+  });
 });
