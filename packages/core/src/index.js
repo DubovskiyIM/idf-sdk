@@ -244,6 +244,16 @@ export {
 } from "./patterns/schema.js";
 export { explainMatch } from "./patterns/index.js";
 export { computeSlotAttribution } from "./patterns/index.js";
+// §13.1 — composite-key API (re-export из patterns/index.js).
+// Без этого re-export `import { patternKey } from "@intent-driven/core"`
+// не разрешался — public bundle не expose'ил функции.
+export {
+  patternKey,
+  isSameLogicalPattern,
+  findPatternByKey,
+  parsePatternKey,
+  logicalId,
+} from "./patterns/index.js";
 
 // Candidate bank («свалка» — 127 unvalidated extractions из реальных продуктов)
 export {
