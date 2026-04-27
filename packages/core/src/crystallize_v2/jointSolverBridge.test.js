@@ -177,7 +177,9 @@ describe("computeAlternateAssignment", () => {
     const result = computeAlternateAssignment(intentsWithoutSalience, SYNTH_PROJECTION, ont, {
       role: "seller",
     });
-    // create_listing (creator-of-main, salience 80) → primaryCTA
-    expect(result.assignment.get("create_listing")).toBe("primaryCTA");
+    // Phase 4: без explicit intent.salience → computed-only → tier 'unspecified'
+    // → intent НЕ попадает в primaryCTA (требует author signal), идёт в overflow.
+    const slot = result.assignment.get("create_listing");
+    expect(["toolbar", "overlay", "footer"]).toContain(slot);
   });
 });
