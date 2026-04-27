@@ -133,6 +133,8 @@ import specVsStatusPanels from "./stable/detail/spec-vs-status-panels.js";
 import formYamlDualSurface from "./stable/detail/form-yaml-dual-surface.js";
 // Sprint 1 P0 #5 (2026-04-25)
 import diffPreviewBeforeIrreversible from "./stable/cross/diff-preview-before-irreversible.js";
+// idf §13.17 first real promote (2026-04-27): из candidates-with-apply
+import anchoredInlineCommentThread from "./stable/detail/anchored-inline-comment-thread.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -175,6 +177,8 @@ const STABLE_PATTERNS = [
   formYamlDualSurface,
   // Sprint 1 P0 #5 (2026-04-25)
   diffPreviewBeforeIrreversible,
+  // idf §13.17 first real promote (2026-04-27)
+  anchoredInlineCommentThread,
 ];
 
 export function loadStablePatterns(registry) {
