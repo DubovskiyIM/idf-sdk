@@ -212,9 +212,12 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
     //      auto-promote). На detail это не активируется т.к. creates===mainEntity
     //      уже early-skipped выше (creator не нужен на detail-виде существующей
     //      сущности). На detail работает только explicit salience signal.
-    // Opt-in пока, default-flip — отдельный шаг.
+    //
+    // Default-flip (#439): default flip'нут с opt-in (`=== true`) на opt-out
+    // (`!== false`). На detail risk surface ниже — explicit salience >= 80
+    // только. Author opt-out: `features.salienceDrivenRouting: false`.
     const isPrimaryTier =
-      ONTOLOGY?.features?.salienceDrivenRouting === true &&
+      ONTOLOGY?.features?.salienceDrivenRouting !== false &&
       classifyIntentRole(intent, mainEntity).includes("primary");
     if (
       !toolbarWhitelist.has(id) &&

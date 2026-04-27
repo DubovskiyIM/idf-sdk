@@ -52,10 +52,32 @@ const intentEdit = (id, salience = undefined) => ({
   ...(salience !== undefined ? { salience } : {}),
 });
 
-describe("Tier-driven catalog routing (salienceDrivenRouting feature)", () => {
-  it("без feature flag: explicit primary creator уходит в toolbar (legacy)", () => {
+describe("Tier-driven catalog routing (salienceDrivenRouting default-on)", () => {
+  it("default (без features): explicit primary creator промотируется в hero", () => {
+    // Default-flip (#439): salienceDrivenRouting теперь !== false by default.
     const INTENTS = { create_listing: intentCreate("listing", 90) };
     const ONTOLOGY = baseOntology();
+    const PROJECTION = {
+      id: "listing_catalog",
+      mainEntity: "Listing",
+      archetype: "catalog",
+    };
+
+    const slots = assignToSlotsCatalog(INTENTS, PROJECTION, ONTOLOGY, null, "default", {
+      role: "seller",
+    });
+
+    const heroIds = slots.hero.map((n) => n.intentId);
+    expect(heroIds).toContain("create_listing");
+    const toolbarIds = slots.toolbar
+      .filter((n) => n.intentId)
+      .map((n) => n.intentId);
+    expect(toolbarIds).not.toContain("create_listing");
+  });
+
+  it("explicit opt-out (false): explicit primary creator уходит в toolbar (legacy)", () => {
+    const INTENTS = { create_listing: intentCreate("listing", 90) };
+    const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: false } });
     const PROJECTION = {
       id: "listing_catalog",
       mainEntity: "Listing",
@@ -73,7 +95,7 @@ describe("Tier-driven catalog routing (salienceDrivenRouting feature)", () => {
     expect(toolbarIds).toContain("create_listing");
   });
 
-  it("с feature flag: explicit primary creator промотируется в hero", () => {
+  it("explicit opt-in (true): explicit primary creator промотируется в hero", () => {
     const INTENTS = { create_listing: intentCreate("listing", 90) };
     const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: true } });
     const PROJECTION = {
@@ -88,19 +110,14 @@ describe("Tier-driven catalog routing (salienceDrivenRouting feature)", () => {
 
     const heroIds = slots.hero.map((n) => n.intentId);
     expect(heroIds).toContain("create_listing");
-    const toolbarIds = slots.toolbar
-      .filter((n) => n.intentId)
-      .map((n) => n.intentId);
-    expect(toolbarIds).not.toContain("create_listing");
   });
 
-  it("с feature flag: creator-of-main без explicit salience авто-промотируется (#438 generalization)", () => {
+  it("default: creator-of-main без explicit salience авто-промотируется (#438 + default-flip)", () => {
     // classifyIntentRole возвращает "primary" для creator-of-main даже без
-    // explicit intent.salience. После #438 generalization tier routing
-    // консультирует classifyIntentRole, не hard-coded numeric check.
-    // Закрывает 5 propose-primary intents из A2 author-audit без annotation.
-    const INTENTS = { create_listing: intentCreate("listing") }; // нет salience
-    const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: true } });
+    // explicit intent.salience. После #438 + default-flip — auto без host
+    // annotation и без features flag.
+    const INTENTS = { create_listing: intentCreate("listing") };
+    const ONTOLOGY = baseOntology(); // нет features
     const PROJECTION = {
       id: "listing_catalog",
       mainEntity: "Listing",
@@ -119,9 +136,9 @@ describe("Tier-driven catalog routing (salienceDrivenRouting feature)", () => {
     expect(toolbarIds).not.toContain("create_listing");
   });
 
-  it("без feature flag: creator-of-main без explicit salience остаётся в toolbar (legacy)", () => {
+  it("explicit opt-out (false): creator-of-main без salience уходит в toolbar (legacy escape hatch)", () => {
     const INTENTS = { create_listing: intentCreate("listing") };
-    const ONTOLOGY = baseOntology(); // no features flag
+    const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: false } });
     const PROJECTION = {
       id: "listing_catalog",
       mainEntity: "Listing",
@@ -225,7 +242,8 @@ describe("Tier-driven detail routing (salienceDrivenRouting feature)", () => {
     archetype: "detail",
   };
 
-  it("без feature flag: explicit primary edit-intent остаётся в toolbar (legacy)", () => {
+  it("explicit opt-out (false): explicit primary edit-intent остаётся в toolbar (legacy escape)", () => {
+    // Default-flip (#439): default теперь !== false, opt-out через explicit false.
     const INTENTS = {
       promote_listing: {
         name: "Продвинуть",
@@ -239,7 +257,7 @@ describe("Tier-driven detail routing (salienceDrivenRouting feature)", () => {
         salience: 90,
       },
     };
-    const ONTOLOGY = detailOntology();
+    const ONTOLOGY = detailOntology({ features: { salienceDrivenRouting: false } });
 
     const slots = assignToSlotsDetail(INTENTS, PROJECTION, ONTOLOGY, null, {
       role: "seller",
@@ -247,6 +265,31 @@ describe("Tier-driven detail routing (salienceDrivenRouting feature)", () => {
 
     expect(slots.primaryCTA).toEqual([]);
     expect(slots.toolbar.find((n) => n.intentId === "promote_listing")).toBeDefined();
+  });
+
+  it("default: explicit primary edit-intent промотируется в primaryCTA (post-flip)", () => {
+    const INTENTS = {
+      promote_listing: {
+        name: "Продвинуть",
+        particles: {
+          entities: ["listing: Listing"],
+          conditions: ["listing.ownerId = me.id"],
+          effects: [{ α: "replace", target: "listing.featured", value: true }],
+          witnesses: [],
+          confirmation: "click",
+        },
+        salience: 90,
+      },
+    };
+    const ONTOLOGY = detailOntology(); // нет features
+
+    const slots = assignToSlotsDetail(INTENTS, PROJECTION, ONTOLOGY, null, {
+      role: "seller",
+    });
+
+    const primaryIds = slots.primaryCTA.map((n) => n.intentId);
+    expect(primaryIds).toContain("promote_listing");
+    expect(slots.toolbar.find((n) => n.intentId === "promote_listing")).toBeUndefined();
   });
 
   it("с feature flag: explicit primary без params промотируется в primaryCTA", () => {
