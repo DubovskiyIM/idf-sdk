@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from "react";
 import { resolveItemCompositions, evalFilter } from "@intent-driven/core";
 import SlotRenderer from "../SlotRenderer.jsx";
+import ArchetypeCanvas from "./ArchetypeCanvas.jsx";
 import OverlayManager, { useOverlayManager } from "../controls/OverlayManager.jsx";
 import SubCollectionSection from "./SubCollectionSection.jsx";
 import ProgressWidget from "./ProgressWidget.jsx";
@@ -250,7 +251,18 @@ export default function ArchetypeDetail({ slots, nav, ctx: parentCtx, projection
       <div style={{ flex: 1, overflow: "auto", padding: 16, maxWidth: "100%", boxSizing: "border-box" }}>
         <div style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", gap: 16, minWidth: 0 }}>
           <PaperSection>
-            <SlotRenderer item={slots.body} ctx={ctx} contextItem={target} />
+            {slots.body?.type === "canvas" ? (
+              // §13c — author body passthrough kind: "canvas" → render через
+              // CANVAS_REGISTRY (host регистрирует через registerCanvas). Без
+              // этой ветки SlotRenderer считал бы canvas-body неизвестным
+              // primitive и печатал «Unknown type: canvas».
+              <ArchetypeCanvas
+                slots={{ body: slots.body }}
+                ctx={{ ...ctx, artifact: { ...ctx.artifact, projection: slots.body.canvasId, domain: ctx.artifact?.domain } }}
+              />
+            ) : (
+              <SlotRenderer item={slots.body} ctx={ctx} contextItem={target} />
+            )}
           </PaperSection>
 
           {/* Voter identity selector (закрытие §23 для planning-домена).
