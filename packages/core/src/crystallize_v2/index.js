@@ -189,7 +189,20 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
         overlay: [],
       };
     } else {
-      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape, { projections: allProjections });
+      // User opts pass-through (Phase 3d follow-up): пробрасываем role,
+      // respectRoleCanExecute, witnesses, diagnoseAlternate, alternateSolver
+      // в assignToSlots*. Без этого все Phase 2d/3d opt-in features
+      // (joint-solver-alternative witness, role-canExecute-violation witness,
+      // pre-filter через canExecute) работают только при прямом call
+      // assignToSlots*, не через стандартный crystallizeV2 pipeline.
+      slots = assignToSlots(INTENTS, { ...proj, id: projId }, ONTOLOGY, patternResult.strategy, shapeResult.shape, {
+        projections: allProjections,
+        role: opts.role,
+        witnesses: opts.witnesses,
+        respectRoleCanExecute: opts.respectRoleCanExecute,
+        diagnoseAlternate: opts.diagnoseAlternate,
+        alternateSolver: opts.alternateSolver,
+      });
     }
 
     // Pattern Bank: structure.apply (v1.8) — обогащение слотов matched + enabled паттернами.
@@ -398,7 +411,15 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
             context: [], fab: [], overlay: [],
           };
         } else {
-          viewSlots = assignToSlots(INTENTS, { ...merged, id: projId + ":" + view.id }, ONTOLOGY, viewPatternResult.strategy);
+          // User opts pass-through (Phase 3d follow-up) — same как
+          // primary assignToSlots call выше.
+          viewSlots = assignToSlots(INTENTS, { ...merged, id: projId + ":" + view.id }, ONTOLOGY, viewPatternResult.strategy, "default", {
+            role: opts.role,
+            witnesses: opts.witnesses,
+            respectRoleCanExecute: opts.respectRoleCanExecute,
+            diagnoseAlternate: opts.diagnoseAlternate,
+            alternateSolver: opts.alternateSolver,
+          });
         }
 
         let viewWitnesses = Array.isArray(proj.derivedBy) ? [...proj.derivedBy] : [];
