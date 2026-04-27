@@ -85,7 +85,13 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   //
   // Fix — filter на crystallize-уровне. assignToSlots* hook остаётся
   // как safety net + для прямого call.
-  if (opts.respectRoleCanExecute && opts.role) {
+  //
+  // Phase 3d.3 (default flip): opts.respectRoleCanExecute defaults to true.
+  // Author может explicitly opt out с opts.respectRoleCanExecute: false
+  // (legacy migration или intentional show-but-fail UI). Sales 593 audit
+  // (idf docs/sales-canexec-audit-2026-04-27.md) — 50.6% intentional
+  // cross-role added to canExec, 47.2% real bugs auto-hidden.
+  if (opts.respectRoleCanExecute !== false && opts.role) {
     INTENTS = filterIntentsByRoleCanExecute(INTENTS, opts.role, ONTOLOGY);
   }
 

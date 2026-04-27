@@ -67,15 +67,15 @@ describe("assignToSlotsDetail — Phase 3d.1 respectRoleCanExecute opt-in", () =
     // create_listing и edit_listing — могут попасть (если особые conditions не fail'ят)
   });
 
-  it("default false + witnesses collector — emit role-canExecute-violation witnesses", () => {
+  it("Phase 3d.3 default flip: opt-out via respectRoleCanExecute: false — emit witnesses", () => {
     const witnesses = [];
     assignToSlotsDetail(INTENTS, PROJ_DETAIL, ONTOLOGY, null, {
       role: "buyer",
       witnesses,
+      respectRoleCanExecute: false, // Phase 3d.3: explicit opt-out для legacy
     });
     const violations = witnesses.filter((w) => w?.basis === "role-canExecute-violation");
     expect(violations.length).toBeGreaterThan(0);
-    // buyer не имеет в canExecute create_listing, edit_listing, delete_listing
     const violatedIds = violations.map((v) => v.intentId);
     expect(violatedIds).toContain("create_listing");
     expect(violatedIds).toContain("edit_listing");
@@ -93,11 +93,12 @@ describe("assignToSlotsDetail — Phase 3d.1 respectRoleCanExecute opt-in", () =
     expect(violations.length).toBe(0);
   });
 
-  it("permittedFor blocked — witness reason 'both' для buyer/delete_listing", () => {
+  it("permittedFor blocked — witness reason 'both' для buyer/delete_listing (opt-out mode)", () => {
     const witnesses = [];
     assignToSlotsDetail(INTENTS, PROJ_DETAIL, ONTOLOGY, null, {
       role: "buyer",
       witnesses,
+      respectRoleCanExecute: false, // Phase 3d.3: explicit opt-out
     });
     const v = witnesses.find((w) => w?.basis === "role-canExecute-violation" && w.intentId === "delete_listing");
     expect(v).toBeDefined();
