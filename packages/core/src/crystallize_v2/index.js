@@ -29,6 +29,7 @@ import { applyStructuralPatterns } from "./applyStructuralPatterns.js";
 import { absorbHubChildren } from "./absorbHubChildren.js";
 import { deriveShape } from "./deriveShape.js";
 import { mergeViewWithParent } from "./mergeViews.js";
+import { filterIntentsByRoleCanExecute } from "./respectRoleCanExecute.js";
 
 const SUPPORTED_ARCHETYPES = new Set(["feed", "catalog", "detail", "form", "canvas", "dashboard", "wizard"]);
 
@@ -71,6 +72,22 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
   // если автор писал manifest-термин. Materializer'ы и downstream
   // iteration читают только `kind`.
   PROJECTIONS = normalizeProjections(PROJECTIONS);
+
+  // Phase 3f: pre-filter INTENTS на crystallize-уровне.
+  //
+  // Phase 3d.1 hook в assignToSlots* ловит slot-assembly intents, но
+  // Pattern Bank apply phase (applyStructuralPatterns) использует
+  // projIntents = filter(INTENTS, touches mainEntity), который строится
+  // из глобального INTENTS — не filtered. Patterns могут добавить
+  // intents в slots после pre-filter в assignToSlots, leak'ая
+  // role-canExecute violations. Phase 3f research показал 88.7% residue
+  // (383 из 432) это canExec-leak именно из-за этого pipeline.
+  //
+  // Fix — filter на crystallize-уровне. assignToSlots* hook остаётся
+  // как safety net + для прямого call.
+  if (opts.respectRoleCanExecute && opts.role) {
+    INTENTS = filterIntentsByRoleCanExecute(INTENTS, opts.role, ONTOLOGY);
+  }
 
   // Anchoring gate (§15 zazor #1)
   const mode = opts.anchoring || DEFAULT_ANCHORING_MODE;
