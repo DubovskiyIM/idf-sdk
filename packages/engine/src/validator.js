@@ -8,7 +8,13 @@
  * @module validator
  */
 
-import { causalSort, buildTypeMap, checkInvariants } from "@intent-driven/core";
+import {
+  causalSort,
+  buildTypeMap,
+  checkInvariants,
+  hashOntology,
+  tagWithSchemaVersion,
+} from "@intent-driven/core";
 
 /**
  * @param {Object} opts
@@ -30,6 +36,47 @@ export function createValidator({
   clock = () => Date.now(),
 }) {
   const typeMap = buildTypeMap(ontology);
+  // Φ schema-versioning Phase 1: ontology hash зафиксирован на старте engine'а;
+  // каждый submit-эффект получает этот тег в context.schemaVersion перед
+  // appendEffect, чтобы fold(upcast(Φ)) в Phase 3 знал, под какой онтологией
+  // эффект был эмиттен. Backlog §2.8.
+  const schemaVersion = hashOntology(ontology);
+
+  /**
+   * Тегировать эффект schemaVersion'ом ДО appendEffect.
+   *
+   * Особенности:
+   *   - context может быть string (host сериализует JSON для PG JSONB).
+   *     Тогда — parse → tag → re-stringify.
+   *   - α === "batch": теги проставляются и parent'у, и всем sub-эффектам
+   *     в value[] (они confirmed под той же онтологией).
+   *
+   * @param {Object} effect
+   * @returns {Object} новая копия (pure)
+   */
+  function applySchemaVersionTag(effect) {
+    let tagged;
+    if (typeof effect.context === "string") {
+      let parsed;
+      try {
+        parsed = JSON.parse(effect.context);
+      } catch {
+        // Невалидный JSON — оставляем context как есть, но рядом сохраняем
+        // тег через свежий object-context. Edge case; не должен случаться
+        // в нормальном flow.
+        return { ...effect, _schemaVersion: schemaVersion };
+      }
+      const taggedObj = tagWithSchemaVersion({ ...effect, context: parsed }, schemaVersion);
+      tagged = { ...taggedObj, context: JSON.stringify(taggedObj.context) };
+    } else {
+      tagged = tagWithSchemaVersion(effect, schemaVersion);
+    }
+
+    if (tagged.alpha === "batch" && Array.isArray(tagged.value)) {
+      tagged = { ...tagged, value: tagged.value.map(applySchemaVersionTag) };
+    }
+    return tagged;
+  }
 
   /**
    * Определяет имя коллекции для entity target.
@@ -238,7 +285,9 @@ export function createValidator({
    */
   async function submit(effect, { viewer } = {}) {
     // Normalize status → proposed (caller мог передать что угодно).
-    const normalized = { ...effect, status: "proposed" };
+    // Φ schema-versioning: тегируем context.schemaVersion ДО persist,
+    // чтобы хэш онтологии был частью audit trail (backlog §2.8, Phase 1).
+    const normalized = applySchemaVersionTag({ ...effect, status: "proposed" });
     await persistence.appendEffect(normalized);
 
     const world = await foldWorld();
@@ -309,5 +358,5 @@ export function createValidator({
     return { status: "confirmed" };
   }
 
-  return { submit, foldWorld, cascadeReject };
+  return { submit, foldWorld, cascadeReject, schemaVersion };
 }

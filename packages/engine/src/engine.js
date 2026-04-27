@@ -136,7 +136,7 @@ export function createEngine({
     // stateless factory — noop. Hook для будущих disposables (таймеров и т.д.).
   }
 
-  return { submit, tick, hydrate, foldWorld, dispose };
+  return { submit, tick, hydrate, foldWorld, dispose, schemaVersion: validator.schemaVersion };
 }
 
 function noopLogger() {
