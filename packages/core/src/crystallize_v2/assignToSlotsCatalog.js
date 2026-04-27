@@ -35,7 +35,8 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
   //   role-canExecute-violation witnesses для author surface
   // Phase 3d research: 89.3% derivedOnly mismatches это canExecute violations.
   // См. idf docs/jointsolver-filter-alignment-decision-2026-04-27.md.
-  if (opts.respectRoleCanExecute && ibRole) {
+  // Phase 3d.3 default flip: respectRoleCanExecute теперь true по умолчанию.
+  if (opts.respectRoleCanExecute !== false && ibRole) {
     INTENTS = filterIntentsByRoleCanExecute(INTENTS, ibRole, ONTOLOGY);
   } else if (ibRole && Array.isArray(opts.witnesses)) {
     const violations = detectCanExecuteViolations(INTENTS, ibRole, ONTOLOGY);

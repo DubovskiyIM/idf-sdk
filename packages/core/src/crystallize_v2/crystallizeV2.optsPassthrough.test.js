@@ -43,11 +43,12 @@ describe("crystallizeV2 — opts pass-through (Phase 3d follow-up)", () => {
     expect(artifacts.listing_detail.slots).toBeDefined();
   });
 
-  it("opts.role + opts.witnesses — emits role-canExecute-violation witnesses", () => {
+  it("opts.role + opts.witnesses + respectRoleCanExecute: false — emits witnesses (opt-out mode)", () => {
     const witnesses = [];
     crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, "test", {
       role: "buyer",
       witnesses,
+      respectRoleCanExecute: false, // Phase 3d.3: explicit opt-out для legacy
     });
     const violations = witnesses.filter((w) => w?.basis === "role-canExecute-violation");
     // buyer.canExecute = [] → все 3 intents должны быть violations
@@ -102,6 +103,7 @@ describe("crystallizeV2 — opts pass-through (Phase 3d follow-up)", () => {
     crystallizeV2(INTENTS, PROJ_CATALOG, ONTOLOGY, "test", {
       role: "buyer",
       witnesses,
+      respectRoleCanExecute: false, // Phase 3d.3: opt-out для witness emission
     });
     const violations = witnesses.filter((w) => w?.basis === "role-canExecute-violation");
     expect(violations.length).toBeGreaterThan(0);
