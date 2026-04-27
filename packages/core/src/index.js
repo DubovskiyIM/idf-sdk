@@ -19,6 +19,15 @@ export {
 } from "./fold.js";
 export { causalSort } from "./causalSort.js";
 
+// Φ schema-versioning (Phase 0 — фундамент, без поведенческих изменений в fold).
+// Контракт — `idf/docs/design/2026-04-26-phi-schema-versioning-spec.md`.
+export {
+  UNKNOWN_SCHEMA_VERSION,
+  getSchemaVersion,
+  tagWithSchemaVersion,
+  hashOntology,
+} from "./schemaVersion.js";
+
 // Snapshot — incremental fold (A1: closed-over префикс Φ)
 export {
   createSnapshot,
