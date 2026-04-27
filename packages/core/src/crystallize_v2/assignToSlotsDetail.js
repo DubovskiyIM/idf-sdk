@@ -22,6 +22,11 @@ import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 import { applyInformationBottleneck } from "./informationBottleneck.js";
 import { diagnoseAssignment } from "./jointSolverDiagnose.js";
+import {
+  filterIntentsByRoleCanExecute,
+  detectCanExecuteViolations,
+  buildCanExecuteViolationWitness,
+} from "./respectRoleCanExecute.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt", "deletedFor",
@@ -36,6 +41,28 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
   // role — из opts.role, или из strategy если передана строкой (тесты),
   // или null (IB применяет union из всех accessible intent'ов без role filter).
   const ibRole = opts.role ?? (typeof strategy === "string" ? strategy : null);
+
+  // Phase 3d.1/3d.2: opt-in pre-filter intents через role.canExecute.
+  // - opts.respectRoleCanExecute: true — фильтруем (default false для backward-compat)
+  // - opts.respectRoleCanExecute: false + opts.witnesses — emit
+  //   role-canExecute-violation witnesses для author surface
+  // Phase 3d research: 89.3% derivedOnly mismatches это canExecute violations.
+  // См. idf docs/jointsolver-filter-alignment-decision-2026-04-27.md.
+  if (opts.respectRoleCanExecute && ibRole) {
+    INTENTS = filterIntentsByRoleCanExecute(INTENTS, ibRole, ONTOLOGY);
+  } else if (ibRole && Array.isArray(opts.witnesses)) {
+    const violations = detectCanExecuteViolations(INTENTS, ibRole, ONTOLOGY);
+    for (const v of violations) {
+      opts.witnesses.push(buildCanExecuteViolationWitness({
+        intentId: v.intentId,
+        role: ibRole,
+        archetype: "detail",
+        projectionId: projection?.id,
+        reason: v.reason,
+      }));
+    }
+  }
+
   const { fields: ibFields, witness: ibWitness } = applyInformationBottleneck({
     projection, role: ibRole, INTENTS, ONTOLOGY
   });
