@@ -62,15 +62,33 @@ export function classifyIntentRole(intent, mainEntity) {
     // placement без explicit intent.salience. Author declarative
     // intent.creates === mainEntity IS primary signal — equivalent
     // to salience: 80 без необходимости явной аннотации.
-    // Закрывает 90+ catalog `hero → overlay` divergent (creator
-    // unspecified → overflow вместо hero до Phase 6).
     const isCreatorOfMain =
       intent?.creates && mainEntity && intent.creates === mainEntity;
     if (isCreatorOfMain) {
       roles.push(ROLE_PRIMARY);
     } else {
-      // Phase 4: unannotated и не creator — overflow tier.
-      roles.push(ROLE_UNSPECIFIED);
+      // Phase 7: edit-main intent (replace на mainEntity или mainEntity.field) —
+      // declarative secondary signal. Status changes (confirm_booking,
+      // approve_payment, mark_complete) — workflow-critical actions,
+      // должны быть visible. Equivalent to salience: 60 без явной аннотации.
+      //
+      // Narrow rule (только .status, не любой replace на main): broad
+      // edit-main rule был tried в Phase 7 development — оказался
+      // ambiguous (closed одни pairs, открыл другие). Narrow phase-
+      // transition — conservative, marginal win с stable agreement.
+      const mainLower2 = (mainEntity || "").toLowerCase();
+      const isPhaseTransition = (intent?.particles?.effects || []).some((e) => {
+        const a = e?.α || e?.alpha;
+        if (a !== "replace") return false;
+        const t = typeof e?.target === "string" ? e.target.toLowerCase() : "";
+        return mainLower2 && (t === `${mainLower2}.status`);
+      });
+      if (isPhaseTransition) {
+        roles.push(ROLE_SECONDARY);
+      } else {
+        // Phase 4: unannotated, не creator, не phase-transition — overflow.
+        roles.push(ROLE_UNSPECIFIED);
+      }
     }
   }
 
