@@ -157,8 +157,17 @@ export default {
     apply(slots, context) {
       const { ontology, projection } = context || {};
 
-      // no-op: уже задан (author-override или предыдущий apply)
-      if (slots?.header?.scopePicker) return slots;
+      // §13b (Notion field-test 2026-04-27) — slots.header per
+      // assignToSlots* контракт инициализируется как array. До fix'а apply
+      // превращал header в object со scopePicker key — это ломало
+      // ArchetypeDetail/Catalog SlotRenderer (items.map is not a function).
+      const headerNodes = Array.isArray(slots?.header) ? slots.header : [];
+      const alreadyAdded =
+        headerNodes.some((n) => n?.type === "scopePicker") ||
+        // legacy: scopePicker как object-key (pre-fix) — рассматриваем
+        // как already-set, чтобы не двойного render'а.
+        (slots?.header && typeof slots.header === "object" && !Array.isArray(slots.header) && slots.header.scopePicker);
+      if (alreadyAdded) return slots;
 
       let scopeName = null;
       let scopeLabel = null;
@@ -179,17 +188,17 @@ export default {
 
       if (!scopeName) return slots;
 
-      const currentHeader = slots?.header || {};
       return {
         ...slots,
-        header: {
-          ...currentHeader,
-          scopePicker: {
+        header: [
+          ...headerNodes,
+          {
+            type: "scopePicker",
             entity: scopeName,
             label: scopeLabel,
             source: "derived:global-scope-picker",
           },
-        },
+        ],
       };
     },
   },

@@ -180,11 +180,18 @@ describe("global-scope-picker.trigger.match", () => {
 
 // ── structure.apply ────────────────────────────────────────────────────────
 
-describe("global-scope-picker.structure.apply", () => {
-  it("добавляет scopePicker в slots.header (argo ontology)", () => {
-    const slots = { header: {} };
+describe("global-scope-picker.structure.apply (§13b — array shape)", () => {
+  // Helper: достаёт scopePicker node из array slots.header
+  const findScopePicker = (header) =>
+    Array.isArray(header) ? header.find((n) => n?.type === "scopePicker") : null;
+
+  it("добавляет scopePicker node в slots.header array (argo ontology)", () => {
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, { ontology: argoOntology, projection: {} });
-    expect(result.header.scopePicker).toMatchObject({
+    expect(Array.isArray(result.header)).toBe(true);
+    const sp = findScopePicker(result.header);
+    expect(sp).toMatchObject({
+      type: "scopePicker",
       entity: "Project",
       label: "Проект",
       source: "derived:global-scope-picker",
@@ -192,32 +199,41 @@ describe("global-scope-picker.structure.apply", () => {
   });
 
   it("использует entity.label если задан", () => {
-    const slots = { header: {} };
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, { ontology: keycloakOntology, projection: {} });
-    expect(result.header.scopePicker.label).toBe("Realm");
+    expect(findScopePicker(result.header).label).toBe("Realm");
   });
 
   it("humanize label если entity.label не задан", () => {
-    const slots = { header: {} };
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, { ontology: clusterOntology, projection: {} });
-    expect(result.header.scopePicker.entity).toBe("Cluster");
-    expect(result.header.scopePicker.label).toBe("Cluster");
+    const sp = findScopePicker(result.header);
+    expect(sp.entity).toBe("Cluster");
+    expect(sp.label).toBe("Cluster");
   });
 
-  it("no-op: scopePicker уже задан (author-override)", () => {
+  it("no-op: scopePicker уже задан (author-override) в array form", () => {
     const slots = {
-      header: { scopePicker: { entity: "CustomScope", label: "My Scope" } },
+      header: [{ type: "scopePicker", entity: "CustomScope", label: "My Scope" }],
     };
     const result = pattern.structure.apply(slots, { ontology: argoOntology, projection: {} });
     expect(result).toBe(slots);
-    expect(result.header.scopePicker.entity).toBe("CustomScope");
+    expect(findScopePicker(result.header).entity).toBe("CustomScope");
+  });
+
+  it("legacy: scopePicker в legacy object-form воспринимается как already-set (no-op)", () => {
+    const slots = {
+      header: { scopePicker: { entity: "Legacy", label: "Legacy" } },
+    };
+    const result = pattern.structure.apply(slots, { ontology: argoOntology, projection: {} });
+    expect(result).toBe(slots);
   });
 
   it("no-op: нет scope entity", () => {
-    const slots = { header: {} };
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, { ontology: lifequestOntology, projection: {} });
     expect(result).toBe(slots);
-    expect(result.header.scopePicker).toBeUndefined();
+    expect(findScopePicker(result.header)).toBeUndefined();
   });
 
   it("no-op: scope entity найдена но <3 зависимых", () => {
@@ -227,31 +243,34 @@ describe("global-scope-picker.structure.apply", () => {
         Client: { fields: { id: { type: "text" }, realmId: { type: "text" } } },
       },
     };
-    const slots = { header: {} };
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, { ontology: ont, projection: {} });
     expect(result).toBe(slots);
   });
 
   it("projection.scope override: entity из projection.scope, не из ontology detection", () => {
-    const slots = { header: {} };
+    const slots = { header: [] };
     const result = pattern.structure.apply(slots, {
       ontology: argoOntology,
       projection: { scope: "Cluster" },
     });
-    expect(result.header.scopePicker.entity).toBe("Cluster");
+    expect(findScopePicker(result.header).entity).toBe("Cluster");
   });
 
-  it("сохраняет существующие поля slots.header", () => {
-    const slots = { header: { title: "Admin", breadcrumbs: [] }, body: {} };
+  it("сохраняет существующие nodes в slots.header array", () => {
+    const slots = { header: [{ type: "title", text: "Admin" }, { type: "breadcrumbs" }], body: {} };
     const result = pattern.structure.apply(slots, { ontology: argoOntology, projection: {} });
-    expect(result.header.title).toBe("Admin");
-    expect(result.header.breadcrumbs).toEqual([]);
+    expect(result.header).toHaveLength(3);
+    expect(result.header[0]).toEqual({ type: "title", text: "Admin" });
+    expect(result.header[1]).toEqual({ type: "breadcrumbs" });
+    expect(result.header[2].type).toBe("scopePicker");
     expect(result.body).toEqual({});
   });
 
-  it("создаёт slots.header если его нет", () => {
+  it("создаёт slots.header (array) если его нет", () => {
     const slots = {};
     const result = pattern.structure.apply(slots, { ontology: argoOntology, projection: {} });
-    expect(result.header?.scopePicker?.entity).toBe("Project");
+    expect(Array.isArray(result.header)).toBe(true);
+    expect(findScopePicker(result.header)?.entity).toBe("Project");
   });
 });
