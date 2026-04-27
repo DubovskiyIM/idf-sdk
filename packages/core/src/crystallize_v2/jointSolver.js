@@ -13,6 +13,7 @@ const ROLE_SECONDARY = "secondary";
 const ROLE_NAVIGATION = "navigation";
 const ROLE_UTILITY = "utility";
 const ROLE_DESTRUCTIVE = "destructive";
+const ROLE_UNSPECIFIED = "unspecified";
 
 export const INFINITY_COST = Number.POSITIVE_INFINITY;
 
@@ -20,12 +21,21 @@ export const INFINITY_COST = Number.POSITIVE_INFINITY;
  * Классифицировать intent в одну или несколько slot-ролей.
  *
  * Salience tier:
- *   ≥ 80 → primary
- *   60-79 → secondary
- *   30-59 → navigation
- *   < 30 → utility
+ *   ≥ 80    → primary
+ *   60-79   → secondary
+ *   30-59   → navigation (с explicit salience)
+ *   < 30    → utility
+ *   no anno → unspecified (Phase 4 — новый tier)
  *
  * Destructive flag (orthogonal): remove-эффект на mainEntity → +destructive.
+ *
+ * Phase 4 finding (idf docs jointsolver-divergent): 100% divergent intents
+ * не имели explicit intent.salience — все default 40 → navigation tier
+ * → подходили во все slots (inclusive defaults) → slot declaration order
+ * dominated outcome. Solution: distinguishable tier `unspecified` для
+ * unannotated intents — fits только в overflow slots (overlay/footer/toolbar),
+ * не в primary placement slots (hero/primaryCTA). Author может explicit
+ * salience override → классический tier.
  *
  * @param {Object} intent — intent definition (с salience и particles)
  * @param {string} [mainEntity] — для destructive проверки
@@ -33,12 +43,25 @@ export const INFINITY_COST = Number.POSITIVE_INFINITY;
  */
 export function classifyIntentRole(intent, mainEntity) {
   const roles = [];
-  const salience = typeof intent?.salience === "number" ? intent.salience : 40;
+  // Phase 4: distinguish author-explicit от system-computed salience.
+  // _salienceSource === "explicit" — author declared intent.salience.
+  // _salienceSource === "computed" — bridge enriched через computeSalience
+  //                                  (heuristic из particles).
+  // absent — direct user of classifyIntentRole без enrichment.
+  const hasExplicit = typeof intent?.salience === "number"
+    && (intent._salienceSource === undefined || intent._salienceSource === "explicit");
 
-  if (salience >= 80) roles.push(ROLE_PRIMARY);
-  else if (salience >= 60) roles.push(ROLE_SECONDARY);
-  else if (salience >= 30) roles.push(ROLE_NAVIGATION);
-  else roles.push(ROLE_UTILITY);
+  if (hasExplicit) {
+    const salience = intent.salience;
+    if (salience >= 80) roles.push(ROLE_PRIMARY);
+    else if (salience >= 60) roles.push(ROLE_SECONDARY);
+    else if (salience >= 30) roles.push(ROLE_NAVIGATION);
+    else roles.push(ROLE_UTILITY);
+  } else {
+    // Phase 4: unannotated или computed-only intents — overflow tier,
+    // не претендуют на primary slots без явного author signal.
+    roles.push(ROLE_UNSPECIFIED);
+  }
 
   // Destructive — orthogonal: remove на mainEntity
   const effects = intent?.particles?.effects || [];

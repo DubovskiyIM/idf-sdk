@@ -52,12 +52,13 @@ describe("classifyIntentRole", () => {
     expect(roles).toContain("destructive");
   });
 
-  it("без salience → default 40 → navigation", () => {
-    expect(classifyIntentRole({})).toContain("navigation");
+  it("без salience → unspecified tier (Phase 4: overflow placement)", () => {
+    expect(classifyIntentRole({})).toContain("unspecified");
+    expect(classifyIntentRole({})).not.toContain("navigation");
   });
 
-  it("intent с salience '' (некорректное) — default", () => {
-    expect(classifyIntentRole({ salience: "junk" })).toContain("navigation");
+  it("intent с salience '' (некорректное) — unspecified", () => {
+    expect(classifyIntentRole({ salience: "junk" })).toContain("unspecified");
   });
 });
 
@@ -110,15 +111,32 @@ describe("buildCostMatrix", () => {
     expect(cost[0][colIndex.get("footer")]).toBe(-30);
   });
 
-  it("intent без salience → default 40 → navigation", () => {
+  it("intent без salience → unspecified tier — INFINITY везде если slots не включают unspecified (Phase 4)", () => {
+    // SLOTS_DEFAULT не имеет 'unspecified' в allowedRoles → intent без
+    // explicit salience не fits никуда (cost INFINITY everywhere).
+    // Это force-author hint: либо аннотировать intent.salience, либо
+    // использовать default empirical slots (которые имеют unspecified
+    // в overflow slots).
     const intents = [mkIntent("read_only", undefined)];
-    const { cost, colIndex } = buildCostMatrix({
+    const { cost } = buildCostMatrix({
       intents,
       slots: SLOTS_DEFAULT,
     });
-    expect(cost[0][colIndex.get("secondary")]).toBe(-40);
-    expect(cost[0][colIndex.get("toolbar")]).toBe(-40);
+    expect(cost[0].every((c) => c === INFINITY_COST)).toBe(true);
+  });
+
+  it("intent без salience + slots с unspecified — fits только в overflow", () => {
+    const intents = [mkIntent("read_only", undefined)];
+    const overflowSlots = {
+      primaryCTA: { capacity: 3, allowedRoles: ["primary"] },
+      overlay:    { capacity: 9, allowedRoles: ["unspecified", "navigation"] },
+    };
+    const { cost, colIndex } = buildCostMatrix({
+      intents,
+      slots: overflowSlots,
+    });
     expect(cost[0][colIndex.get("primaryCTA")]).toBe(INFINITY_COST);
+    expect(cost[0][colIndex.get("overlay")]).toBeLessThan(INFINITY_COST);
   });
 
   it("пустой intents → пустая матрица", () => {
