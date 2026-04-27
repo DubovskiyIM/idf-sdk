@@ -9,12 +9,16 @@
  * Q/W-level override (§2.4) блокируется с warning:
  *  - mainEntity, entities, filter, witnesses, idParam
  *
- * Archetype whitelist (§2.5): catalog / feed / dashboard.
+ * Archetype whitelist (§2.5, §12.11): catalog / feed / dashboard / canvas.
+ *  - catalog/feed/dashboard — auto-derived через slot-assembly.
+ *  - canvas — host-managed (требует registerCanvas(viewId, Component));
+ *    slot-assembly заменяется placeholder body, host рисует кастомный
+ *    компонент. Используется для Notion calendar/timeline/Gantt views.
  * Остальные — fallback на parent.kind + warning.
  */
 
 const Q_LEVEL_KEYS = new Set(["mainEntity", "entities", "filter", "witnesses", "idParam"]);
-const ALLOWED_VIEW_ARCHETYPES = new Set(["catalog", "feed", "dashboard"]);
+const ALLOWED_VIEW_ARCHETYPES = new Set(["catalog", "feed", "dashboard", "canvas"]);
 const OBJECT_MERGE_KEYS = new Set(["patterns", "strategy"]);
 
 export function mergeViewWithParent(projection, view) {
@@ -41,7 +45,7 @@ export function mergeViewWithParent(projection, view) {
 
   if (merged.kind && !ALLOWED_VIEW_ARCHETYPES.has(merged.kind)) {
     warnings.push(
-      `view '${view.id}' archetype '${merged.kind}' not in view whitelist (catalog|feed|dashboard); fallback to parent.kind '${projection.kind}'.`
+      `view '${view.id}' archetype '${merged.kind}' not in view whitelist (catalog|feed|dashboard|canvas); fallback to parent.kind '${projection.kind}'.`
     );
     merged.kind = projection.kind;
   }
