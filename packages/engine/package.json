@@ -26,7 +26,7 @@
     "dev": "tsup --watch"
   },
   "peerDependencies": {
-    "@intent-driven/core": ">= 0.48.0"
+    "@intent-driven/core": ">= 0.107.0"
   },
   "dependencies": {
     "uuid": "^11.0.0"
