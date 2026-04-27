@@ -19,7 +19,7 @@
  *     `indent: false`, `dragHandles: false`.
  */
 
-import { useMemo, useEffect, useRef } from "react";
+import React, { useMemo, useEffect, useRef } from "react";
 import { Select } from "antd";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";

@@ -8,6 +8,7 @@
  * чтобы не тащить @ant-design/icons.
  */
 
+import React from "react";
 import { BubbleMenu } from "@tiptap/react/menus";
 
 const BTN_STYLE = {

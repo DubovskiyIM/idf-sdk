@@ -14,7 +14,7 @@
  * для popup'а — простой div со стилями (но используем те же CSS-vars).
  */
 
-import { useEffect, useState, useImperativeHandle, forwardRef } from "react";
+import React, { useEffect, useState, useImperativeHandle, forwardRef } from "react";
 import { createPortal } from "react-dom";
 
 const SLASH_OPTIONS = [
