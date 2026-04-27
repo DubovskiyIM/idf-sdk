@@ -16,6 +16,7 @@ import { getEntityFields, inferFieldRole } from "./ontologyHelpers.js";
 import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildWitnessChildren, findHeroImageWitness } from "./witnessItemChildren.js";
+import { diagnoseAssignment } from "./jointSolverDiagnose.js";
 import { applyInformationBottleneck } from "./informationBottleneck.js";
 
 export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, shape = "default", opts = {}) {
@@ -270,6 +271,19 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
       const extras = strategy.extraSlots();
       if (Object.keys(extras).length > 0) slots.body.extras = extras;
     }
+  }
+
+  // Phase 2d: opt-in diagnostic — emit witness 'joint-solver-alternative'
+  // если derived assignment расходится с jointSolver Hungarian. Не меняет
+  // existing behavior — только witness emission в opts.witnesses.
+  if (opts?.diagnoseAlternate && Array.isArray(opts.witnesses)) {
+    const altWitness = diagnoseAssignment({
+      INTENTS, projection, ONTOLOGY,
+      derivedSlots: slots,
+      role: opts.role,
+      solver: opts.alternateSolver,
+    });
+    if (altWitness) opts.witnesses.push(altWitness);
   }
 
   return slots;
