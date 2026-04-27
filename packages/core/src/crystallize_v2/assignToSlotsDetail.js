@@ -40,10 +40,19 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
   });
   if (Array.isArray(opts.witnesses)) opts.witnesses.push(ibWitness);
 
+  // §13c (Notion field-test 2026-04-27): author body passthrough.
+  // Если автор задал `projection.slots.body` с известным render-kind
+  // (canvas / blockEditor / formBody / dashboard), используем его как
+  // финальный slots.body, минуя auto-derive infoSection-column.
+  // Полезно для notion page_detail (canvas → BlockEditor primitive) и
+  // других domain-managed body'ев.
+  const authoredBody = pickAuthoredBody(projection.slots?.body);
+  const body = authoredBody || buildDetailBody(projection, ONTOLOGY, "self", INTENTS, ibFields);
+
   const slots = {
     header: [],
     toolbar: [],
-    body: buildDetailBody(projection, ONTOLOGY, "self", INTENTS, ibFields),
+    body,
     context: [],
     fab: [],
     overlay: [],
@@ -953,4 +962,39 @@ function camelPluralFromEntity(entity) {
   if (head.endsWith("y")) return head.slice(0, -1) + "ies";
   if (head.endsWith("s")) return head + "es";
   return head + "s";
+}
+
+/**
+ * §13c — author body passthrough.
+ *
+ * Если `projection.slots.body` содержит recognized render-kind, возвращает
+ * нормализованную body-node для renderer'а (с `type` ключом). Иначе null —
+ * crystallize_v2 fallback'ит на auto-derive infoSection-column.
+ *
+ * Поддерживаемые kinds:
+ *   - "canvas"       → { type: "canvas", canvasId }
+ *                       Host регистрирует компонент через registerCanvas.
+ *   - "blockEditor"  → { type: "blockEditor", entity, parentField, ... }
+ *                       Renderer резолвит через
+ *                       `adapter.capabilities.primitive.blockEditor`.
+ *   - "dashboard"    → { type: "dashboard", widgets: [...] }
+ *   - already-typed body — passthrough as-is (когда автор уже выдаёт
+ *                          finalized shape, e.g. для тестов).
+ */
+function pickAuthoredBody(authored) {
+  if (!authored || typeof authored !== "object") return null;
+  // Already в finalized shape (`type` ключ) — passthrough.
+  if (typeof authored.type === "string") return { ...authored };
+  // Author hint через `kind` — нормализуем.
+  if (authored.kind === "canvas") {
+    return { type: "canvas", canvasId: authored.canvasId || null };
+  }
+  if (authored.kind === "blockEditor") {
+    const { kind, ...rest } = authored;
+    return { type: "blockEditor", ...rest };
+  }
+  if (authored.kind === "dashboard") {
+    return { type: "dashboard", widgets: authored.widgets || [] };
+  }
+  return null;
 }
