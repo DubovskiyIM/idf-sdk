@@ -21,6 +21,7 @@ import { getIntentIcon } from "./getIntentIcon.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 import { applyInformationBottleneck } from "./informationBottleneck.js";
+import { diagnoseAssignment } from "./jointSolverDiagnose.js";
 
 const SYSTEM_DETAIL_FIELDS = new Set([
   "id", "createdAt", "updatedAt", "deletedAt", "deletedFor",
@@ -221,6 +222,19 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
   if (strategy?.extraSlots) {
     const extras = strategy.extraSlots();
     if (Object.keys(extras).length > 0) slots.extras = extras;
+  }
+
+  // Phase 2d: opt-in diagnostic — emit witness 'joint-solver-alternative'
+  // если derived assignment расходится с jointSolver Hungarian. Не меняет
+  // existing behavior — только witness emission в opts.witnesses.
+  if (opts?.diagnoseAlternate && Array.isArray(opts.witnesses)) {
+    const altWitness = diagnoseAssignment({
+      INTENTS, projection, ONTOLOGY,
+      derivedSlots: slots,
+      role: opts.role,
+      solver: opts.alternateSolver,
+    });
+    if (altWitness) opts.witnesses.push(altWitness);
   }
 
   return slots;
