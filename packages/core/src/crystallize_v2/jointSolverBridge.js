@@ -49,36 +49,40 @@ import { appliesToProjection } from "./assignToSlotsShared.js";
 // ============================================================================
 
 // Slot declaration order служит stable tie-break через Object.keys
-// в Hungarian solver. Order semantic: primary-candidate slots first,
-// чтобы explicit primary intents (salience ≥ 80) предпочитали
-// hero/primaryCTA, secondary — toolbar, overflow — overlay/footer.
+// в Hungarian solver. Order semantic:
+//   1. Primary placement slots first (hero/primaryCTA) — для explicit
+//      primary intents (salience ≥ 80) с author annotation.
+//   2. Overflow slots — порядок по empirical preference: overlay
+//      (semantic overflow для secondary actions, capacity больше)
+//      before toolbar (visible toolbar обычно reserved для author-
+//      annotated primary actions).
 //
-// Phase 4: tier `unspecified` (intents без explicit intent.salience —
-// 99% реальных intents) идут только в overflow slots (toolbar/overlay/footer),
-// чтобы не претендовать на primary placement (hero/primaryCTA) без явного
-// signal от автора. Закрывает ~474 из 476 divergent cases (Phase 4 research):
-// 309 catalog `overlay → toolbar/hero` + 165 detail `toolbar/overlay → primaryCTA`
-// — все unannotated intents auto-routed в primary slots до Phase 4.
+// Phase 5 finding: после Phase 4 (tier `unspecified` для unannotated)
+// alternate перестал ставить в hero/primaryCTA, но 63% остающихся
+// divergences были `overlay → toolbar` — alternate выбирал toolbar
+// (первый overflow в declaration), derived semantic'ously overlay
+// (existing logic считает overlay как overflow для secondary actions).
+// Fix: reorder overflow в catalog/detail/feed — overlay before toolbar.
 
 const ALL_TIER_ROLES = ["primary", "secondary", "navigation", "utility"];
 const OVERFLOW_ROLES = ["primary", "secondary", "navigation", "utility", "unspecified"];
 
 const SLOTS_CATALOG = {
   hero:    { capacity:  2, allowedRoles: ALL_TIER_ROLES },
-  toolbar: { capacity:  5, allowedRoles: OVERFLOW_ROLES },
   overlay: { capacity:  9, allowedRoles: [...OVERFLOW_ROLES, "destructive"] },
+  toolbar: { capacity:  5, allowedRoles: OVERFLOW_ROLES },
 };
 
 const SLOTS_DETAIL = {
   primaryCTA: { capacity: 10, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
-  toolbar:    { capacity:  3, allowedRoles: OVERFLOW_ROLES },
   overlay:    { capacity:  9, allowedRoles: [...OVERFLOW_ROLES, "destructive"] },
+  toolbar:    { capacity:  3, allowedRoles: OVERFLOW_ROLES },
   footer:     { capacity: 35, allowedRoles: [...OVERFLOW_ROLES, "destructive"] },
 };
 
 const SLOTS_FEED = {
-  toolbar: { capacity:  5, allowedRoles: OVERFLOW_ROLES },
   overlay: { capacity: 14, allowedRoles: [...OVERFLOW_ROLES, "destructive"] },
+  toolbar: { capacity:  5, allowedRoles: OVERFLOW_ROLES },
 };
 
 /**
