@@ -146,4 +146,62 @@ describe("subcollections.structure.apply", () => {
     const oi = result.sections[0];
     expect(oi.title).toBe("Order item");
   });
+
+  // §13d (Notion field-test 2026-04-27)
+  describe("§13d — author signals", () => {
+    const onto = {
+      entities: {
+        Page:       { fields: { id: { type: "text" } } },
+        Block:      { fields: { id: { type: "text" }, pageId: { type: "foreignKey", refs: "Page" }, text: { type: "text" } } },
+        Comment:    { fields: { id: { type: "text" }, pageId: { type: "foreignKey", refs: "Page" } } },
+        Permission: { fields: { id: { type: "text" }, pageId: { type: "foreignKey", refs: "Page" } } },
+      },
+    };
+
+    it("nested slots.subCollections (author-curated) — pattern no-op", () => {
+      const projection = {
+        slots: {
+          subCollections: [
+            { projectionId: "comments_thread", foreignKey: "pageId", entity: "Comment" },
+          ],
+        },
+      };
+      const result = subcollections.structure.apply({}, {
+        ontology: onto, mainEntity: "Page", intents: [], projection,
+      });
+      expect(result).toEqual({}); // no auto-derive
+    });
+
+    it("absorbExclude: ['Block'] — Block НЕ попадает в auto-derived sections", () => {
+      const projection = { absorbExclude: ["Block"] };
+      const result = subcollections.structure.apply({}, {
+        ontology: onto, mainEntity: "Page", intents: [], projection,
+      });
+      expect(result.sections.map(s => s.itemEntity).sort()).toEqual(["Comment", "Permission"]);
+    });
+
+    it("absorbExclude: ['Block','Comment'] — только Permission остаётся", () => {
+      const projection = { absorbExclude: ["Block", "Comment"] };
+      const result = subcollections.structure.apply({}, {
+        ontology: onto, mainEntity: "Page", intents: [], projection,
+      });
+      expect(result.sections.map(s => s.itemEntity)).toEqual(["Permission"]);
+    });
+
+    it("absorbExclude: [] — все 3 child entities добавлены (baseline)", () => {
+      const projection = { absorbExclude: [] };
+      const result = subcollections.structure.apply({}, {
+        ontology: onto, mainEntity: "Page", intents: [], projection,
+      });
+      expect(result.sections).toHaveLength(3);
+    });
+
+    it("non-array absorbExclude — silently игнорируется (baseline)", () => {
+      const projection = { absorbExclude: "Block" }; // string
+      const result = subcollections.structure.apply({}, {
+        ontology: onto, mainEntity: "Page", intents: [], projection,
+      });
+      expect(result.sections).toHaveLength(3);
+    });
+  });
 });
