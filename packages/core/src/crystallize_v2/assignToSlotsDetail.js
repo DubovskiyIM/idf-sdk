@@ -197,9 +197,21 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
     //
     // Author-override: если intent в projection.toolbar whitelist, skip
     // primaryCTA routing — автор явно попросил toolbar.
+    //
+    // Tier-driven extension (ontology.features.salienceDrivenRouting): если
+    // intent.salience >= 80 (explicit primary tier) — также промотируем в
+    // primaryCTA даже без phase-transition. Закрывает A2 author-audit
+    // structural divergence: до этого assignToSlotsDetail не консультировало
+    // classifyIntentRole для slot routing'а; salience влияла только на
+    // in-slot ordering (bySalienceDesc). Теперь author signal активен во
+    // всех путях кристаллизации. Opt-in пока, default-flip — отдельный шаг.
+    const isExplicitPrimaryTier =
+      ONTOLOGY?.features?.salienceDrivenRouting === true &&
+      typeof intent.salience === "number" &&
+      intent.salience >= 80;
     if (
       !toolbarWhitelist.has(id) &&
-      isPhaseTransition(intent, mainEntity) &&
+      (isPhaseTransition(intent, mainEntity) || isExplicitPrimaryTier) &&
       intent.irreversibility !== "high" &&
       parameters.length === 0
     ) {
