@@ -67,7 +67,7 @@ describe("curated candidate bank — registry integration", () => {
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(44);
+    expect(stableCount).toBe(45);
     // Curated (10) прошли validatePattern; manifest-свалка может добавить >0.
     expect(candidateCount).toBeGreaterThanOrEqual(10);
     // Проверка, что каждый curated действительно в registry.
