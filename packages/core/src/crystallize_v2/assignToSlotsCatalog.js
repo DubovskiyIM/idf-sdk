@@ -190,8 +190,30 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     if (isCreator && parameters.length === 0 && !hasOverlay) continue;
 
     // Creator главной сущности → toolbar (iOS "+"-паттерн, не FAB)
+    //
+    // Tier-driven extension (ontology.features.salienceDrivenRouting): если
+    // creator имеет explicit primary tier (intent.salience >= 80) И hero
+    // пустой И shape позволяет hero — promotion в hero. Закрывает A2
+    // author-audit divergence (5 propose-primary intents — booking::add_service,
+    // workflow::import_workflow, messenger::create_direct_chat,
+    // reflect::create_activity/create_tag — alternate placed их в hero,
+    // derived в toolbar). Opt-in пока, default-flip — отдельный шаг.
     if (isCreator && !isPerItem) {
+      const isExplicitPrimaryTier =
+        ONTOLOGY?.features?.salienceDrivenRouting === true &&
+        typeof intent.salience === "number" &&
+        intent.salience >= 80;
+      const heroAllowed = shape !== "timeline" && shape !== "directory";
       const salience = computeSalience(intent, projection.mainEntity).value;
+      if (isExplicitPrimaryTier && heroAllowed && slots.hero.length === 0) {
+        if (hasOverlay) {
+          slots.overlay.push(wrapped.overlay);
+          slots.hero.push({ ...wrapped.trigger, salience, declarationOrder });
+        } else {
+          slots.hero.push({ ...wrapped, salience, declarationOrder });
+        }
+        continue;
+      }
       if (hasOverlay) {
         slots.overlay.push(wrapped.overlay);
         slots.toolbar.push({ ...wrapped.trigger, salience, declarationOrder });
