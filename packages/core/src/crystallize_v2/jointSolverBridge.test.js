@@ -5,21 +5,22 @@ import {
 } from "./jointSolverBridge.js";
 
 describe("getDefaultSlotsForArchetype (Phase 3c' empirical model)", () => {
-  it("catalog → hero/toolbar/overlay (Phase 3c': context/fab убраны как unused)", () => {
+  it("catalog → hero/overlay/toolbar (Phase 5: overlay before toolbar в overflow)", () => {
     const slots = getDefaultSlotsForArchetype("catalog");
-    expect(Object.keys(slots)).toEqual(["hero", "toolbar", "overlay"]);
+    expect(Object.keys(slots)).toEqual(["hero", "overlay", "toolbar"]);
     expect(slots.hero.capacity).toBe(2);
-    expect(slots.toolbar.capacity).toBe(5);
     expect(slots.overlay.capacity).toBe(9);
+    expect(slots.toolbar.capacity).toBe(5);
     expect(slots.hero.allowedRoles).toContain("primary");
     expect(slots.toolbar.allowedRoles).toContain("navigation");
     expect(slots.overlay.allowedRoles).toContain("destructive");
   });
 
-  it("detail → primaryCTA/toolbar/overlay/footer (Phase 3c': secondary убран как unused)", () => {
+  it("detail → primaryCTA/overlay/toolbar/footer (Phase 5: overflow reordered)", () => {
     const slots = getDefaultSlotsForArchetype("detail");
-    expect(Object.keys(slots)).toEqual(["primaryCTA", "toolbar", "overlay", "footer"]);
+    expect(Object.keys(slots)).toEqual(["primaryCTA", "overlay", "toolbar", "footer"]);
     expect(slots.primaryCTA.capacity).toBe(10);
+    expect(slots.overlay.capacity).toBe(9);
     expect(slots.toolbar.capacity).toBe(3);
     expect(slots.footer.capacity).toBe(35);
     expect(slots.primaryCTA.allowedRoles).toContain("destructive");
@@ -108,7 +109,7 @@ describe("computeAlternateAssignment", () => {
     expect(result.metadata.solver).toBe("hungarian");
     expect(result.metadata.intentCount).toBeGreaterThan(0);
     // Phase 3c' empirical detail slots
-    expect(result.metadata.slotNames).toEqual(["primaryCTA", "toolbar", "overlay", "footer"]);
+    expect(result.metadata.slotNames).toEqual(["primaryCTA", "overlay", "toolbar", "footer"]);
   });
 
   it("opts.slots override — использует переданный slot model", () => {
