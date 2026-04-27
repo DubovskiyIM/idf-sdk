@@ -61,7 +61,7 @@ const SYNTH_INTENTS = {
     id: "create_listing",
     creates: "Listing",
     salience: 80,
-    particles: { entities: ["Listing"], effects: [] },
+    particles: { entities: ["Listing"], effects: [{ α: "add", target: "Listing" }] },
   },
   edit_listing: {
     id: "edit_listing",

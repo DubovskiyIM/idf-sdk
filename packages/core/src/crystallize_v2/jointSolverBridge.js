@@ -19,6 +19,7 @@ import { computeSalience } from "./salience.js";
 import { buildCostMatrix, greedyAssign } from "./jointSolver.js";
 import { hungarianAssign } from "./hungarianAssign.js";
 import { normalizeIntentsMap } from "./normalizeIntentNative.js";
+import { appliesToProjection } from "./assignToSlotsShared.js";
 
 // ============================================================================
 // Empirical default slot models (Phase 3c').
@@ -135,7 +136,19 @@ export function computeAlternateAssignment(INTENTS, projection, ONTOLOGY, opts =
   // вход — должен делать то же. Idempotent — уже-normalized passes через no-op.
   const normalizedIntents = normalizeIntentsMap(INTENTS);
 
-  const rawIntents = accessibleIntents(projection, role, normalizedIntents, ONTOLOGY);
+  // Phase 3g: appliesToProjection symmetry с derived assignToSlots*.
+  //
+  // accessibleIntents wider than appliesToProjection — он только проверяет
+  // intentTouchesEntity + roleDef.canExecute. Derived assignToSlots*
+  // дополнительно фильтрует через appliesToProjection (creator-scoping,
+  // route-scope, effect-less utility check, search witness check). Без
+  // matching этих rules bridge становится too-inclusive — alternate-only
+  // residue 530 cases (Phase 3g research показал bridge видит intents
+  // которые derived НАМЕРЕННО не показывает).
+  //
+  // Apply applies (после accessibleIntents) для symmetric comparison.
+  const filteredByAccess = accessibleIntents(projection, role, normalizedIntents, ONTOLOGY);
+  const rawIntents = filteredByAccess.filter((intent) => appliesToProjection(intent, projection));
   const mainEntity = projection?.mainEntity;
 
   // Enrich intents с computed salience (если ещё нет explicit)

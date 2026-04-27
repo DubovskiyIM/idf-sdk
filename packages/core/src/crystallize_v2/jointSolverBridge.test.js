@@ -45,7 +45,8 @@ const SYNTH_INTENTS = {
     id: "create_listing",
     creates: "Listing",
     salience: 80,
-    particles: { entities: ["Listing"], effects: [] },
+    // creator-of-mainEntity → passes appliesToProjection (rule 2)
+    particles: { entities: ["Listing"], effects: [{ α: "add", target: "Listing" }] },
   },
   edit_listing: {
     id: "edit_listing",
@@ -60,7 +61,8 @@ const SYNTH_INTENTS = {
   view_history: {
     id: "view_history",
     salience: 10,
-    particles: { entities: ["Listing"], effects: [] },
+    // search-utility — passes appliesToProjection (rule 1) с witness "query"
+    particles: { entities: ["Listing"], effects: [{ α: "replace", target: "Listing.viewedAt" }], witnesses: ["query"] },
   },
 };
 
@@ -133,10 +135,10 @@ describe("computeAlternateAssignment", () => {
 
   it("использует Hungarian (default solver) — 4 primary fit в primaryCTA(capacity 10)", () => {
     const fourPrimary = {
-      a: { id: "a", salience: 90, particles: { entities: ["Listing"], effects: [] } },
-      b: { id: "b", salience: 88, particles: { entities: ["Listing"], effects: [] } },
-      c: { id: "c", salience: 86, particles: { entities: ["Listing"], effects: [] } },
-      d: { id: "d", salience: 84, particles: { entities: ["Listing"], effects: [] } },
+      a: { id: "a", salience: 90, particles: { entities: ["Listing"], effects: [{ α: "replace", target: "Listing.x" }] } },
+      b: { id: "b", salience: 88, particles: { entities: ["Listing"], effects: [{ α: "replace", target: "Listing.y" }] } },
+      c: { id: "c", salience: 86, particles: { entities: ["Listing"], effects: [{ α: "replace", target: "Listing.z" }] } },
+      d: { id: "d", salience: 84, particles: { entities: ["Listing"], effects: [{ α: "replace", target: "Listing.w" }] } },
     };
     const ont = {
       entities: { Listing: { fields: {} } },
@@ -164,7 +166,8 @@ describe("computeAlternateAssignment", () => {
         id: "create_listing",
         creates: "Listing",
         // нет explicit salience → computeSalience вернёт 80 (creator-of-main)
-        particles: { entities: ["Listing"], effects: [] },
+        // creator-of-main → passes appliesToProjection
+        particles: { entities: ["Listing"], effects: [{ α: "add", target: "Listing" }] },
       },
     };
     const ont = {

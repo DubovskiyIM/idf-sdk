@@ -9,7 +9,7 @@ describe("@intent-driven/core — diagnose exports (A2 Phase 2c)", () => {
 
   it("end-to-end через публичный API", () => {
     const INTENTS = {
-      a: { id: "a", salience: 80, particles: { entities: ["Item"], effects: [] } },
+      a: { id: "a", salience: 80, creates: "Item", particles: { entities: ["Item"], effects: [{ α: "add", target: "Item" }] } },
     };
     const ONTOLOGY = {
       entities: { Item: { fields: {} } },
