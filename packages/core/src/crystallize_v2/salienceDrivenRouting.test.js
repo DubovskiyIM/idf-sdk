@@ -94,6 +94,51 @@ describe("Tier-driven catalog routing (salienceDrivenRouting feature)", () => {
     expect(toolbarIds).not.toContain("create_listing");
   });
 
+  it("с feature flag: creator-of-main без explicit salience авто-промотируется (#438 generalization)", () => {
+    // classifyIntentRole возвращает "primary" для creator-of-main даже без
+    // explicit intent.salience. После #438 generalization tier routing
+    // консультирует classifyIntentRole, не hard-coded numeric check.
+    // Закрывает 5 propose-primary intents из A2 author-audit без annotation.
+    const INTENTS = { create_listing: intentCreate("listing") }; // нет salience
+    const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: true } });
+    const PROJECTION = {
+      id: "listing_catalog",
+      mainEntity: "Listing",
+      archetype: "catalog",
+    };
+
+    const slots = assignToSlotsCatalog(INTENTS, PROJECTION, ONTOLOGY, null, "default", {
+      role: "seller",
+    });
+
+    const heroIds = slots.hero.map((n) => n.intentId);
+    expect(heroIds).toContain("create_listing");
+    const toolbarIds = slots.toolbar
+      .filter((n) => n.intentId)
+      .map((n) => n.intentId);
+    expect(toolbarIds).not.toContain("create_listing");
+  });
+
+  it("без feature flag: creator-of-main без explicit salience остаётся в toolbar (legacy)", () => {
+    const INTENTS = { create_listing: intentCreate("listing") };
+    const ONTOLOGY = baseOntology(); // no features flag
+    const PROJECTION = {
+      id: "listing_catalog",
+      mainEntity: "Listing",
+      archetype: "catalog",
+    };
+
+    const slots = assignToSlotsCatalog(INTENTS, PROJECTION, ONTOLOGY, null, "default", {
+      role: "seller",
+    });
+
+    expect(slots.hero).toEqual([]);
+    const toolbarIds = slots.toolbar
+      .filter((n) => n.intentId)
+      .map((n) => n.intentId);
+    expect(toolbarIds).toContain("create_listing");
+  });
+
   it("с feature flag: salience < 80 не промотируется (только primary tier)", () => {
     const INTENTS = { create_listing: intentCreate("listing", 70) };
     const ONTOLOGY = baseOntology({ features: { salienceDrivenRouting: true } });

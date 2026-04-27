@@ -17,6 +17,7 @@ import { buildCardSpec } from "./cardSpec.js";
 import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js";
 import { buildWitnessChildren, findHeroImageWitness } from "./witnessItemChildren.js";
 import { diagnoseAssignment } from "./jointSolverDiagnose.js";
+import { classifyIntentRole } from "./jointSolver.js";
 import { applyInformationBottleneck } from "./informationBottleneck.js";
 import {
   filterIntentsByRoleCanExecute,
@@ -192,20 +193,26 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     // Creator главной сущности → toolbar (iOS "+"-паттерн, не FAB)
     //
     // Tier-driven extension (ontology.features.salienceDrivenRouting): если
-    // creator имеет explicit primary tier (intent.salience >= 80) И hero
-    // пустой И shape позволяет hero — promotion в hero. Закрывает A2
-    // author-audit divergence (5 propose-primary intents — booking::add_service,
-    // workflow::import_workflow, messenger::create_direct_chat,
-    // reflect::create_activity/create_tag — alternate placed их в hero,
-    // derived в toolbar). Opt-in пока, default-flip — отдельный шаг.
+    // intent classified как primary tier И hero пустой И shape позволяет
+    // hero — promotion в hero. Закрывает A2 author-audit divergence
+    // (5 propose-primary intents: booking::add_service, workflow::import_workflow,
+    // messenger::create_direct_chat, reflect::create_activity/create_tag —
+    // alternate placed их в hero, derived в toolbar).
+    //
+    // classifyIntentRole возвращает "primary" в двух случаях:
+    //   1. intent.salience >= 80 (explicit author signal)
+    //   2. intent.creates === mainEntity без explicit salience (creator-of-main
+    //      auto-promote, Phase 6 default)
+    // Generalization (#438): использование classifyIntentRole закрывает все
+    // 5 propose-primary intents без обязательной explicit annotation.
+    // Opt-in пока, default-flip — отдельный шаг.
     if (isCreator && !isPerItem) {
-      const isExplicitPrimaryTier =
+      const isPrimaryTier =
         ONTOLOGY?.features?.salienceDrivenRouting === true &&
-        typeof intent.salience === "number" &&
-        intent.salience >= 80;
+        classifyIntentRole(intent, projection.mainEntity).includes("primary");
       const heroAllowed = shape !== "timeline" && shape !== "directory";
       const salience = computeSalience(intent, projection.mainEntity).value;
-      if (isExplicitPrimaryTier && heroAllowed && slots.hero.length === 0) {
+      if (isPrimaryTier && heroAllowed && slots.hero.length === 0) {
         if (hasOverlay) {
           slots.overlay.push(wrapped.overlay);
           slots.hero.push({ ...wrapped.trigger, salience, declarationOrder });

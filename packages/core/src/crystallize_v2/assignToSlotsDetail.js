@@ -22,6 +22,7 @@ import { computeSalience, bySalienceDesc, detectTiedGroups } from "./salience.js
 import { buildTemporalRenderSpec } from "./buildTemporalRenderSpec.js";
 import { applyInformationBottleneck } from "./informationBottleneck.js";
 import { diagnoseAssignment } from "./jointSolverDiagnose.js";
+import { classifyIntentRole } from "./jointSolver.js";
 import {
   filterIntentsByRoleCanExecute,
   detectCanExecuteViolations,
@@ -199,19 +200,25 @@ export function assignToSlotsDetail(INTENTS, projection, ONTOLOGY, strategy, opt
     // primaryCTA routing — автор явно попросил toolbar.
     //
     // Tier-driven extension (ontology.features.salienceDrivenRouting): если
-    // intent.salience >= 80 (explicit primary tier) — также промотируем в
-    // primaryCTA даже без phase-transition. Закрывает A2 author-audit
-    // structural divergence: до этого assignToSlotsDetail не консультировало
-    // classifyIntentRole для slot routing'а; salience влияла только на
-    // in-slot ordering (bySalienceDesc). Теперь author signal активен во
-    // всех путях кристаллизации. Opt-in пока, default-flip — отдельный шаг.
-    const isExplicitPrimaryTier =
+    // intent classified как primary tier (через classifyIntentRole) — также
+    // промотируем в primaryCTA даже без phase-transition. Закрывает A2
+    // author-audit structural divergence: до этого assignToSlotsDetail не
+    // консультировало classifyIntentRole для slot routing'а; salience влияла
+    // только на in-slot ordering (bySalienceDesc).
+    //
+    // classifyIntentRole возвращает "primary" в двух случаях:
+    //   1. intent.salience >= 80 (explicit author signal)
+    //   2. intent.creates === mainEntity без explicit salience (creator-of-main
+    //      auto-promote). На detail это не активируется т.к. creates===mainEntity
+    //      уже early-skipped выше (creator не нужен на detail-виде существующей
+    //      сущности). На detail работает только explicit salience signal.
+    // Opt-in пока, default-flip — отдельный шаг.
+    const isPrimaryTier =
       ONTOLOGY?.features?.salienceDrivenRouting === true &&
-      typeof intent.salience === "number" &&
-      intent.salience >= 80;
+      classifyIntentRole(intent, mainEntity).includes("primary");
     if (
       !toolbarWhitelist.has(id) &&
-      (isPhaseTransition(intent, mainEntity) || isExplicitPrimaryTier) &&
+      (isPhaseTransition(intent, mainEntity) || isPrimaryTier) &&
       intent.irreversibility !== "high" &&
       parameters.length === 0
     ) {
