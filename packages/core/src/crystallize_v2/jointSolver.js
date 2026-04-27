@@ -58,9 +58,20 @@ export function classifyIntentRole(intent, mainEntity) {
     else if (salience >= 30) roles.push(ROLE_NAVIGATION);
     else roles.push(ROLE_UTILITY);
   } else {
-    // Phase 4: unannotated или computed-only intents — overflow tier,
-    // не претендуют на primary slots без явного author signal.
-    roles.push(ROLE_UNSPECIFIED);
+    // Phase 6: creator-of-mainEntity — strong author signal для primary
+    // placement без explicit intent.salience. Author declarative
+    // intent.creates === mainEntity IS primary signal — equivalent
+    // to salience: 80 без необходимости явной аннотации.
+    // Закрывает 90+ catalog `hero → overlay` divergent (creator
+    // unspecified → overflow вместо hero до Phase 6).
+    const isCreatorOfMain =
+      intent?.creates && mainEntity && intent.creates === mainEntity;
+    if (isCreatorOfMain) {
+      roles.push(ROLE_PRIMARY);
+    } else {
+      // Phase 4: unannotated и не creator — overflow tier.
+      roles.push(ROLE_UNSPECIFIED);
+    }
   }
 
   // Destructive — orthogonal: remove на mainEntity

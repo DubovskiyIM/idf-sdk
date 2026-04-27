@@ -178,9 +178,9 @@ describe("computeAlternateAssignment", () => {
     const result = computeAlternateAssignment(intentsWithoutSalience, SYNTH_PROJECTION, ont, {
       role: "seller",
     });
-    // Phase 4: без explicit intent.salience → computed-only → tier 'unspecified'
-    // → intent НЕ попадает в primaryCTA (требует author signal), идёт в overflow.
-    const slot = result.assignment.get("create_listing");
-    expect(["toolbar", "overlay", "footer"]).toContain(slot);
+    // Phase 6: creator-of-mainEntity (intent.creates === 'Listing') —
+    // declarative author signal, auto-promote в primary tier даже без
+    // explicit intent.salience.
+    expect(result.assignment.get("create_listing")).toBe("primaryCTA");
   });
 });
