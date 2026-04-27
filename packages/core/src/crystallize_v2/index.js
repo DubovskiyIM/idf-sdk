@@ -268,7 +268,22 @@ export function crystallizeV2(INTENTS, PROJECTIONS, ONTOLOGY, domainId = "unknow
     // раньше уводил task_list в response_detail.
     if (slots.body?.type === "list") {
       if (proj.onItemClick) {
-        slots.body.onItemClick = proj.onItemClick;
+        // §13 (Notion field-test 2026-04-27): авто-coerce string-shorthand
+        // `onItemClick: "projId"` в structured action. Берём `idParam`
+        // целевой проекции в качестве ключа params (если есть), иначе "id".
+        // resolveNavigateAction резолвит "item.id" → row.id.
+        if (typeof proj.onItemClick === "string") {
+          const targetProjId = proj.onItemClick;
+          const targetProj = allProjections[targetProjId];
+          const paramKey = targetProj?.idParam || "id";
+          slots.body.onItemClick = {
+            action: "navigate",
+            to: targetProjId,
+            params: { [paramKey]: "item.id" },
+          };
+        } else {
+          slots.body.onItemClick = proj.onItemClick;
+        }
       } else {
         const outgoing = navGraph.edgesFrom(projId).filter(e => e.kind === "item-click");
         if (outgoing.length > 0) {

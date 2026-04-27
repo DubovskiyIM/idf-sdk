@@ -194,3 +194,57 @@ describe("§9.3 — onItemClick routing предпочитает detail с match
     expect(arts.task_list?.slots?.body?.onItemClick?.to).toBe("custom_view");
   });
 });
+
+// §13 (Notion field-test 2026-04-27) — string-shorthand auto-coerce
+describe("§13 — onItemClick: \"projId\" string-shorthand auto-coerce", () => {
+  it("string-shorthand → structured action с idParam от target projection", () => {
+    const derived = deriveProjections(ontology.intents, ontology);
+    const authored = {
+      ...derived,
+      task_list: {
+        ...derived.task_list,
+        onItemClick: "task_detail",  // string shorthand
+      },
+    };
+    const arts = crystallizeV2(ontology.intents, authored, ontology, "workzilla");
+    const oc = arts.task_list?.slots?.body?.onItemClick;
+    expect(oc).toEqual({
+      action: "navigate",
+      to: "task_detail",
+      params: { taskId: "item.id" },  // taskId = task_detail.idParam
+    });
+  });
+
+  it("если target.idParam отсутствует → fallback на 'id'", () => {
+    const derived = deriveProjections(ontology.intents, ontology);
+    const authored = {
+      ...derived,
+      task_list: {
+        ...derived.task_list,
+        onItemClick: "unknown_target",  // нет такой projection в map
+      },
+    };
+    const arts = crystallizeV2(ontology.intents, authored, ontology, "workzilla");
+    const oc = arts.task_list?.slots?.body?.onItemClick;
+    expect(oc).toEqual({
+      action: "navigate",
+      to: "unknown_target",
+      params: { id: "item.id" },
+    });
+  });
+
+  it("structured action не coerc'ится (backward-compat)", () => {
+    const derived = deriveProjections(ontology.intents, ontology);
+    const authored = {
+      ...derived,
+      task_list: {
+        ...derived.task_list,
+        onItemClick: { action: "navigate", to: "x", params: { foo: "bar" } },
+      },
+    };
+    const arts = crystallizeV2(ontology.intents, authored, ontology, "workzilla");
+    expect(arts.task_list?.slots?.body?.onItemClick).toEqual({
+      action: "navigate", to: "x", params: { foo: "bar" },
+    });
+  });
+});
