@@ -24,5 +24,11 @@ export default defineConfig({
     "@tiptap/suggestion",
   ],
   loader: { ".jsx": "jsx" },
+  // §13e-fix: esbuild дефолтный JSX-transform = classic, требует React в scope.
+  // Принудительно automatic runtime (react/jsx-runtime) чтобы dist не падал
+  // с «React is not defined» когда .jsx файл не импортирует React явно.
+  esbuildOptions(options) {
+    options.jsx = "automatic";
+  },
   outExtension({ format }) { return { js: format === "esm" ? ".mjs" : ".cjs" }; },
 });
