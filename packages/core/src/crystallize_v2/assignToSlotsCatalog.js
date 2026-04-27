@@ -205,10 +205,17 @@ export function assignToSlotsCatalog(INTENTS, projection, ONTOLOGY, strategy, sh
     //      auto-promote, Phase 6 default)
     // Generalization (#438): использование classifyIntentRole закрывает все
     // 5 propose-primary intents без обязательной explicit annotation.
-    // Opt-in пока, default-flip — отдельный шаг.
+    //
+    // Default-flip (#439): после host-side audit (idf #168) подтвердившего
+    // 42 implicit-primary creator intents в 12 доменах align с пользовательским
+    // ожиданием (canonical "Add" CTA в hero), default flip'нут с opt-in
+    // (`=== true`) на opt-out (`!== false`). Trajectory совпадает с Phase
+    // 3d.3 (respectRoleCanExecute). Author opt-out: `features.salienceDrivenRouting:
+    // false` или explicit `intent.salience < 80` (secondary tier остаётся
+    // в toolbar).
     if (isCreator && !isPerItem) {
       const isPrimaryTier =
-        ONTOLOGY?.features?.salienceDrivenRouting === true &&
+        ONTOLOGY?.features?.salienceDrivenRouting !== false &&
         classifyIntentRole(intent, projection.mainEntity).includes("primary");
       const heroAllowed = shape !== "timeline" && shape !== "directory";
       const salience = computeSalience(intent, projection.mainEntity).value;

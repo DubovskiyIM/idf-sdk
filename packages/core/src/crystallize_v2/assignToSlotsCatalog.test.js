@@ -57,6 +57,10 @@ const conversationList = {
 };
 
 const ONTOLOGY = {
+  // Default-flip (#439): tier-routing default-on. Эти legacy тесты документируют
+  // heroCreate-path и customCapture flow — opt-out чтобы tier-routing не
+  // переехал create_direct_chat в hero раньше heroCreate-path для create_group.
+  features: { salienceDrivenRouting: false },
   entities: {
     Conversation: { fields: ["id", "title", "createdAt"] },
     Participant: { fields: ["id", "muted"] },
