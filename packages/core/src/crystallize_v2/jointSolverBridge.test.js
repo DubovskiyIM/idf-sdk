@@ -4,25 +4,33 @@ import {
   computeAlternateAssignment,
 } from "./jointSolverBridge.js";
 
-describe("getDefaultSlotsForArchetype", () => {
-  it("catalog → hero/toolbar/context/fab", () => {
+describe("getDefaultSlotsForArchetype (Phase 3c' empirical model)", () => {
+  it("catalog → hero/toolbar/overlay (Phase 3c': context/fab убраны как unused)", () => {
     const slots = getDefaultSlotsForArchetype("catalog");
-    expect(Object.keys(slots)).toEqual(["hero", "toolbar", "context", "fab"]);
-    expect(slots.hero.capacity).toBe(1);
+    expect(Object.keys(slots)).toEqual(["hero", "toolbar", "overlay"]);
+    expect(slots.hero.capacity).toBe(2);
+    expect(slots.toolbar.capacity).toBe(5);
+    expect(slots.overlay.capacity).toBe(9);
     expect(slots.hero.allowedRoles).toContain("primary");
+    expect(slots.toolbar.allowedRoles).toContain("navigation");
+    expect(slots.overlay.allowedRoles).toContain("destructive");
   });
 
-  it("detail → primaryCTA/secondary/toolbar/footer", () => {
+  it("detail → primaryCTA/toolbar/overlay/footer (Phase 3c': secondary убран как unused)", () => {
     const slots = getDefaultSlotsForArchetype("detail");
-    expect(Object.keys(slots)).toEqual(["primaryCTA", "secondary", "toolbar", "footer"]);
-    expect(slots.primaryCTA.capacity).toBe(3);
+    expect(Object.keys(slots)).toEqual(["primaryCTA", "toolbar", "overlay", "footer"]);
+    expect(slots.primaryCTA.capacity).toBe(10);
+    expect(slots.toolbar.capacity).toBe(3);
+    expect(slots.footer.capacity).toBe(35);
     expect(slots.primaryCTA.allowedRoles).toContain("destructive");
   });
 
-  it("feed → toolbar/context/fab (без hero)", () => {
+  it("feed → toolbar/overlay (без hero)", () => {
     const slots = getDefaultSlotsForArchetype("feed");
     expect("toolbar" in slots).toBe(true);
+    expect("overlay" in slots).toBe(true);
     expect("hero" in slots).toBe(false);
+    expect(slots.overlay.capacity).toBe(14);
   });
 
   it("неизвестный archetype → fallback на catalog", () => {
@@ -70,19 +78,19 @@ const SYNTH_PROJECTION = {
 };
 
 describe("computeAlternateAssignment", () => {
-  it("извлекает intents через accessibleIntents и распределяет по default slots", () => {
+  it("извлекает intents через accessibleIntents и распределяет по empirical defaults", () => {
     const result = computeAlternateAssignment(SYNTH_INTENTS, SYNTH_PROJECTION, SYNTH_ONTOLOGY, {
       role: "seller",
     });
     expect(result.assignment.size).toBeGreaterThan(0);
-    // create_listing (primary, salience 80) → primaryCTA
+    // Phase 3c' (empirical): primaryCTA первый в slot order →
+    // primary intent (salience 80) попадает туда первым.
     expect(result.assignment.get("create_listing")).toBe("primaryCTA");
-    // edit_listing (secondary, salience 70) → secondary или toolbar
-    expect(["secondary", "toolbar"]).toContain(result.assignment.get("edit_listing"));
-    // delete_listing (navigation+destructive, salience 30) → primaryCTA или footer
-    expect(["primaryCTA", "footer"]).toContain(result.assignment.get("delete_listing"));
-    // view_history (utility, salience 10) → toolbar или footer
-    expect(["toolbar", "footer"]).toContain(result.assignment.get("view_history"));
+    // Все 4 intent'а fit в primaryCTA(10) или toolbar(3) — один из этих slots.
+    const validSlots = ["primaryCTA", "toolbar", "overlay", "footer"];
+    for (const id of ["edit_listing", "delete_listing", "view_history"]) {
+      expect(validSlots).toContain(result.assignment.get(id));
+    }
   });
 
   it("metadata содержит basis 'joint-solver-alternative' и diagnostic поля", () => {
@@ -97,7 +105,8 @@ describe("computeAlternateAssignment", () => {
     expect(result.metadata.mainEntity).toBe("Listing");
     expect(result.metadata.solver).toBe("hungarian");
     expect(result.metadata.intentCount).toBeGreaterThan(0);
-    expect(result.metadata.slotNames).toEqual(["primaryCTA", "secondary", "toolbar", "footer"]);
+    // Phase 3c' empirical detail slots
+    expect(result.metadata.slotNames).toEqual(["primaryCTA", "toolbar", "overlay", "footer"]);
   });
 
   it("opts.slots override — использует переданный slot model", () => {
@@ -122,7 +131,7 @@ describe("computeAlternateAssignment", () => {
     expect(result.metadata.role).toBe("seller");
   });
 
-  it("использует Hungarian (default solver) — 4 primary → 3 в primaryCTA", () => {
+  it("использует Hungarian (default solver) — 4 primary fit в primaryCTA(capacity 10)", () => {
     const fourPrimary = {
       a: { id: "a", salience: 90, particles: { entities: ["Listing"], effects: [] } },
       b: { id: "b", salience: 88, particles: { entities: ["Listing"], effects: [] } },
@@ -134,8 +143,9 @@ describe("computeAlternateAssignment", () => {
       roles: { seller: { canExecute: ["a", "b", "c", "d"] } },
     };
     const result = computeAlternateAssignment(fourPrimary, SYNTH_PROJECTION, ont, { role: "seller" });
+    // Phase 3c' empirical detail/primaryCTA capacity = 10 → все 4 primary fit здесь
     const inPrimary = [...result.assignment.entries()].filter(([_, s]) => s === "primaryCTA");
-    expect(inPrimary).toHaveLength(3);
+    expect(inPrimary).toHaveLength(4);
     expect(result.metadata.solver).toBe("hungarian");
   });
 

@@ -19,24 +19,56 @@ import { computeSalience } from "./salience.js";
 import { buildCostMatrix, greedyAssign } from "./jointSolver.js";
 import { hungarianAssign } from "./hungarianAssign.js";
 
+// ============================================================================
+// Empirical default slot models (Phase 3c').
+//
+// Источник: idf/scripts/jointsolver-empirical-slots.mjs прогон на 16 доменах
+// (booking/planning/workflow/messenger/sales/lifequest/reflect/invest/delivery/
+//  freelance/compliance/keycloak/argocd/notion/automation/gravitino).
+//
+// Дата измерений: 2026-04-27.
+//
+// Структура:
+//   capacity     = p95 наблюдаемых intent counts (empirical, conservative)
+//   allowedRoles = inclusive defaults — все salience-tier roles + destructive
+//                  где observed. Empirical observed roles = lower bound
+//                  (99% intents в real domains не имеют explicit
+//                  intent.salience → default 40 = navigation tier);
+//                  inclusive set accommodates explicit-salience annotations.
+//
+// Сравнение с Phase 2b упрощённой моделью:
+//   - overlay slot добавлен во все archetypes (закрывал 268/470 = 57%
+//     divergences из Phase 3a — top divergence pattern был overlay → toolbar)
+//   - context, fab, secondary — declared в Phase 2b, в practice unused
+//     (0 observations) → удалены
+//   - capacities recalibrated: detail/primaryCTA 3 → 10, detail/footer
+//     3 → 35 (heavy footers в keycloak/argocd/gravitino), detail/toolbar
+//     10 → 3
+// ============================================================================
+
+// Slot declaration order служит stable tie-break через Object.keys
+// в Hungarian solver. Order semantic: primary-candidate slots first,
+// чтобы explicit primary intents (salience ≥ 80) предпочитали
+// hero/primaryCTA, secondary — toolbar, overflow — overlay/footer.
+
+const ALL_TIER_ROLES = ["primary", "secondary", "navigation", "utility"];
+
 const SLOTS_CATALOG = {
-  hero:    { capacity: 1,  allowedRoles: ["primary"] },
-  toolbar: { capacity: 5,  allowedRoles: ["primary", "secondary", "navigation"] },
-  context: { capacity: 10, allowedRoles: ["secondary", "utility", "navigation"] },
-  fab:     { capacity: 1,  allowedRoles: ["destructive"] },
+  hero:    { capacity:  2, allowedRoles: ALL_TIER_ROLES },
+  toolbar: { capacity:  5, allowedRoles: ALL_TIER_ROLES },
+  overlay: { capacity:  9, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
 };
 
 const SLOTS_DETAIL = {
-  primaryCTA: { capacity: 3,  allowedRoles: ["primary", "destructive"] },
-  secondary:  { capacity: 5,  allowedRoles: ["secondary", "navigation"] },
-  toolbar:    { capacity: 10, allowedRoles: ["secondary", "utility", "navigation"] },
-  footer:     { capacity: 3,  allowedRoles: ["utility", "destructive"] },
+  primaryCTA: { capacity: 10, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
+  toolbar:    { capacity:  3, allowedRoles: ALL_TIER_ROLES },
+  overlay:    { capacity:  9, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
+  footer:     { capacity: 35, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
 };
 
 const SLOTS_FEED = {
-  toolbar: { capacity: 5,  allowedRoles: ["primary", "secondary", "navigation"] },
-  context: { capacity: 10, allowedRoles: ["secondary", "utility", "navigation"] },
-  fab:     { capacity: 1,  allowedRoles: ["destructive"] },
+  toolbar: { capacity:  5, allowedRoles: ALL_TIER_ROLES },
+  overlay: { capacity: 14, allowedRoles: [...ALL_TIER_ROLES, "destructive"] },
 };
 
 /**
