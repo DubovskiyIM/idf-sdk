@@ -54,6 +54,14 @@ export {
   diagnoseAssignment,
 } from "./crystallize_v2/jointSolverDiagnose.js";
 
+// Joint solver — Phase 3d: respectRoleCanExecute opt-in
+// (89% derivedOnly mismatches были role-canExecute violations)
+export {
+  filterIntentsByRoleCanExecute,
+  detectCanExecuteViolations,
+  buildCanExecuteViolationWitness,
+} from "./crystallize_v2/respectRoleCanExecute.js";
+
 // Intent algebra — связи ▷ ⇌ ⊕ ∥
 export {
   computeAlgebra,
