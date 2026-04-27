@@ -28,6 +28,19 @@ export {
   hashOntology,
 } from "./schemaVersion.js";
 
+// Φ schema-versioning (Phase 2 — ontology.evolution[] append-only лог, spec §4.2).
+// Helpers без upcaster-execution (Phase 3).
+export {
+  getEvolutionLog,
+  getCurrentVersionHash,
+  findVersionByHash,
+  getAncestry,
+  validateEvolutionEntry,
+  addEvolutionEntry,
+  createEvolutionEntry,
+  emptyDiff,
+} from "./evolutionLog.js";
+
 // Snapshot — incremental fold (A1: closed-over префикс Φ)
 export {
   createSnapshot,
