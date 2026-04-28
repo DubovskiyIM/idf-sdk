@@ -54,6 +54,18 @@ export {
   foldWithUpcast,
 } from "./upcasters.js";
 
+// Φ schema-versioning (Phase 4 — Reader gap policy, spec §4.5). Контракт
+// "equivalent information content under the same gap policy" для 4 reader'ов.
+export {
+  DEFAULT_READER_POLICIES,
+  DEFAULT_PLACEHOLDER,
+  getReaderPolicy,
+  detectFieldGap,
+  resolveGap,
+  resolveFieldGap,
+  scanEntityGaps,
+} from "./readerGapPolicy.js";
+
 // Snapshot — incremental fold (A1: closed-over префикс Φ)
 export {
   createSnapshot,
