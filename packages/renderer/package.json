@@ -28,7 +28,7 @@
   },
   "peerDependencies": {
     "react": ">=18",
-    "@intent-driven/core": ">=0.3.0"
+    "@intent-driven/core": ">=0.112.0"
   },
   "devDependencies": {
     "tsup": "^8.5.0",
