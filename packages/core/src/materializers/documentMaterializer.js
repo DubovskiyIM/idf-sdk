@@ -32,6 +32,8 @@
 
 import { evalFilter } from "../filterExpr.js";
 import { normalizeProjection } from "../normalizeProjection.js";
+import { getReaderPolicy } from "../readerGapPolicy.js";
+import { computeCanonicalGapSet } from "../driftDetector.js";
 
 function pluralize(word) {
   if (!word) return word;
@@ -256,6 +258,15 @@ function materializeAsDocument(projection, world, viewer, opts = {}) {
         content: `Неизвестный архетип ${projection.kind}`,
       });
   }
+
+  // Φ schema-versioning Phase 4/5 — reader gap policy + observability.
+  // Декларируем document policy и сообщаем canonical gap-set, чтобы
+  // detectReaderEquivalenceDrift мог использовать output как ReaderObservation.
+  // opts.gapPolicy override — для per-tenant настроек.
+  doc.meta.gapPolicy = opts.gapPolicy ?? getReaderPolicy("document");
+  doc.meta.gapsObserved = ontology?.entities
+    ? computeCanonicalGapSet(world, ontology, { typeMap: opts.typeMap }).cells
+    : [];
 
   return doc;
 }

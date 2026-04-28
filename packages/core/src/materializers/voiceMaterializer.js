@@ -42,6 +42,8 @@ function pluralize(word) {
 import { evalFilter } from "../filterExpr.js";
 import { normalizeProjection } from "../normalizeProjection.js";
 import { getPrimaryFieldValue } from "../getPrimaryFieldName.js";
+import { getReaderPolicy } from "../readerGapPolicy.js";
+import { computeCanonicalGapSet } from "../driftDetector.js";
 
 function findCollection(world, entityName) {
   if (!entityName) return [];
@@ -382,6 +384,15 @@ function materializeAsVoice(projection, world, viewer, opts = {}) {
   if (prompts.length > 0) {
     script.turns.push({ role: "prompts", items: prompts });
   }
+
+  // Φ schema-versioning Phase 4/5 — reader gap policy + observability.
+  // Декларируем voice'овую policy и сообщаем canonical gap-set, чтобы
+  // detectReaderEquivalenceDrift мог использовать output как ReaderObservation.
+  // opts.gapPolicy override — для per-tenant настроек.
+  script.meta.gapPolicy = opts.gapPolicy ?? getReaderPolicy("voice");
+  script.meta.gapsObserved = ontology?.entities
+    ? computeCanonicalGapSet(world, ontology, { typeMap: opts.typeMap }).cells
+    : [];
 
   return script;
 }
