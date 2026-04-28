@@ -1,3 +1,5 @@
+import { useEffect, useMemo } from "react";
+import { computeCanonicalGapSet, getReaderPolicy } from "@intent-driven/core";
 import ArchetypeFeed from "./archetypes/ArchetypeFeed.jsx";
 import ArchetypeCatalog from "./archetypes/ArchetypeCatalog.jsx";
 import ArchetypeDetail from "./archetypes/ArchetypeDetail.jsx";
@@ -63,9 +65,33 @@ export default function ProjectionRendererV2({
   artifacts,
   allProjections,
   validationStrict = false,
+  // Φ schema-versioning Phase 4/5 — reader gap policy + observability.
+  // Pixels reader декларирует policy и сообщает наблюдённый canonical gap-set
+  // через onGapsObserved-callback. Параметры опциональны: если ontology не
+  // передана, gap detection пропускается (рендер не зависит от neё).
+  ontology,
+  gapPolicy,
+  onGapsObserved,
 }) {
   // §27 authoring-env: override имеет приоритет над artifact (dev-only).
   const baseArtifact = artifactOverride || artifact;
+
+  // Φ schema-versioning Phase 4/5 — pixels reader gap observation.
+  // Computation memoized по (world, ontology); callback вызывается через
+  // useEffect, чтобы не side-effect'ить во время рендера. Caller использует
+  // observation как ReaderObservation для detectReaderEquivalenceDrift.
+  const resolvedGapPolicy = useMemo(
+    () => gapPolicy ?? getReaderPolicy("pixels"),
+    [gapPolicy],
+  );
+  const gapsObserved = useMemo(() => {
+    if (!ontology?.entities || !world) return [];
+    return computeCanonicalGapSet(world, ontology).cells;
+  }, [ontology, world]);
+  useEffect(() => {
+    if (typeof onGapsObserved !== "function") return;
+    onGapsObserved({ reader: "pixels", policy: resolvedGapPolicy, gapCells: gapsObserved });
+  }, [onGapsObserved, resolvedGapPolicy, gapsObserved]);
 
   if (!baseArtifact) {
     return <div style={{ padding: 20, color: "#9ca3af", textAlign: "center" }}>Нет артефакта</div>;
