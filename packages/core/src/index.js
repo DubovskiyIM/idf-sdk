@@ -29,7 +29,6 @@ export {
 } from "./schemaVersion.js";
 
 // Φ schema-versioning (Phase 2 — ontology.evolution[] append-only лог, spec §4.2).
-// Helpers без upcaster-execution (Phase 3).
 export {
   getEvolutionLog,
   getCurrentVersionHash,
@@ -40,6 +39,20 @@ export {
   createEvolutionEntry,
   emptyDiff,
 } from "./evolutionLog.js";
+
+// Φ schema-versioning (Phase 3 — applyUpcaster + fold(upcast(Φ, target)), spec §4.3-§4.4).
+export {
+  applyRename,
+  applySplitDiscriminator,
+  applySetDefault,
+  applyEnumMap,
+  applyDeclarativeUpcaster,
+  applyUpcaster,
+  pathFromTo,
+  upcastEffect,
+  upcastEffects,
+  foldWithUpcast,
+} from "./upcasters.js";
 
 // Snapshot — incremental fold (A1: closed-over префикс Φ)
 export {
