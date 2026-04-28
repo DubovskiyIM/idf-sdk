@@ -66,6 +66,17 @@ export {
   scanEntityGaps,
 } from "./readerGapPolicy.js";
 
+// Φ schema-versioning (Phase 5 — Layer 4 drift detector). Runtime-проверка
+// reader-equivalence: 4 reader'а на одной world-slice должны давать
+// совпадающий gap-set в пересечении их scope.
+export {
+  gapCellKey,
+  computeCanonicalGapSet,
+  compareReaderObservations,
+  detectReaderEquivalenceDrift,
+  buildPerfectObservation,
+} from "./driftDetector.js";
+
 // Snapshot — incremental fold (A1: closed-over префикс Φ)
 export {
   createSnapshot,
