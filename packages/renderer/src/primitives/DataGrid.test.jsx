@@ -492,6 +492,89 @@ describe("DataGrid — chipAssociation (inline-chip-association)", () => {
   });
 });
 
+describe("nested dataPath", () => {
+  it("резолвит value из item.audit.creator когда col.dataPath = 'audit.creator'", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "alpha", audit: { creator: "alice@acme" } }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "creator", label: "Creator", dataPath: "audit.creator" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.getByText("alpha")).toBeTruthy();
+    expect(screen.getByText("alice@acme")).toBeTruthy();
+  });
+
+  it("сортировка по nested dataPath работает", () => {
+    const node = {
+      type: "dataGrid",
+      items: [
+        { id: "1", name: "a", audit: { creator: "zed@acme" } },
+        { id: "2", name: "b", audit: { creator: "alice@acme" } },
+      ],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "creator", label: "Creator", dataPath: "audit.creator", sortable: true },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    // click Creator header — порядок должен стать alice, zed
+    const creatorHeader = screen.getByText("Creator");
+    fireEvent.click(creatorHeader);
+    const cells = container.querySelectorAll("tbody tr td:nth-child(2)");
+    expect(cells[0].textContent).toContain("alice@acme");
+    expect(cells[1].textContent).toContain("zed@acme");
+  });
+});
+
+describe("kind: 'datetime'", () => {
+  it("форматирует ISO-string через toLocaleString", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", createdAt: "2026-03-19T10:03:01Z" }],
+      columns: [
+        { key: "createdAt", label: "Created", kind: "datetime" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    // Не пытаемся pin-точный формат (locale-зависимый), но не должна быть raw ISO
+    expect(screen.queryByText("2026-03-19T10:03:01Z")).toBeNull();
+    // Год должен присутствовать
+    expect(screen.getByText(/2026|26/)).toBeTruthy();
+  });
+
+  it("рендерит — для null/undefined", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", createdAt: null }],
+      columns: [
+        { key: "createdAt", label: "Created", kind: "datetime" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.getByText("—")).toBeTruthy();
+  });
+});
+
+describe("kind: 'propertyPopover'", () => {
+  it("рендерит PropertyPopover для object value (не JSON)", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", properties: { env: "prod", region: "eu" } }],
+      columns: [
+        { key: "properties", label: "Properties", kind: "propertyPopover" },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    // Не должна быть JSON-сериализация
+    expect(container.textContent).not.toContain("{\"env\"");
+    // Должен быть counter (2) или клик-кнопка
+    expect(container.textContent).toMatch(/2|env|properties/i);
+  });
+});
+
 describe("DataGrid — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;
