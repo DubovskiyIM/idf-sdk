@@ -1,8 +1,19 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import RowAssociationChips, { pluralizeAsLabel } from "./RowAssociationChips.jsx";
 import { Badge } from "./atoms.jsx";
+import PropertyPopover from "./PropertyPopover.jsx";
 import { evalFilter } from "@intent-driven/core";
 import { evalCondition, evalIntentCondition } from "../eval.js";
+
+// resolveDataPath — lodash.get-style accessor для nested dataPath на column.
+// Поддерживает "audit.creator" / "user.profile.email" / просто "name".
+// Если path === undefined/null → undefined; если intermediate node === null → undefined.
+function resolveDataPath(item, path) {
+  if (item == null || path == null) return undefined;
+  if (typeof path !== "string") return undefined;
+  if (path.indexOf(".") === -1) return item[path];
+  return path.split(".").reduce((acc, key) => (acc == null ? undefined : acc[key]), item);
+}
 
 /**
  * DataGrid — enhanced table primitive с sort / per-column filter /
@@ -96,7 +107,7 @@ export default function DataGrid({ node, ctx }) {
       if (!col) continue;
       const q = String(value).toLowerCase();
       result = result.filter(it => {
-        const v = it[key];
+        const v = resolveDataPath(it, col.dataPath ?? col.key);
         if (v == null) return false;
         return String(v).toLowerCase().includes(q);
       });
@@ -104,7 +115,8 @@ export default function DataGrid({ node, ctx }) {
     // Sort
     if (sortBy) {
       result = [...result].sort((a, b) => {
-        const av = a[sortBy.key], bv = b[sortBy.key];
+        const path = sortBy.dataPath ?? sortBy.key;
+        const av = resolveDataPath(a, path), bv = resolveDataPath(b, path);
         if (av == null && bv == null) return 0;
         if (av == null) return 1;
         if (bv == null) return -1;
@@ -117,10 +129,10 @@ export default function DataGrid({ node, ctx }) {
     return result;
   }, [items, columns, filters, sortBy]);
 
-  const toggleSort = useCallback((key) => {
+  const toggleSort = useCallback((key, dataPath) => {
     setSortBy(cur => {
-      if (!cur || cur.key !== key) return { key, dir: "asc" };
-      if (cur.dir === "asc") return { key, dir: "desc" };
+      if (!cur || cur.key !== key) return { key, dataPath, dir: "asc" };
+      if (cur.dir === "asc") return { key, dataPath, dir: "desc" };
       return null;
     });
   }, []);
@@ -214,8 +226,14 @@ export default function DataGrid({ node, ctx }) {
                       <ChipCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "badge" ? (
                       <BadgeCell item={item} col={col} ctx={ctx} />
+                    ) : col.kind === "propertyPopover" ? (
+                      <PropertyPopover
+                        value={resolveDataPath(item, col.dataPath ?? col.key) ?? {}}
+                        summary={col.placeholder}
+                        ctx={ctx}
+                      />
                     ) : (
-                      <CellValue value={item[col.key]} col={col} />
+                      <CellValue value={resolveDataPath(item, col.dataPath ?? col.key)} col={col} />
                     )}
                   </td>
                 ))}
@@ -241,7 +259,7 @@ function HeaderCell({ col, sortBy, onToggleSort }) {
         cursor: clickable ? "pointer" : "default",
         width: col.width,
       }}
-      onClick={clickable ? () => onToggleSort(col.key) : undefined}
+      onClick={clickable ? () => onToggleSort(col.key, col.dataPath) : undefined}
       aria-sort={isSorted ? sortBy.dir === "asc" ? "ascending" : "descending" : "none"}
     >
       {col.label || col.key}{sortIndicator}
@@ -282,6 +300,16 @@ function CellValue({ value, col }) {
   if (value == null) return <span style={mutedStyle}>—</span>;
   if (col.format === "badge") {
     return <span style={badgeStyle}>{String(value)}</span>;
+  }
+  if (col?.kind === "datetime") {
+    if (value === "") return <span style={mutedStyle}>—</span>;
+    // Поддержка ISO-string ("2026-03-19T10:03:01Z") и millis (1714521600000).
+    let date;
+    if (typeof value === "number") date = new Date(value);
+    else if (typeof value === "string") date = new Date(value);
+    else date = null;
+    if (!date || isNaN(date.getTime())) return <span>{String(value)}</span>;
+    return <span>{date.toLocaleString("ru-RU", { dateStyle: "short", timeStyle: "short" })}</span>;
   }
   if (Array.isArray(value)) {
     // Arrays render как chip-list (для tags/roles) или count
