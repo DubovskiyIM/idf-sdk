@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.59.1
+
+### Patch Changes
+
+- 44ad6c8: DataGrid: nested dataPath ("audit.creator"), kind: "datetime" (toLocaleString), kind: "propertyPopover" (вместо JSON-snippet).
+
+  Backward-compatible: flat dataPath / column.key как раньше; новые kinds — опциональны.
+
 ## 0.59.0
 
 ### Minor Changes
