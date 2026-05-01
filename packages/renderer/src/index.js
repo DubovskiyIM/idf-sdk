@@ -55,7 +55,15 @@ export { Countdown } from "./primitives/Countdown.jsx";
 export { UndoToast } from "./primitives/UndoToast.jsx";
 export { default as AdminShell } from "./primitives/AdminShell.jsx";
 export { default as BlockEditor, BlockEditorFallback, buildHierarchy } from "./primitives/BlockEditor.jsx";
-export { default as Icon } from "./adapters/Icon.jsx";
+// Icon primitive (D12) — canonical names + lucide-react / emoji fallback.
+// Старый emoji-based Icon из adapters/Icon.jsx — IconLegacy (для backward compat).
+export {
+  default as Icon,
+  registerIconResolver,
+  EMOJI_MAP,
+  LUCIDE_MAP,
+} from "./primitives/Icon.jsx";
+export { default as IconLegacy } from "./adapters/Icon.jsx";
 import * as labels from "./adapters/labels.js";
 export { labels };
 
