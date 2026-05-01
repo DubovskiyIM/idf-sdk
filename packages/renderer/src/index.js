@@ -83,6 +83,16 @@ export {
   useCoSelectionEnabled,
 } from "./coSelection.jsx";
 
+// U-derive Phase 1 primitives — extracted из gravitino host (foundation
+// для Phase 2 pattern bank entries и Phase 3 host refactor).
+export { default as ColoredChip }            from "./primitives/ColoredChip.jsx";
+export { default as AvatarChip }             from "./primitives/AvatarChip.jsx";
+export { default as StatusBadge, STATUS_PALETTE } from "./primitives/StatusBadge.jsx";
+export { default as IllustratedEmptyState }  from "./primitives/IllustratedEmptyState.jsx";
+export { default as ConfirmDialog }          from "./primitives/ConfirmDialog.jsx";
+export { default as AssociatePopover }       from "./primitives/AssociatePopover.jsx";
+export { default as TwoPaneShell }           from "./primitives/TwoPaneShell.jsx";
+
 // Утилиты
 export * from "./hooks.js";
 export {
