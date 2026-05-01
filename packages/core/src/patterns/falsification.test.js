@@ -125,8 +125,8 @@ describe("Pattern Bank Falsification", () => {
     loadStablePatterns(registry);
   });
 
-  it("45 stable patterns loaded (+anchored-inline-comment-thread idf §13.17 first promote 2026-04-27)", () => {
-    expect(registry.getAllPatterns("stable").length).toBe(45);
+  it("49 stable patterns loaded (+U-derive Phase 2 batch — 4 gravitino-driven derived UI patterns 2026-05-01)", () => {
+    expect(registry.getAllPatterns("stable").length).toBe(49);
   });
 
   // ─── hero-create ───

@@ -135,6 +135,11 @@ import formYamlDualSurface from "./stable/detail/form-yaml-dual-surface.js";
 import diffPreviewBeforeIrreversible from "./stable/cross/diff-preview-before-irreversible.js";
 // idf §13.17 first real promote (2026-04-27): из candidates-with-apply
 import anchoredInlineCommentThread from "./stable/detail/anchored-inline-comment-thread.js";
+// U-derive Phase 2 (2026-05-01) — gravitino-driven derived UI patterns
+import entityRowActions from "./stable/catalog/entity-row-actions.js";
+import entityTagPolicyColumns from "./stable/catalog/entity-tag-policy-columns.js";
+import entityOwnerColumn from "./stable/catalog/entity-owner-column.js";
+import metadataObjectsReverseLookup from "./stable/cross/metadata-objects-reverse-lookup.js";
 
 const STABLE_PATTERNS = [
   heroCreate, phaseAwarePrimaryCta, subcollections, irreversibleConfirm,
@@ -179,6 +184,11 @@ const STABLE_PATTERNS = [
   diffPreviewBeforeIrreversible,
   // idf §13.17 first real promote (2026-04-27)
   anchoredInlineCommentThread,
+  // U-derive Phase 2 (2026-05-01)
+  entityRowActions,
+  entityTagPolicyColumns,
+  entityOwnerColumn,
+  metadataObjectsReverseLookup,
 ];
 
 export function loadStablePatterns(registry) {

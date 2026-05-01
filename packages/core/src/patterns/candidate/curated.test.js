@@ -67,7 +67,9 @@ describe("curated candidate bank — registry integration", () => {
     // частично schema-lax и не вся попадает в registry.
     const stableCount = registry.getAllPatterns("stable").length;
     const candidateCount = registry.getAllPatterns("candidate").length;
-    expect(stableCount).toBe(45);
+    // U-derive Phase 2 (2026-05-01): +4 gravitino-driven patterns (entity-row-actions,
+    // entity-tag-policy-columns, entity-owner-column, metadata-objects-reverse-lookup)
+    expect(stableCount).toBe(49);
     // Curated (10) прошли validatePattern; manifest-свалка может добавить >0.
     expect(candidateCount).toBeGreaterThanOrEqual(10);
     // Проверка, что каждый curated действительно в registry.
