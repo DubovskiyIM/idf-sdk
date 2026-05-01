@@ -13,6 +13,7 @@ import { markEmbeddedTypes } from "./markEmbeddedTypes.js";
 import { inferFieldRole, inferFieldRolesForEntities } from "./inferFieldRoles.js";
 import { canonicalizeGrpcOperationId } from "./canonicalizeGrpcOperationIds.js";
 import { extractInlineArrays } from "./extractInlineArrays.js";
+import { extractBodyParameters } from "./extractBodyParameters.js";
 import { convertSwagger2, isSwagger2 } from "./convertSwagger2.js";
 import { parse as parseYaml } from "yaml";
 
@@ -30,6 +31,7 @@ export {
   inferFieldRolesForEntities,
   canonicalizeGrpcOperationId,
   extractInlineArrays,
+  extractBodyParameters,
   convertSwagger2,
   isSwagger2,
 };
@@ -107,6 +109,28 @@ export function importOpenApi(spec, opts = {}) {
       const { name, intent } = pathToIntent(method, path, op, {
         collectionPostAsCreate: opts.collectionPostAsCreate,
       });
+
+      // Body params для POST / PUT / PATCH — request body schema fields
+      // попадают в parameters рядом с path/query. Path wins на collision
+      // (path identifies entity, body — это data). Foundation для
+      // SDK FormModal auto-derive формы из intent metadata.
+      const methodUpper = method.toUpperCase();
+      if (
+        opts.extractBodyParameters !== false
+        && (methodUpper === "POST" || methodUpper === "PUT" || methodUpper === "PATCH")
+      ) {
+        const bodyParams = extractBodyParameters(op, spec);
+        if (Object.keys(bodyParams).length > 0) {
+          // pathParams already в intent.parameters — merge так, чтобы
+          // existing path params не были overwritten (collision → path wins).
+          const merged = { ...bodyParams };
+          for (const [pname, pval] of Object.entries(intent.parameters || {})) {
+            merged[pname] = pval;
+          }
+          intent.parameters = merged;
+        }
+      }
+
       intents[name] = intent;
 
       // Гарантируем что entity есть (из path, если не было в components)
