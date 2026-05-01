@@ -588,3 +588,79 @@ describe("DataGrid — adapter delegation", () => {
     expect(screen.getByTestId("adapter-grid").textContent).toBe("adapter:3");
   });
 });
+
+describe("DataGrid — resizable columns (D3)", () => {
+  it("resizable: true → drag-handle присутствует справа от th", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "a" }],
+      columns: [
+        { key: "name", label: "Name", resizable: true },
+        { key: "static", label: "Static" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.queryByLabelText(/resize-name/i)).toBeTruthy();
+    expect(screen.queryByLabelText(/resize-static/i)).toBeNull();
+  });
+
+  it("mousedown + mousemove + mouseup → width изменяется", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "alpha" }],
+      columns: [{ key: "name", label: "Name", resizable: true, width: 100 }],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    const handle = screen.getByLabelText(/resize-name/i);
+    const initialWidth = container.querySelector("th").style.width;
+
+    fireEvent.mouseDown(handle, { clientX: 100 });
+    fireEvent.mouseMove(window, { clientX: 180 });
+    fireEvent.mouseUp(window);
+
+    const finalWidth = container.querySelector("th").style.width;
+    expect(finalWidth).not.toBe(initialWidth);
+  });
+
+  it("static column (resizable !== true) сохраняет width prop", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "a" }],
+      columns: [{ key: "name", label: "Name", width: 200 }],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    expect(container.querySelector("th").style.width).toMatch(/200/);
+  });
+
+  it("persistKey → loads widths из localStorage", () => {
+    const key = "test-pk-1";
+    localStorage.setItem(`idf-datagrid-widths:${key}`, JSON.stringify({ name: 250 }));
+    const node = {
+      type: "dataGrid",
+      persistKey: key,
+      items: [{ id: "1", name: "a" }],
+      columns: [{ key: "name", label: "Name", resizable: true }],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    expect(container.querySelector("th").style.width).toMatch(/250/);
+    localStorage.removeItem(`idf-datagrid-widths:${key}`);
+  });
+
+  it("resize-handle click не триггерит sort (stopPropagation)", () => {
+    const node = {
+      type: "dataGrid",
+      items: [
+        { id: 1, name: "b" },
+        { id: 2, name: "a" },
+      ],
+      columns: [{ key: "name", label: "Name", sortable: true, resizable: true }],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    const handle = screen.getByLabelText(/resize-name/i);
+    fireEvent.click(handle);
+    // sort не должен сработать — порядок остаётся как был
+    const cells = container.querySelectorAll("tbody tr td:nth-child(1)");
+    expect(cells[0].textContent).toContain("b");
+    expect(cells[1].textContent).toContain("a");
+  });
+});
