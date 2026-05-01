@@ -575,6 +575,174 @@ describe("kind: 'propertyPopover'", () => {
   });
 });
 
+describe("DataGrid — chipList cell kind", () => {
+  it("рендерит array values как inline ColoredChip's", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", tags: ["PII", "GDPR"] }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "tags", label: "Tags", kind: "chipList", chipKind: "tag" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.getByText("PII")).toBeTruthy();
+    expect(screen.getByText("GDPR")).toBeTruthy();
+  });
+
+  it("рендерит — для пустого array", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", tags: [] }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    const tagsCell = container.querySelectorAll("tbody tr td")[1];
+    expect(tagsCell.textContent).toBe("—");
+  });
+
+  it("рендерит — для null/undefined value", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", tags: null }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    const tagsCell = container.querySelectorAll("tbody tr td")[1];
+    expect(tagsCell.textContent).toBe("—");
+  });
+
+  it("scalar value оборачивается в single-chip array", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", tags: "PII" }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.getByText("PII")).toBeTruthy();
+  });
+
+  it("col.chipKind применяется к ColoredChip (policy preset)", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", policies: ["enforce-pii"] }],
+      columns: [
+        { key: "policies", label: "Policies", kind: "chipList", chipKind: "policy" },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    // ColoredChip — leaf span с background + color (нет nested children)
+    const chip = Array.from(container.querySelectorAll("span"))
+      .find(s => s.textContent === "enforce-pii" && s.children.length === 0);
+    expect(chip).toBeTruthy();
+    // policy preset — color #FFAB00 (jsdom может вернуть либо hex, либо rgb)
+    const color = chip.style.color.toLowerCase();
+    expect(color.includes("ffab00") || color.includes("255, 171, 0")).toBe(true);
+  });
+
+  it("click на chipList не триггерит row navigation (stopPropagation)", () => {
+    const onItemClick = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", tags: ["PII"] }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+      onItemClick,
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    fireEvent.click(screen.getByText("PII"));
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+});
+
+describe("DataGrid — ownerAvatar cell kind", () => {
+  it("рендерит AvatarChip с initial для string value", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", owner: "alice@acme" }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "owner", label: "Owner", kind: "ownerAvatar" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    // AvatarChip — letter-avatar + name
+    expect(screen.getByText("alice@acme")).toBeTruthy();
+    // First-letter circle ("A" — uppercase)
+    expect(screen.getByText("A")).toBeTruthy();
+  });
+
+  it("рендерит placeholder для null value", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", owner: null }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "owner", label: "Owner", kind: "ownerAvatar", placeholder: "+ Set Owner" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.getByText("+ Set Owner")).toBeTruthy();
+  });
+
+  it("рендерит — для empty без placeholder", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", owner: "" }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "owner", label: "Owner", kind: "ownerAvatar" },
+      ],
+    };
+    const { container } = render(<DataGrid node={node} ctx={{}} />);
+    const ownerCell = container.querySelectorAll("tbody tr td")[1];
+    expect(ownerCell.textContent).toBe("—");
+  });
+
+  it("col.ownerKind=group → group-цвет фона avatar", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", owner: "data-team" }],
+      columns: [
+        { key: "owner", label: "Owner", kind: "ownerAvatar", ownerKind: "group" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    // Letter D (uppercase)
+    const letter = screen.getByText("D");
+    const bg = letter.style.background.toLowerCase();
+    // group preset — #FFAB00 (jsdom рендерит либо hex, либо rgb)
+    expect(bg.includes("ffab00") || bg.includes("255, 171, 0")).toBe(true);
+  });
+
+  it("click на owner cell не триггерит row navigation (stopPropagation)", () => {
+    const onItemClick = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", name: "Catalog A", owner: "alice@acme" }],
+      columns: [
+        { key: "name", label: "Name" },
+        { key: "owner", label: "Owner", kind: "ownerAvatar" },
+      ],
+      onItemClick,
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    fireEvent.click(screen.getByText("alice@acme"));
+    expect(onItemClick).not.toHaveBeenCalled();
+  });
+});
+
 describe("DataGrid — adapter delegation", () => {
   it("использует adapter component если capability зарегистрирована", () => {
     const AdapterGrid = ({ node }) => <div data-testid="adapter-grid">adapter:{node.items.length}</div>;

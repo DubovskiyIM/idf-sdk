@@ -2,6 +2,8 @@ import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import RowAssociationChips, { pluralizeAsLabel } from "./RowAssociationChips.jsx";
 import { Badge } from "./atoms.jsx";
 import PropertyPopover from "./PropertyPopover.jsx";
+import ColoredChip from "./ColoredChip.jsx";
+import AvatarChip from "./AvatarChip.jsx";
 import { evalFilter } from "@intent-driven/core";
 import { evalCondition, evalIntentCondition } from "../eval.js";
 
@@ -249,6 +251,10 @@ export default function DataGrid({ node, ctx }) {
                       <ActionCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "chipAssociation" ? (
                       <ChipCell item={item} col={col} ctx={ctx} />
+                    ) : col.kind === "chipList" ? (
+                      <ChipListCell item={item} col={col} />
+                    ) : col.kind === "ownerAvatar" ? (
+                      <OwnerAvatarCell item={item} col={col} />
                     ) : col.kind === "badge" ? (
                       <BadgeCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "propertyPopover" ? (
@@ -553,6 +559,59 @@ function ChipCell({ item, col, ctx }) {
     return <span style={mutedStyle}>—</span>;
   }
   return <RowAssociationChips assoc={assoc} item={item} ctx={ctx} layout="inline" />;
+}
+
+/**
+ * ChipListCell — cell-renderer для column.kind === "chipList".
+ *
+ * Renders array-of-strings (item[col.key] / col.dataPath) inline через
+ * ColoredChip primitive. Используется паттерном entity-tag-policy-columns
+ * для inline-arrays типа catalog.tags = ["PII", "GDPR"], в отличие от
+ * chipAssociation (junction-table model).
+ *
+ * `col.chipKind` — ColoredChip preset ("tag" | "policy" | "muted"), default "tag".
+ * Empty array / null → "—" muted placeholder.
+ */
+function ChipListCell({ item, col }) {
+  const value = resolveDataPath(item, col.dataPath ?? col.key);
+  const arr = Array.isArray(value) ? value : (value != null && value !== "" ? [value] : []);
+  if (arr.length === 0) return <span style={mutedStyle}>—</span>;
+  const chipKind = col.chipKind || "tag";
+  return (
+    <span
+      style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {arr.map((text, i) => (
+        <ColoredChip key={i} text={String(text)} kind={chipKind} />
+      ))}
+    </span>
+  );
+}
+
+/**
+ * OwnerAvatarCell — cell-renderer для column.kind === "ownerAvatar".
+ *
+ * Renders owner-string (item[col.key] / col.dataPath) через AvatarChip primitive.
+ * Используется паттерном entity-owner-column для scalar owner полей типа
+ * catalog.owner = "alice@acme".
+ *
+ * `col.placeholder` — текст для empty value ("+ Set Owner" по конвенции).
+ * `col.ownerKind` — "user" | "group", default "user".
+ */
+function OwnerAvatarCell({ item, col }) {
+  const value = resolveDataPath(item, col.dataPath ?? col.key);
+  if (value == null || value === "") {
+    return col.placeholder
+      ? <span style={mutedStyle}>{col.placeholder}</span>
+      : <span style={mutedStyle}>—</span>;
+  }
+  const kind = col.ownerKind || "user";
+  return (
+    <span onClick={(e) => e.stopPropagation()}>
+      <AvatarChip name={String(value)} kind={kind} size="sm" />
+    </span>
+  );
 }
 
 /**

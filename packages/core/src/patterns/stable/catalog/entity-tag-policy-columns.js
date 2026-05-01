@@ -1,11 +1,16 @@
 /**
  * entity-tag-policy-columns — автоматически добавляет Tags + Policies columns
  * в catalog dataGrid когда entity ontology имеет соответствующие fields.
- * Использует chipAssociation kind (renders chip-list + AssociatePopover).
+ * Использует chipList kind (renders inline ColoredChip's для array-of-strings).
  *
  * U-derive Phase 2 (gravitino-driven). Phase 3 host'ы дропнут вручную написанные
  * Tags / Policies column-config'и в проекциях — pattern apply поверх ontology
  * полей делает то же самое декларативно.
+ *
+ * Phase 3.3: переход с chipAssociation на chipList. chipAssociation
+ * требует junction + foreignKey (junction-table модель). Inline-arrays
+ * типа catalog.tags = ["PII", "GDPR"] — gravitino модель — рендерятся
+ * через chipList + col.chipKind preset ("tag" | "policy").
  *
  * Insertion strategy: после `name` column (если есть) — типичный Gravitino
  * UX где Tags/Policies идут сразу за именем сущности.
@@ -25,7 +30,7 @@ export const PATTERN = {
   structure: {
     slot: "body",
     description:
-      "Добавляет Tags + Policies column'ы (kind: 'chipAssociation') в catalog dataGrid " +
+      "Добавляет Tags + Policies column'ы (kind: 'chipList') в catalog dataGrid " +
       "когда entity имеет оба поля. Insert после `name` column (если присутствует), " +
       "иначе в конец. Author-override: existing tags / policies column сохраняется (no double).",
     apply(slots, context) {
@@ -42,18 +47,18 @@ export const PATTERN = {
       if (!has("tags")) additions.push({
         key: "tags",
         label: "Tags",
-        kind: "chipAssociation",
+        kind: "chipList",
+        chipKind: "tag",
         associateLabel: "+ Associate Tag",
         intentOnAssociate: "associateTags",
-        variant: "tag",
       });
       if (!has("policies")) additions.push({
         key: "policies",
         label: "Policies",
-        kind: "chipAssociation",
+        kind: "chipList",
+        chipKind: "policy",
         associateLabel: "+ Associate Policy",
         intentOnAssociate: "associatePoliciesForObject",
-        variant: "policy",
       });
       if (additions.length === 0) return slots;
 

@@ -9,8 +9,12 @@ describe("entity-tag-policy-columns pattern", () => {
       ontology: { entities: { Catalog: { fields: { tags: { type: "array" }, policies: { type: "array" } } } } },
     };
     const next = PATTERN.structure.apply(slots, context);
-    expect(next.body.columns.find(c => c.key === "tags")?.kind).toBe("chipAssociation");
-    expect(next.body.columns.find(c => c.key === "policies")?.kind).toBe("chipAssociation");
+    const tagsCol = next.body.columns.find(c => c.key === "tags");
+    const policiesCol = next.body.columns.find(c => c.key === "policies");
+    expect(tagsCol?.kind).toBe("chipList");
+    expect(tagsCol?.chipKind).toBe("tag");
+    expect(policiesCol?.kind).toBe("chipList");
+    expect(policiesCol?.chipKind).toBe("policy");
   });
 
   it("no-op когда entity не имеет tags/policies", () => {
