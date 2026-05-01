@@ -93,6 +93,29 @@ export default function DataGrid({ node, ctx }) {
   const [filters, setFilters] = useState({}); // {key: string}
   const [hiddenCols, setHiddenCols] = useState(new Set());
 
+  // D3 — resizable columns. State: { colKey: pixelWidth }. Опционально
+  // persist'ится в localStorage по `node.persistKey`. setColWidth clamp'ит
+  // по minWidth = 60px (защита от collapse).
+  const persistKey = node?.persistKey;
+  const [colWidths, setColWidths] = useState(() => {
+    if (typeof localStorage === "undefined" || !persistKey) return {};
+    try {
+      const raw = localStorage.getItem(`idf-datagrid-widths:${persistKey}`);
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+
+  useEffect(() => {
+    if (!persistKey || typeof localStorage === "undefined") return;
+    try {
+      localStorage.setItem(`idf-datagrid-widths:${persistKey}`, JSON.stringify(colWidths));
+    } catch { /* localStorage quota / disabled — silently skip */ }
+  }, [colWidths, persistKey]);
+
+  const setColWidth = useCallback((key, width) => {
+    setColWidths(prev => ({ ...prev, [key]: Math.max(60, Math.round(width)) }));
+  }, []);
+
   const visibleColumns = useMemo(
     () => columns.filter(c => !hiddenCols.has(c.key)),
     [columns, hiddenCols]
@@ -188,6 +211,8 @@ export default function DataGrid({ node, ctx }) {
                 col={col}
                 sortBy={sortBy}
                 onToggleSort={toggleSort}
+                width={colWidths[col.key] ?? col.width}
+                setWidth={setColWidth}
               />
             ))}
           </tr>
@@ -246,23 +271,62 @@ export default function DataGrid({ node, ctx }) {
   );
 }
 
-function HeaderCell({ col, sortBy, onToggleSort }) {
+function HeaderCell({ col, sortBy, onToggleSort, width, setWidth }) {
   const isSorted = sortBy?.key === col.key;
   const sortIndicator = isSorted ? (sortBy.dir === "asc" ? " ↑" : " ↓") : "";
   // Actions-column не сортируется (нет скалярного значения для compare).
   const clickable = col.kind !== "actions" && col.sortable !== false;
+  const resizable = col.resizable === true;
+
+  // D3 — drag-handle справа от cell. mouseDown захватывает startX +
+  // текущую ширину th (offsetWidth, иначе fallback на width prop / 100px),
+  // вешает window-listener'ы на move/up. stopPropagation чтобы не
+  // сработал sort-toggle на header.
+  const onResizeMouseDown = (e) => {
+    if (!setWidth) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const th = e.currentTarget.parentElement;
+    const startWidth = th?.offsetWidth || width || 100;
+    const onMove = (ev) => {
+      const delta = ev.clientX - startX;
+      setWidth(col.key, startWidth + delta);
+    };
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    document.body.style.cursor = "col-resize";
+    document.body.style.userSelect = "none";
+  };
+
   return (
     <th
       style={{
         ...headCellStyle,
         textAlign: col.align || "left",
         cursor: clickable ? "pointer" : "default",
-        width: col.width,
+        width,
+        position: "relative",
       }}
       onClick={clickable ? () => onToggleSort(col.key, col.dataPath) : undefined}
       aria-sort={isSorted ? sortBy.dir === "asc" ? "ascending" : "descending" : "none"}
     >
       {col.label || col.key}{sortIndicator}
+      {resizable && (
+        <span
+          role="separator"
+          aria-label={`resize-${col.key}`}
+          onMouseDown={onResizeMouseDown}
+          onClick={(e) => e.stopPropagation()}
+          style={resizeHandleStyle}
+        />
+      )}
     </th>
   );
 }
@@ -618,6 +682,19 @@ const headCellStyle = {
   textTransform: "uppercase",
   letterSpacing: "0.4px",
   color: "var(--idf-text-muted, #6b7280)",
+  userSelect: "none",
+};
+
+// D3 — resize-handle: 6px-полоска справа от th, position:absolute
+// относительно th (которая имеет position:relative). col-resize cursor.
+const resizeHandleStyle = {
+  position: "absolute",
+  top: 0,
+  right: -3,
+  bottom: 0,
+  width: 6,
+  cursor: "col-resize",
+  zIndex: 1,
   userSelect: "none",
 };
 
