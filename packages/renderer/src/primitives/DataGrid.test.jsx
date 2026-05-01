@@ -664,6 +664,33 @@ describe("DataGrid — chipList cell kind", () => {
     fireEvent.click(screen.getByText("PII"));
     expect(onItemClick).not.toHaveBeenCalled();
   });
+
+  it("ChipListCell renders + button когда intentOnAssociate задан", () => {
+    const exec = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", tags: ["A"] }],
+      columns: [
+        { key: "tags", label: "Tags", kind: "chipList", chipKind: "tag", intentOnAssociate: "associateTags" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{ exec }} />);
+    const btn = screen.getByTitle("Add");
+    fireEvent.click(btn);
+    expect(exec).toHaveBeenCalledWith("associateTags", expect.objectContaining({ id: "1" }));
+  });
+
+  it("ChipListCell — no + button когда intentOnAssociate отсутствует", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", tags: ["A"] }],
+      columns: [
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.queryByTitle("Add")).toBeNull();
+  });
 });
 
 describe("DataGrid — ownerAvatar cell kind", () => {
@@ -740,6 +767,37 @@ describe("DataGrid — ownerAvatar cell kind", () => {
     render(<DataGrid node={node} ctx={{}} />);
     fireEvent.click(screen.getByText("alice@acme"));
     expect(onItemClick).not.toHaveBeenCalled();
+  });
+
+  it("OwnerAvatarCell — click → ctx.exec(editIntent)", () => {
+    const exec = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "m1", owner: "alice@acme" }],
+      columns: [
+        { key: "owner", label: "Owner", kind: "ownerAvatar", editIntent: "setOwner" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{ exec }} />);
+    const btn = screen.getByTitle("Edit owner");
+    fireEvent.click(btn);
+    expect(exec).toHaveBeenCalledWith("setOwner", expect.objectContaining({ id: "m1" }));
+  });
+
+  it("OwnerAvatarCell empty + editIntent + placeholder → clickable button", () => {
+    const exec = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "m1" }],
+      columns: [
+        { key: "owner", label: "Owner", kind: "ownerAvatar", editIntent: "setOwner", placeholder: "+ Set Owner" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{ exec }} />);
+    const btn = screen.getByText("+ Set Owner");
+    expect(btn.tagName).toBe("BUTTON");
+    fireEvent.click(btn);
+    expect(exec).toHaveBeenCalledWith("setOwner", expect.objectContaining({ id: "m1" }));
   });
 });
 

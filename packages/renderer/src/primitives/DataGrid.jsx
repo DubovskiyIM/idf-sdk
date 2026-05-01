@@ -252,9 +252,9 @@ export default function DataGrid({ node, ctx }) {
                     ) : col.kind === "chipAssociation" ? (
                       <ChipCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "chipList" ? (
-                      <ChipListCell item={item} col={col} />
+                      <ChipListCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "ownerAvatar" ? (
-                      <OwnerAvatarCell item={item} col={col} />
+                      <OwnerAvatarCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "badge" ? (
                       <BadgeCell item={item} col={col} ctx={ctx} />
                     ) : col.kind === "propertyPopover" ? (
@@ -570,21 +570,53 @@ function ChipCell({ item, col, ctx }) {
  * chipAssociation (junction-table model).
  *
  * `col.chipKind` — ColoredChip preset ("tag" | "policy" | "muted"), default "tag".
- * Empty array / null → "—" muted placeholder.
+ * `col.intentOnAssociate` — если задан, рендерится «+» add-button.
+ *   Click → ctx.openOverlay(`overlay_<intent>`) если overlay найден в artifact,
+ *   иначе ctx.exec(intent, { id, entity }).
+ * Empty array / null без intentOnAssociate → "—" muted placeholder.
  */
-function ChipListCell({ item, col }) {
+function ChipListCell({ item, col, ctx }) {
   const value = resolveDataPath(item, col.dataPath ?? col.key);
   const arr = Array.isArray(value) ? value : (value != null && value !== "" ? [value] : []);
-  if (arr.length === 0) return <span style={mutedStyle}>—</span>;
   const chipKind = col.chipKind || "tag";
+  const intentId = col.intentOnAssociate;
+  const handleAdd = intentId && ctx ? () => {
+    const overlayKey = `overlay_${intentId}`;
+    const overlays = ctx?.artifact?.slots?.overlay;
+    const hasOverlay = Array.isArray(overlays) && overlays.some(o => o?.key === overlayKey);
+    if (hasOverlay && ctx.openOverlay) {
+      ctx.openOverlay(overlayKey, { item });
+    } else if (ctx.exec) {
+      ctx.exec(intentId, { id: item.id, entity: item });
+    }
+  } : null;
+
   return (
     <span
-      style={{ display: "inline-flex", gap: 4, flexWrap: "wrap" }}
+      style={{ display: "inline-flex", gap: 4, flexWrap: "wrap", alignItems: "center" }}
       onClick={(e) => e.stopPropagation()}
     >
-      {arr.map((text, i) => (
-        <ColoredChip key={i} text={String(text)} kind={chipKind} />
-      ))}
+      {arr.length === 0
+        ? <span style={mutedStyle}>—</span>
+        : arr.map((text, i) => (
+          <ColoredChip key={i} text={String(text)} kind={chipKind} />
+        ))}
+      {handleAdd && (
+        <button
+          type="button"
+          onClick={handleAdd}
+          title={col.associateLabel || "Add"}
+          style={{
+            background: "transparent",
+            border: "1px dashed var(--idf-border, #d1d5db)",
+            borderRadius: 4,
+            padding: "1px 6px",
+            fontSize: 11,
+            color: "var(--idf-text-muted)",
+            cursor: "pointer",
+          }}
+        >+</button>
+      )}
     </span>
   );
 }
@@ -598,20 +630,63 @@ function ChipListCell({ item, col }) {
  *
  * `col.placeholder` — текст для empty value ("+ Set Owner" по конвенции).
  * `col.ownerKind` — "user" | "group", default "user".
+ * `col.editIntent` — если задан, avatar/placeholder становится clickable.
+ *   Click → ctx.openOverlay(`overlay_<intent>`) если overlay найден в artifact,
+ *   иначе ctx.exec(intent, { id, entity }).
  */
-function OwnerAvatarCell({ item, col }) {
+function OwnerAvatarCell({ item, col, ctx }) {
   const value = resolveDataPath(item, col.dataPath ?? col.key);
+  const editIntent = col.editIntent;
+  const handleClick = editIntent && ctx ? (e) => {
+    e.stopPropagation();
+    const overlayKey = `overlay_${editIntent}`;
+    const overlays = ctx?.artifact?.slots?.overlay;
+    const hasOverlay = Array.isArray(overlays) && overlays.some(o => o?.key === overlayKey);
+    if (hasOverlay && ctx.openOverlay) {
+      ctx.openOverlay(overlayKey, { item });
+    } else if (ctx.exec) {
+      ctx.exec(editIntent, { id: item.id, entity: item });
+    }
+  } : null;
+
   if (value == null || value === "") {
-    return col.placeholder
-      ? <span style={mutedStyle}>{col.placeholder}</span>
-      : <span style={mutedStyle}>—</span>;
+    const placeholder = col.placeholder || "—";
+    if (handleClick) {
+      return (
+        <button
+          type="button"
+          onClick={handleClick}
+          style={{
+            background: "transparent",
+            border: "none",
+            color: "var(--idf-primary, #6478f7)",
+            cursor: "pointer",
+            fontSize: 12,
+            padding: 0,
+          }}
+        >{placeholder}</button>
+      );
+    }
+    return <span style={mutedStyle}>{placeholder}</span>;
   }
   const kind = col.ownerKind || "user";
-  return (
-    <span onClick={(e) => e.stopPropagation()}>
-      <AvatarChip name={String(value)} kind={kind} size="sm" />
-    </span>
-  );
+  const inner = <AvatarChip name={String(value)} kind={kind} size="sm" />;
+  if (handleClick) {
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        title="Edit owner"
+        style={{
+          background: "transparent",
+          border: "none",
+          padding: 0,
+          cursor: "pointer",
+        }}
+      >{inner}</button>
+    );
+  }
+  return <span onClick={(e) => e.stopPropagation()}>{inner}</span>;
 }
 
 /**
