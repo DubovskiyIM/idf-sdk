@@ -573,6 +573,8 @@ function ChipCell({ item, col, ctx }) {
  * `col.intentOnAssociate` — если задан, рендерится «+» add-button.
  *   Click → ctx.openOverlay(`overlay_<intent>`) если overlay найден в artifact,
  *   иначе ctx.exec(intent, { id, entity }).
+ * `col.intentOnDetach` — если задан, на каждом chip рендерится «×» detach-button.
+ *   Click → ctx.exec(intent, { id, entity, value: chipText }).
  * Empty array / null без intentOnAssociate → "—" muted placeholder.
  */
 function ChipListCell({ item, col, ctx }) {
@@ -580,6 +582,7 @@ function ChipListCell({ item, col, ctx }) {
   const arr = Array.isArray(value) ? value : (value != null && value !== "" ? [value] : []);
   const chipKind = col.chipKind || "tag";
   const intentId = col.intentOnAssociate;
+  const detachIntent = col.intentOnDetach;
   const handleAdd = intentId && ctx ? () => {
     const overlayKey = `overlay_${intentId}`;
     const overlays = ctx?.artifact?.slots?.overlay;
@@ -590,6 +593,9 @@ function ChipListCell({ item, col, ctx }) {
       ctx.exec(intentId, { id: item.id, entity: item });
     }
   } : null;
+  const handleDetach = detachIntent && ctx?.exec
+    ? (chipText) => ctx.exec(detachIntent, { id: item.id, entity: item, value: chipText })
+    : null;
 
   return (
     <span
@@ -598,9 +604,30 @@ function ChipListCell({ item, col, ctx }) {
     >
       {arr.length === 0
         ? <span style={mutedStyle}>—</span>
-        : arr.map((text, i) => (
-          <ColoredChip key={i} text={String(text)} kind={chipKind} />
-        ))}
+        : arr.map((text, i) => {
+          const chipText = String(text);
+          return (
+            <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 2 }}>
+              <ColoredChip text={chipText} kind={chipKind} />
+              {handleDetach && (
+                <button
+                  type="button"
+                  onClick={() => handleDetach(chipText)}
+                  title={`Remove ${chipText}`}
+                  style={{
+                    background: "transparent",
+                    border: "none",
+                    cursor: "pointer",
+                    padding: "0 2px",
+                    fontSize: 10,
+                    color: "var(--idf-text-muted)",
+                    lineHeight: 1,
+                  }}
+                >×</button>
+              )}
+            </span>
+          );
+        })}
       {handleAdd && (
         <button
           type="button"

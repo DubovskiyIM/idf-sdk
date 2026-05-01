@@ -691,6 +691,34 @@ describe("DataGrid — chipList cell kind", () => {
     render(<DataGrid node={node} ctx={{}} />);
     expect(screen.queryByTitle("Add")).toBeNull();
   });
+
+  it("ChipListCell renders × button per chip когда intentOnDetach задан", () => {
+    const exec = vi.fn();
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", tags: ["A", "B"] }],
+      columns: [
+        { key: "tags", label: "Tags", kind: "chipList", chipKind: "tag", intentOnDetach: "removeTag" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{ exec }} />);
+    const btns = screen.getAllByTitle(/Remove /);
+    expect(btns.length).toBe(2);
+    fireEvent.click(btns[0]);
+    expect(exec).toHaveBeenCalledWith("removeTag", expect.objectContaining({ id: "1", value: "A" }));
+  });
+
+  it("ChipListCell — нет × кнопок когда intentOnDetach отсутствует", () => {
+    const node = {
+      type: "dataGrid",
+      items: [{ id: "1", tags: ["A"] }],
+      columns: [
+        { key: "tags", label: "Tags", kind: "chipList" },
+      ],
+    };
+    render(<DataGrid node={node} ctx={{}} />);
+    expect(screen.queryByTitle(/Remove /)).toBeNull();
+  });
 });
 
 describe("DataGrid — ownerAvatar cell kind", () => {
