@@ -93,6 +93,17 @@ export { default as ConfirmDialog }          from "./primitives/ConfirmDialog.js
 export { default as AssociatePopover }       from "./primitives/AssociatePopover.jsx";
 export { default as TwoPaneShell }           from "./primitives/TwoPaneShell.jsx";
 
+// U-derive Phase 3.13 primitives — form-derive enhancements для host gravitino
+// (CreateTagDialog color + properties, CreatePolicyDialog properties → IntentFormDialog).
+export { default as ColorPicker, PALETTE as COLOR_PALETTE, randomColor } from "./primitives/ColorPicker.jsx";
+export { default as KeyValueEditor }         from "./primitives/KeyValueEditor.jsx";
+
+// FormModal — control-archetype rendering modal с auto-derived parameters.
+// Раньше был доступен только через `controls.FormModal` namespace; теперь
+// также top-level export для host'ов которые рендерят его напрямую (без
+// overlay registration).
+export { default as FormModal, ModalShell }  from "./controls/FormModal.jsx";
+
 // Утилиты
 export * from "./hooks.js";
 export {
