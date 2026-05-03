@@ -20,6 +20,8 @@ import AdminShell from "./AdminShell.jsx";
 import ResourceTree from "./ResourceTree.jsx";
 import BlockEditor from "./BlockEditor.jsx";
 import ScopePicker from "./ScopePicker.jsx";
+import ColorPicker from "./ColorPicker.jsx";
+import KeyValueEditor from "./KeyValueEditor.jsx";
 
 // Re-export primitives как named members — для прямого использования
 // (например, в doменных canvas-wrapper'ах).
@@ -41,6 +43,8 @@ export { default as AdminShell } from "./AdminShell.jsx";
 export { default as ResourceTree } from "./ResourceTree.jsx";
 export { default as BlockEditor, BlockEditorFallback, buildHierarchy } from "./BlockEditor.jsx";
 export { default as ScopePicker } from "./ScopePicker.jsx";
+export { default as ColorPicker, PALETTE as COLOR_PALETTE, randomColor } from "./ColorPicker.jsx";
+export { default as KeyValueEditor } from "./KeyValueEditor.jsx";
 export { EventTimeline } from "./eventTimeline.jsx";
 
 export const PRIMITIVES = {
@@ -85,4 +89,6 @@ export const PRIMITIVES = {
   resourceTree: ResourceTree,
   blockEditor: BlockEditor,
   scopePicker: ScopePicker,
+  colorPicker: ColorPicker,
+  keyValueEditor: KeyValueEditor,
 };

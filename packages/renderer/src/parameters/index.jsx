@@ -5,6 +5,8 @@ import FileControl from "./FileControl.jsx";
 import ImageControl from "./ImageControl.jsx";
 import MultiImageControl from "./MultiImageControl.jsx";
 import MethodSelectControl from "./MethodSelectControl.jsx";
+import ColorControl from "./ColorControl.jsx";
+import KeyValueControl from "./KeyValueControl.jsx";
 import PresetChips from "./PresetChips.jsx";
 import HelpCard from "./HelpCard.jsx";
 import { getAdaptedComponent, pickAdaptedComponent } from "../adapters/registry.js";
@@ -24,6 +26,9 @@ const CONTROLS_BY_TYPE = {
   image: ImageControl,
   multiImage: MultiImageControl,
   methodSelect: MethodSelectControl,
+  // U-derive Phase 3.13 prerequisite (host gravitino tag/policy properties).
+  color: ColorControl,
+  keyValue: KeyValueControl,
 };
 
 // Presets рендерятся только для контролов, где quick-fill семантически
@@ -40,7 +45,17 @@ export default function ParameterControl({ spec, value, onChange, error }) {
   // Fallback: exact lookup по spec.control (back-compat), потом built-in.
   const Picked = pickAdaptedComponent("parameter", spec);
   const Adapted = Picked || getAdaptedComponent("parameter", spec.control);
-  const Component = Adapted || CONTROLS_BY_TYPE[spec.control] || TextControl;
+  // Field-type discriminator: caller передаёт либо `spec.control` (canonical), либо
+  // `spec.type` (alias из intent.parameters[].type). Object-без-values тоже
+  // dispatch'нется на KeyValueControl — free-form properties editor.
+  const objectFreeForm =
+    (spec.control === "object" || spec.type === "object") && !spec.values;
+  const Component =
+    Adapted ||
+    CONTROLS_BY_TYPE[spec.control] ||
+    CONTROLS_BY_TYPE[spec.type] ||
+    (objectFreeForm ? KeyValueControl : null) ||
+    TextControl;
 
   const showPresets =
     Array.isArray(spec.presets) &&
